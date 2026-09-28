@@ -1,26 +1,55 @@
 # Notas de zkVM
 
-## Estado D0
+## Estado D1a.1
 
-A versão de `risc0-zkvm` e a toolchain RISC Zero ainda não estão pinadas. A documentação oficial consultada está marcada como versão 3.0 e a página de releases mostra `v3.0.6` como release estável mais recente consultada em 2026-09-28, mas isso não constitui decisão de pin.
+A raia zkVM de referência é o tag `risc0/risc0 v3.0.3`: Rust host `1.89.0`, Rust guest `1.88.0`, `rzup 0.5.1`, `cargo-risczero 3.0.3`, `risc0-zkvm 3.0.3` e `risc0-build 3.0.3`. Esses números estão registrados em arquivos do tag exato; não foram instalados nem executados localmente.
 
-Não há neste repositório evidência de build do guest, ImageID calculado ou receipt local válida.
+O host Rust, a toolchain guest RISC-V e a toolchain Solana/Anchor são raias distintas. Não há fonte exigindo que suas versões Rust sejam idênticas, e esta documentação não as força a coincidir.
 
-## Versão de `risc0-zkvm`
+**Ainda não existe receipt VeriCode**, para PASS ou FAIL. Também não existe build do guest, ImageID calculado ou prova local neste repositório.
 
-- Versão pinada: pendente.
-- Requisito do spike: escolher uma release estável suportada, alinhar `risc0-zkvm`, `risc0-build`, `cargo-risczero`/`rzup` e verificar avisos de segurança antes de gerar evidência.
-- A versão não deve ser escolhida apenas por ser a mais recente; precisa ser compatível com o caminho Groth16/Router que vier a ser validado.
+## Compatibilidade dentro da raia RISC Zero
 
-## Exemplo oficial escolhido
+| Item | Versão/fato | Evidência no tag exato | Estado |
+| --- | --- | --- | --- |
+| Rust host | `1.89.0` | `risc0/risc0 v3.0.3`, [`rust-toolchain.toml`](https://github.com/risc0/risc0/blob/v3.0.3/rust-toolchain.toml) | verificado por manifest |
+| Rust guest | `1.88.0` | `risc0/risc0 v3.0.3`, [`.github/workflows/main.yml`](https://github.com/risc0/risc0/blob/v3.0.3/.github/workflows/main.yml) | verificado por manifest |
+| `rzup` | `0.5.1` | `risc0/risc0 v3.0.3`, [`rzup/Cargo.toml`](https://github.com/risc0/risc0/blob/v3.0.3/rzup/Cargo.toml) | verificado por manifest |
+| `cargo-risczero` | `3.0.3` | `risc0/risc0 v3.0.3`, [`risc0/cargo-risczero/Cargo.toml`](https://github.com/risc0/risc0/blob/v3.0.3/risc0/cargo-risczero/Cargo.toml) | verificado por manifest |
+| SDK | `risc0-zkvm 3.0.3`; `risc0-build 3.0.3` | manifests e lock do `counter` listados abaixo | verificado por manifest |
 
-Referência inicial para o spike local: tutorial oficial **Building zkVM Hello World**, por demonstrar separação host/guest, entrada privada, commit no journal, geração e verificação de receipt. O exemplo será referência estrutural; a lógica do VeriCode continuará no core Rust puro e `Verdict::Fail` não usará panic.
+O exemplo `hello-world` do tag `risc0/risc0 v3.0.3` é a referência mínima para host/guest, journal e receipt. Seu [`Cargo.toml`](https://github.com/risc0/risc0/blob/v3.0.3/examples/hello-world/Cargo.toml) aponta para `risc0-zkvm` do mesmo workspace; [`methods/Cargo.toml`](https://github.com/risc0/risc0/blob/v3.0.3/examples/hello-world/methods/Cargo.toml) aponta para `risc0-build`; e [`methods/guest/Cargo.toml`](https://github.com/risc0/risc0/blob/v3.0.3/examples/hello-world/methods/guest/Cargo.toml) aponta para o mesmo `risc0-zkvm`. Assim, exemplo, crates, `cargo-risczero` e toolchain guest estão rastreados no mesmo tag upstream `v3.0.3`. Isso é compatibilidade de release por manifest/CI, não execução local. O `counter` do tag `risc0-solana v3.0.0` é a referência adicional para a fronteira Solana e conserva as limitações descritas abaixo.
+
+## Auditoria do exemplo `counter`
+
+No tag exato `boundless-xyz/risc0-solana v3.0.0`:
+
+- [`zkvm/host/Cargo.toml`](https://github.com/boundless-xyz/risc0-solana/blob/v3.0.0/examples/counter/zkvm/host/Cargo.toml) declara `risc0-zkvm 3.0.3` com `prove`, `anchor-client 0.31.1` e um patch Git de `curve25519-dalek` por **branch**, não por commit;
+- [`zkvm/methods/Cargo.toml`](https://github.com/boundless-xyz/risc0-solana/blob/v3.0.0/examples/counter/zkvm/methods/Cargo.toml) declara `risc0-build 3.0.3`;
+- [`zkvm/methods/guest/Cargo.toml`](https://github.com/boundless-xyz/risc0-solana/blob/v3.0.0/examples/counter/zkvm/methods/guest/Cargo.toml) declara `risc0-zkvm 3.0.3`;
+- [`zkvm/Cargo.lock`](https://github.com/boundless-xyz/risc0-solana/blob/v3.0.0/examples/counter/zkvm/Cargo.lock) resolve `risc0-zkvm 3.0.3`, `risc0-build 3.0.3`, `risc0-groth16 3.0.2`, `anchor-client 0.31.1`, `solana-program 2.3.0` e `solana-sdk 2.3.1`;
+- [`zkvm/rust-toolchain.toml`](https://github.com/boundless-xyz/risc0-solana/blob/v3.0.0/examples/counter/zkvm/rust-toolchain.toml) usa `channel = "stable"`, sem versão exata.
+
+Consequência: os crates RISC Zero `3.0.3` do exemplo estão demonstrados pelos manifests/lock, mas a toolchain Rust usada pelo próprio exemplo não está pinada. A CI do tag também chama uma action Rust de `risc0/risc0@main`; `main` não é evidência de uma release pinada. O próximo spike precisa registrar e fixar a toolchain efetiva antes de alegar reprodução.
+
+## Docker e build determinístico
+
+O README de `cargo-risczero` no tag `v3.0.3` exige Docker disponível no `PATH` para `cargo risczero build` e explica que esse build containerizado produz o ImageID determinístico.
+
+Portanto:
+
+- Docker não será instalado nesta correção;
+- uma versão exata ainda precisa ser escolhida;
+- Docker é **obrigatório antes do primeiro `cargo risczero build` e antes do gate de receipt**, não um opcional posterior;
+- sem Docker e sem build determinístico, não há ImageID VeriCode aceitável para o gate.
+
+Fonte: [`risc0/cargo-risczero/README.md` no tag `v3.0.3`](https://github.com/risc0/risc0/blob/v3.0.3/risc0/cargo-risczero/README.md).
 
 ## ImageID
 
 - ImageID do VeriCode: não gerado.
-- Gate: build determinístico do guest, registro do comando e do ImageID real.
-- O ImageID identifica o guest e deve ser conferido ao verificar a receipt; não é substituto de `harness_hash` ou de Program ID Solana.
+- Gate futuro: build determinístico do guest, repetição do comando, comparação do ImageID e registro da saída real.
+- O ImageID identifica o guest; não substitui `harness_hash`, `spec_hash`, `artifact_hash` ou Program ID Solana.
 
 ## Receipt PASS/FAIL
 
@@ -29,7 +58,7 @@ Referência inicial para o spike local: tutorial oficial **Building zkVM Hello W
 | `PASS` | NÃO EXECUTADO | Receipt real verificada localmente com journal `JournalV1` e ImageID esperado. |
 | `FAIL` | NÃO EXECUTADO | Receipt real verificada localmente contendo `Verdict::Fail`, sem panic/assert. |
 
-Dev mode não satisfaz esses gates de prova. Falha de execução não pode ser apresentada como receipt `FAIL`.
+Dev mode não satisfaz esses gates. Falha de execução não pode ser apresentada como receipt `FAIL`.
 
 ## Fontes oficiais consultadas
 
@@ -37,4 +66,6 @@ Dev mode não satisfaz esses gates de prova. Falha de execução não pode ser a
 - [Building zkVM Hello World](https://dev.risczero.com/api/zkvm/tutorials/hello-world)
 - [Receipts 101](https://dev.risczero.com/api/zkvm/receipts)
 - [Terminologia: Image ID, Journal e Receipt](https://dev.risczero.com/terminology)
-- [Releases do repositório risc0/risc0](https://github.com/risc0/risc0/releases)
+- [`risc0/risc0 v3.0.3`](https://github.com/risc0/risc0/tree/v3.0.3)
+- [`examples/hello-world` em `v3.0.3`](https://github.com/risc0/risc0/tree/v3.0.3/examples/hello-world)
+- [`risc0-solana v3.0.0`, exemplo `counter`](https://github.com/boundless-xyz/risc0-solana/tree/v3.0.0/examples/counter)
