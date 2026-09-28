@@ -1,6 +1,6 @@
-# Matriz de compatibilidade D1a.1
+# Matriz de compatibilidade D1a.2
 
-Data da correção: 2026-09-28.
+Data da revisão: 2026-09-28.
 
 Esta matriz registra somente o que fontes oficiais ou arquivos do tag exato demonstram. Ela não registra instalação local nem execução do VeriCode.
 
@@ -15,6 +15,22 @@ Esta matriz registra somente o que fontes oficiais ou arquivos do tag exato demo
 
 **SEM PERFIL PRONTO PARA INSTALAÇÃO.**
 
+A D1a.2 definiu o protocolo reproduzível em
+[`docs/d1a2-spike-plan.md`](d1a2-spike-plan.md), mas não executou nem
+autorizou as toolchains. A decisão para iniciar instalações permanece
+**PENDENTE**: o Rust host da raia A e a versão/modelo Docker ainda são
+`NÃO DETERMINADOS`.
+
+Revisões auditadas: `risc0/risc0 v3.0.3` no commit
+`14b5d588dd01cf4f7ba804d8bb0a61264e6ae2c6`;
+`boundless-xyz/risc0-solana v3.0.0` no commit
+`ee415935d04a948f27a346b563391900bdad6486`; Anchor `v0.31.1` no
+commit `47284f8f0b9844c6b83234aa90f556bad00e12ed`; Agave `v2.1.0`
+no commit `c1080de464cfb578c301e975f498964b5d5313db`; e Agave
+`v2.3.9` como tag anotado
+`f20bef1cce6abb06512b76f2baddc99111980740` apontando para
+`47647df756f5dd0b3c739cecaa71bcf754af6be8`.
+
 O perfil Anchor demonstrado é Anchor/AVM/crates `0.31.1` com Agave CLI `2.1.0`. A referência `risc0-solana v3.0.0`, por outro lado, configura em seu workflow Anchor CLI `0.31.1` com Agave CLI `2.3.9`; seus lockfiles resolvem `solana-program 2.3.0` e outras crates Solana em patches distintos. Não há, nas fontes permitidas consultadas, prova de que o tag `v3.0.0` compile e execute com Agave CLI `2.1.0`, nem de que o perfil recomendado pelo Anchor possa ser trocado por `2.3.9` sem um spike.
 
 Portanto, as raias abaixo são referências para o próximo spike, não um conjunto aprovado para D1b:
@@ -28,9 +44,9 @@ Portanto, as raias abaixo são referências para o próximo spike, não um conju
 | Componente | Versão exata proposta | Status | Motivo da escolha | Dependências de compatibilidade | Evidência exata | Comando de verificação após eventual instalação | Risco residual |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Windows host | Windows `10.0.26200`, x64, já observado | verificado por fonte | É o host real registrado no D0; não é a plataforma canônica das toolchains Linux. | WSL2 e virtualização | Estado local D0; [Microsoft WSL](https://learn.microsoft.com/windows/wsl/install) | `Get-ComputerInfo \| Select-Object WindowsProductName,WindowsVersion,OsBuildNumber,OsArchitecture` | Política/preview do Windows pode afetar WSL. |
-| WSL | WSL2; versão do pacote pendente | a confirmar por spike | Anchor orienta Windows via WSL; a máquina ainda não possui WSL. | Windows compatível e reinicialização possível | [Anchor Installation](https://www.anchor-lang.com/docs/installation); [Microsoft WSL](https://learn.microsoft.com/windows/wsl/install) | `wsl --version`; `wsl --status`; `wsl --list --verbose` | É pré-requisito de ambiente, não evidência de compatibilidade das toolchains. |
-| Linux no WSL | Ubuntu `24.04 LTS`, x86_64 | verificado por fonte | Distribuição LTS identificável e separada do host Windows. | WSL2 | [Distribuições WSL](https://learn.microsoft.com/windows/wsl/install-manual#downloading-distributions) | `cat /etc/os-release`; `uname -m` | Pacotes APT continuam não pinados até instalação autorizada. |
-| Git | Host `2.53.0.windows.2`; Git no Ubuntu pendente | a confirmar por spike | O Git do host foi observado; o Git canônico dentro do WSL ainda não existe. | Ubuntu 24.04 | [Git para Linux](https://git-scm.com/downloads/linux); saída D0 | `git --version` | O aviso de permissão do exclude global permanece não bloqueante; não alterar configuração global. |
+| WSL | WSL2 no clone canônico | verificado por execução | O kernel `microsoft-standard-WSL2` foi observado no D1b0.1. | Windows compatível | Saída D1b0.1; `docs/evidence.md` | `uname -r`; no host: `wsl --status` e `wsl --list --verbose` | É pré-requisito de ambiente, não evidência de compatibilidade das toolchains. |
+| Linux no WSL | Ubuntu `24.04.5 LTS`, x86_64, ext4 | verificado por execução | É o ambiente canônico observado em `~/src/vericode`, fora de `/mnt/c`. | WSL2 | Saída D1b0.1; `docs/evidence.md` | `cat /etc/os-release`; `uname -m`; `findmnt -T . -n -o FSTYPE,TARGET` | Não demonstra compatibilidade das toolchains de produto. |
+| Git | Ubuntu package `1:2.43.0-1ubuntu7.3` | verificado por execução | O clone canônico e o Git Linux foram validados no D1b0.1. | Ubuntu 24.04.5 | Saída D1b0.1; `docs/evidence.md` | `git --version`; `git status --short` | O aviso de permissão do exclude global permanece não bloqueante; não alterar configuração global. |
 | Rust host da raia zkVM | `1.89.0` | verificado por manifest | É o canal do `rust-toolchain.toml` do tag RISC Zero escolhido. | `rustup`; Linux x86_64 | `risc0/risc0`, tag `v3.0.3`, [`rust-toolchain.toml`](https://github.com/risc0/risc0/blob/v3.0.3/rust-toolchain.toml); [release Rust 1.89.0](https://blog.rust-lang.org/2025/08/07/Rust-1.89.0/) | `rustc +1.89.0 --version`; `rustup show` | Não prova que AVM/Anchor 0.31.1 compile com esse host Rust. |
 | Cargo da raia zkVM | `1.89.0`, fornecido pela toolchain Rust `1.89.0` | verificado por fonte | Mantém Cargo associado à release Rust, sem pin independente inventado. | Rust `1.89.0` | [release Rust 1.89.0](https://blog.rust-lang.org/2025/08/07/Rust-1.89.0/) | `cargo +1.89.0 --version --verbose` | Precisa ser observado no ambiente real. |
 | Rust guest RISC-V | `1.88.0` | verificado por manifest | A CI do tag `v3.0.3` fixa `RISC0_RUST_TOOLCHAIN_VERSION=1.88.0`; é separado do Rust host. | `rzup` e SDK RISC Zero do mesmo tag | `risc0/risc0`, tag `v3.0.3`, [`.github/workflows/main.yml`](https://github.com/risc0/risc0/blob/v3.0.3/.github/workflows/main.yml) | `rzup show`; `rustup toolchain list --verbose` | O exemplo `counter` não fixa esse número: seu `rust-toolchain.toml` usa apenas `stable`. |
@@ -73,3 +89,20 @@ Não há fonte que demonstre incompatibilidade definitiva entre Agave `2.1.0` e 
 6. Selecionar uma versão exata de Docker antes do primeiro `cargo risczero build` e do gate de receipt.
 
 Até esses gates fecharem, não criar `rust-toolchain.toml`, `.anchorversion`, `Anchor.toml`, `Cargo.toml`, lockfiles ou scaffold do VeriCode.
+
+## Protocolo D1a.2
+
+As raias do spike são:
+
+1. raia A: Anchor/AVM/crates `0.31.1` + Agave CLI `2.1.0`, Rust
+   host `NÃO DETERMINADO`;
+2. raia B: Anchor CLI `0.31.1` + Agave CLI `2.3.9`, com Rust host
+   `1.89.0` somente como pin experimental a confirmar;
+3. raia zkVM: RISC Zero `v3.0.3`, Rust host `1.89.0`, guest
+   `1.88.0`, `rzup 0.5.1` e componentes `3.0.3`; Docker bloqueado
+   até escolher versão e modelo exatos.
+
+Comandos, hashes dos locks, limites sem chave, critérios de sucesso/falha,
+rollback e confirmações humanas estão em
+[`docs/d1a2-spike-plan.md`](d1a2-spike-plan.md). Todos os comandos futuros
+desse documento estão marcados como `NÃO EXECUTADOS`.

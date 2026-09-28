@@ -6,6 +6,8 @@
 
 **Correção D1a.1: `risc0-solana v3.0.0` permanece referência técnica; não constitui Perfil A instalável nem prova deployment.**
 
+**D1a.2: protocolo definido; Router/CPI/deployments continuam não executados e não validados.**
+
 ## Objetivo
 
 Verificar uma receipt RISC Zero Groth16 por CPI em Solana e, somente após validar a prova e os campos críticos do journal contra o Job, permitir que o programa Anchor considere o release.
@@ -13,6 +15,9 @@ Verificar uma receipt RISC Zero Groth16 por CPI em Solana e, somente após valid
 ## Fatos demonstrados pelo tag `v3.0.0`
 
 - Origem: repositório oficial `risc0/risc0-solana`, redirecionado para `boundless-xyz/risc0-solana`.
+- O tag é leve e resolve diretamente para o commit
+  `ee415935d04a948f27a346b563391900bdad6486`, conforme o
+  [ref oficial](https://api.github.com/repos/boundless-xyz/risc0-solana/git/ref/tags/v3.0.0).
 - A [release `v3.0.0`](https://github.com/boundless-xyz/risc0-solana/releases/tag/v3.0.0) declara suporte ao RISC0 zkVM 3.0 e a descreve como primeira versão totalmente auditada.
 - O [`Cargo.toml` do verificador Groth16](https://github.com/boundless-xyz/risc0-solana/blob/v3.0.0/solana-verifier/programs/groth_16_verifier/Cargo.toml) declara `anchor-lang 0.31.1`, `risc0-zkvm 3.0.3` e `solana-bn254 3.0.0`.
 - O [`Cargo.lock` do solana-verifier](https://github.com/boundless-xyz/risc0-solana/blob/v3.0.0/solana-verifier/Cargo.lock) resolve `anchor-lang 0.31.1`, `risc0-zkvm 3.0.3`, `risc0-groth16 3.0.2` e `solana-program 2.3.0`. As crates Solana separadas abrangem várias linhas: interfaces 1.x, crates 2.2–2.4, `solana-bn254`/`solana-define-syscall 3.0.0` e `solana-loader-v3-interface 5.0.0`.
@@ -20,6 +25,16 @@ Verificar uma receipt RISC Zero Groth16 por CPI em Solana e, somente após valid
 - O [`counter`](https://github.com/boundless-xyz/risc0-solana/tree/v3.0.0/examples/counter) é o exemplo de CPI consultado. Seus manifests e lockfiles foram lidos no tag exato; ele não foi clonado, compilado, executado ou implantado pelo VeriCode.
 
 A versão da CLI Agave e as versões das crates Solana são dimensões diferentes. A presença de CLI `2.3.9` no workflow não transforma todas as crates em `2.3.9`, nem prova compatibilidade com a recomendação Anchor `2.1.0`.
+
+Os SHA-256 auditados no commit exato são:
+`54949aa872bd9d6886eece9c4c964a74f1b42f272abd9a8e1ab89060a4feaf6e`
+para `solana-verifier/Cargo.lock`,
+`49004c7c7dcedce5d1ebccd00a38356b78b5d42491d92124ba3d8b83551fb38a`
+para `examples/counter/Cargo.lock` e
+`ab03b523330c4bd66b8ff29eb81ef862cf6f59e56fd4b821dbd60e5648122c15`
+para `examples/counter/zkvm/Cargo.lock`. Nenhum desses locks contém source
+`git+`, embora o manifesto host declare um patch por branch; o protocolo deve
+observar seu efeito por `cargo metadata --locked` sem atualizar os locks.
 
 ## Exemplo `counter` e fronteira de workspaces
 
@@ -67,6 +82,12 @@ Consequências:
 5. Confirmar em fonte oficial o Program ID e o cluster antes de preencher qualquer variável.
 6. Validar receipt Groth16, ImageID e digest do journal; testar rejeição para Job, mint, executor, ImageID e journal divergentes.
 7. Comprovar devnet separadamente, se houver deployment oficial. Até lá, manter `STATUS: NÃO VALIDADO`.
+
+O workflow oficial executa `solana-keygen new` antes de `anchor test`.
+Consequentemente, `anchor test`, validator, deploy, airdrop e transações estão
+fora do gate D1a.2 sem chaves e ficam `BLOQUEADOS POR AUTORIZAÇÃO`. O plano
+completo, incluindo ABI, seal, journal, ImageID, account metas e testes
+negativos, está em [`docs/d1a2-spike-plan.md`](d1a2-spike-plan.md).
 
 ## Fontes oficiais consultadas
 

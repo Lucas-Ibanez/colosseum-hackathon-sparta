@@ -8,6 +8,23 @@ O host Rust, a toolchain guest RISC-V e a toolchain Solana/Anchor são raias dis
 
 **Ainda não existe receipt VeriCode**, para PASS ou FAIL. Também não existe build do guest, ImageID calculado ou prova local neste repositório.
 
+## Protocolo D1a.2
+
+O tag leve `risc0/risc0 v3.0.3` resolve diretamente para o commit
+`14b5d588dd01cf4f7ba804d8bb0a61264e6ae2c6`, conforme o
+[ref oficial](https://api.github.com/repos/risc0/risc0/git/ref/tags/v3.0.3).
+
+A raia zkVM futura mantém Rust host `1.89.0`, Rust guest `1.88.0`,
+`rzup 0.5.1`, `cargo-risczero 3.0.3`, `risc0-zkvm 3.0.3` e
+`risc0-build 3.0.3`. Os comandos de checkout, instalação e verificação estão
+em [`docs/d1a2-spike-plan.md`](d1a2-spike-plan.md) e estão todos marcados
+como `NÃO EXECUTADOS`.
+
+`cargo risczero build` continua bloqueado: a fonte oficial demonstra que
+Docker é necessário, mas versão, origem e modelo Engine versus Desktop/WSL
+permanecem `NÃO DETERMINADOS`. Nenhum ImageID ou receipt pode ser promovido
+como evidência antes desse pin e de dois builds determinísticos reproduzíveis.
+
 ## Compatibilidade dentro da raia RISC Zero
 
 | Item | Versão/fato | Evidência no tag exato | Estado |

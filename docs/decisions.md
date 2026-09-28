@@ -44,3 +44,34 @@ Registre decisões relevantes do projeto neste formato.
 - **Evidência:** Ubuntu `24.04.5 LTS`, arquitetura `x86_64`, WSL versão 2, versões dos seis pacotes registradas em `docs/evidence.md`, clone na branch `main` e commit inicial `7aaf40b` com status limpo.
 - **Risco aberto:** D1a.2 ainda precisa demonstrar a interseção Anchor/Agave/RISC Zero; Router/CPI e deployments continuam não validados.
 - **Próximo gate:** D1a.2. Rust, RISC Zero, Solana/Agave, Anchor, Docker e Node permanecem fora do bootstrap autorizado.
+
+## 2026-09-28 — D1a.2: protocolar o spike sem autorizar instalações
+
+- **Data:** 2026-09-28
+- **Decisão:** adotar [`docs/d1a2-spike-plan.md`](d1a2-spike-plan.md) como
+  protocolo futuro das raias A (Anchor `0.31.1` + Agave `2.1.0`), B
+  (Anchor `0.31.1` + Agave `2.3.9`) e zkVM (RISC Zero `v3.0.3`).
+  Manter a decisão **PENDENTE**, `SEM PERFIL PRONTO PARA INSTALAÇÃO` e D1b
+  bloqueado.
+- **Motivo:** os tags e locks agora têm revisões/hashes exatos e os comandos,
+  critérios e limites sem chave estão definidos, mas o Rust host da raia A e
+  o Docker exato continuam `NÃO DETERMINADOS`. O workflow oficial usa Rust
+  por action `@main` e cria keypair antes de `anchor test`; nenhuma dessas
+  práticas é evidência reproduzível ou está autorizada.
+- **Evidência:** `risc0/risc0 v3.0.3` em
+  `14b5d588dd01cf4f7ba804d8bb0a61264e6ae2c6`;
+  `boundless-xyz/risc0-solana v3.0.0` em
+  `ee415935d04a948f27a346b563391900bdad6486`; Anchor `v0.31.1` em
+  `47284f8f0b9844c6b83234aa90f556bad00e12ed`; Agave `v2.1.0` em
+  `c1080de464cfb578c301e975f498964b5d5313db`; tag anotado Agave
+  `v2.3.9` `f20bef1cce6abb06512b76f2baddc99111980740` apontando para
+  `47647df756f5dd0b3c739cecaa71bcf754af6be8`; manifests, workflows e
+  locks exatos citados no plano.
+- **Risco aberto:** Rust host A, Docker, patch Git por branch, builds
+  Anchor/SBF, ABI, receipt, ImageID, Router/CPI, Program ID e deployment por
+  rede continuam não executados/não validados. Testes negativos de Job, mint
+  e executor dependem de código VeriCode ainda não autorizado.
+- **Próximo gate:** revisão humana do protocolo e dos pins faltantes; somente
+  depois autorizar um ambiente descartável e a fase sem chaves. Wallet,
+  keypair, validator, deploy, airdrop e transações exigem autorização
+  adicional separada.

@@ -1,4 +1,4 @@
-# Plano de bootstrap controlado D1a.1 + D1b0.1
+# Plano de bootstrap controlado D1a.2 + D1b0.1
 
 O D1b0.1 concluiu somente o ambiente WSL, os pacotes-base autorizados e o clone canônico. Nenhuma toolchain de produto foi instalada.
 
@@ -11,6 +11,12 @@ A documentação oficial do Anchor 0.31.x recomenda Agave `2.1.0`, enquanto o wo
 Não executar as antigas etapas D1b de Rust, RISC Zero, Agave, Anchor, Node ou Docker enquanto este bloqueio estiver aberto.
 
 O gate D1b0.1 não altera esse bloqueio: ele prepara apenas o sistema Linux e o clone.
+
+A D1a.2 também não altera o bloqueio: ela define em
+[`docs/d1a2-spike-plan.md`](d1a2-spike-plan.md) um protocolo auditável para
+as raias Anchor/Agave e zkVM. Nenhum comando de instalação ou teste de
+toolchain foi executado. A decisão permanece **PENDENTE** até confirmação
+humana, pin do Rust host da raia A e seleção exata de Docker.
 
 ## Pré-requisito separado: WSL2 + Ubuntu — concluído
 
@@ -50,6 +56,13 @@ O próximo gate deve usar um ambiente descartável, preservar os lockfiles do ta
 6. Registrar falhas como falhas. Não alterar código, manifestos ou locks para forçar sucesso sem uma decisão separada.
 
 O exemplo oficial cria keypair e faz deploy local em seu workflow. Esses passos não estão autorizados nesta tarefa. O desenho do spike deverá isolar ou pedir autorização específica para qualquer ação futura que gere chaves.
+
+O protocolo D1a.2 separa o gate sem chaves do gate com wallet/deploy:
+`cargo metadata --locked`, `cargo tree --locked`, testes Rust sem validator e
+comparações de bytes podem ser autorizados primeiro. `solana-keygen`,
+`anchor test` com payer/validator/deploy, `anchor deploy`, airdrop e
+transações exigem autorização adicional e não podem ser usados para completar
+silenciosamente o primeiro gate.
 
 ## Ordem de instalação somente após desbloqueio
 
@@ -103,7 +116,8 @@ Nenhum destes arquivos deve ser criado antes do Perfil A comprovado:
 
 ## Checklist para liberar D1b
 
-- [ ] O tag e o commit exatos do `risc0-solana v3.0.0` foram registrados.
+- [x] O tag leve `risc0-solana v3.0.0` e o commit
+  `ee415935d04a948f27a346b563391900bdad6486` foram registrados.
 - [ ] O exemplo `counter` foi testado com a raia do workflow, usando Rust pinado e locks preservados.
 - [ ] O exemplo foi testado com Anchor `0.31.1` + Agave `2.1.0`.
 - [ ] Há decisão documentada sobre a divergência `2.1.0` versus `2.3.9`.
