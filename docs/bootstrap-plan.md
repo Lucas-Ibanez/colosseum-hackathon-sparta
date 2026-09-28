@@ -1,6 +1,6 @@
-# Plano de bootstrap controlado D1a.1
+# Plano de bootstrap controlado D1a.1 + D1b0.1
 
-Nenhum comando de instalação deste documento foi executado.
+O D1b0.1 concluiu somente o ambiente WSL, os pacotes-base autorizados e o clone canônico. Nenhuma toolchain de produto foi instalada.
 
 ## Estado do gate
 
@@ -10,30 +10,31 @@ A documentação oficial do Anchor 0.31.x recomenda Agave `2.1.0`, enquanto o wo
 
 Não executar as antigas etapas D1b de Rust, RISC Zero, Agave, Anchor, Node ou Docker enquanto este bloqueio estiver aberto.
 
-## Pré-requisito separado: WSL2 + Ubuntu
+O gate D1b0.1 não altera esse bloqueio: ele prepara apenas o sistema Linux e o clone.
 
-O ambiente recomendado continua sendo WSL2 com Ubuntu 24.04 LTS x86_64 e checkout canônico no filesystem Linux, por exemplo `~/src/vericode`. Isso é preparação de plataforma; não valida nem autoriza a instalação das toolchains.
+## Pré-requisito separado: WSL2 + Ubuntu — concluído
 
-Diagnóstico read-only proposto:
+Ambiente confirmado em 2026-09-28:
 
-```powershell
-wsl --version
-wsl --status
-wsl --list --online
-wsl --list --verbose
-```
+- distribuição `Ubuntu-24.04` em WSL versão 2;
+- Ubuntu `24.04.5 LTS` (Noble), arquitetura `x86_64`;
+- home Linux inicializada;
+- clone canônico `~/src/vericode` em filesystem ext4, fora de `/mnt/c`;
+- remote e branch iguais ao repositório de origem: `origin`, branch `main`, commit inicial `7aaf40b`;
+- status do clone limpo antes das alterações documentais.
 
-Se `Ubuntu-24.04` estiver disponível, a instalação abaixo só pode ocorrer em tarefa separada e após confirmação humana imediata:
+Pacotes-base efetivamente validados:
 
-```powershell
-wsl --install -d Ubuntu-24.04
-```
+| Pacote | Versão instalada |
+| --- | --- |
+| `git` | `1:2.43.0-1ubuntu7.3` |
+| `curl` | `8.5.0-2ubuntu10.15` |
+| `ca-certificates` | `20260601~24.04.1` |
+| `build-essential` | `12.10ubuntu1` |
+| `pkg-config` | `1.8.1-2build1` |
+| `libssl-dev` | `3.0.13-0ubuntu3.15` |
 
-- **Origem:** [Microsoft WSL](https://learn.microsoft.com/windows/wsl/install).
-- **Altera:** recursos do Windows, uma distribuição Linux e armazenamento local; pode exigir reinicialização.
-- **Privilégio:** administrador pode ser necessário; a criação do usuário Linux é interativa.
-- **Verificação:** `wsl --version`, `wsl --status`, `wsl --list --verbose`, `cat /etc/os-release` e `uname -m`.
-- **Rollback:** `wsl --unregister Ubuntu-24.04` destrói os dados da distribuição; só pode ser executado após inventário, backup e confirmação explícita.
+Foi executado `apt-get update`, seguido da instalação explícita somente dos seis pacotes acima com `--no-install-recommends`. O APT atualizou dependências necessárias, incluindo `libc` e bibliotecas do `curl`; não foi executado `apt upgrade`.
 
 O aviso `unable to access .../.config/git/ignore: Permission denied` permanece não bloqueante. Não alterar configuração global do Git; o `.gitignore` do repositório é a proteção relevante.
 
@@ -54,8 +55,8 @@ O exemplo oficial cria keypair e faz deploy local em seu workflow. Esses passos 
 
 Quando o spike demonstrar um único Perfil A e a decisão for atualizada, a ordem proposta será:
 
-1. WSL2 e Ubuntu 24.04 LTS, como pré-requisito separado.
-2. Dependências nativas mínimas do Ubuntu, com versões efetivas registradas.
+1. WSL2 e Ubuntu 24.04 LTS, como pré-requisito separado — **concluído no D1b0.1**.
+2. Dependências nativas mínimas do Ubuntu, com versões efetivas registradas — **concluído no D1b0.1**.
 3. `rustup` e Rust host exato exigido pelo perfil.
 4. `rzup`, `cargo-risczero` e toolchain guest exatos do mesmo conjunto RISC Zero.
 5. Docker em versão exata **antes** do primeiro `cargo risczero build` e do gate de receipt.
@@ -89,6 +90,16 @@ Nenhum destes arquivos deve ser criado antes do Perfil A comprovado:
 - Antes de remover WSL, Docker, Rust, RISC Zero, Agave ou Anchor, confirmar que nenhum outro projeto depende deles.
 - A remoção de distribuição WSL é destrutiva e exige confirmação específica.
 - Reversão de PATH/perfil deve remover apenas as linhas registradas durante o bootstrap.
+
+## Checklist D1b0.1
+
+- [x] WSL2 e Ubuntu 24.04 confirmados.
+- [x] Arquitetura `x86_64` e filesystem ext4 confirmados.
+- [x] Seis pacotes-base instalados e versionados.
+- [x] Clone canônico criado em `~/src/vericode` na branch `main`.
+- [x] AGENTS, CLAUDE e documentos D1 presentes no clone.
+- [x] Nenhum Git global alterado; nenhum commit ou push realizado.
+- [x] Nenhuma toolchain de produto, wallet, keypair, `.env`, Program ID ou scaffold criado.
 
 ## Checklist para liberar D1b
 
