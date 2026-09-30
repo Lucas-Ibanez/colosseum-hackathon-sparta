@@ -1,0 +1,9 @@
+[package]
+name = "vericode-core"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "Pure semantic core for the restricted VeriCode MVP"
+
+[dependencies]
+# Intentionally empty: this crate uses only the Rust standard library.

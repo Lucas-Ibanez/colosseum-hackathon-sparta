@@ -1,5 +1,17 @@
 # Arquitetura do MVP
 
+## Estado D1c1
+
+A primeira implementação existe em `crates/vericode-core`. É uma crate Rust
+pura, `std`-only, que modela `Hash32`, `JobId`, `ImageId`, `Verdict`, os
+compromissos esperados e `JournalV1`. Ela valida igualdade semântica dos
+compromissos e trata `PASS` e `FAIL` como resultados normais.
+
+Essa crate não serializa o journal, não calcula hashes, não executa artefato,
+não contém lógica Solana/Anchor/RISC Zero e não autoriza pagamentos. O único
+fixture de teste é um registro de desenvolvimento restrito e versionado; ele
+não representa suporte a código ou repositórios arbitrários.
+
 ## Fluxo
 
 `Buyer cria Job e deposita Test USDC` -> `Executor fornece artefato restrito` -> `host executa o harness e gera receipt` -> `contrato valida prova e journal contra o Job` -> `release ao executor em PASS válido ou refund conforme as regras do Job`

@@ -107,3 +107,29 @@ Registre decisões relevantes do projeto neste formato.
   `JournalV1` para testar Job, mint e executor e regenerar/comparar IDLs. H5
   continua proibido até decisão específica sobre keypair, validator, CPI e
   rede.
+
+## 2026-09-30 — D1c1: implementar o contrato semântico puro de JournalV1
+
+- **Data:** 2026-09-30
+- **Decisão:** criar a workspace mínima e a crate `vericode-core` sem
+  dependências externas, com `Hash32`, `JobId`, `ImageId`, `Verdict`,
+  `JournalV1Commitments` e `JournalV1`. A validação compara todos os
+  compromissos e retorna `PASS` ou `FAIL` como valores normais. Autorizar o
+  início de D1c2 somente para guest mínimo e receipt VeriCode local em
+  ambiente isolado; não liberar D1b, M1, Router/CPI ou rede.
+- **Motivo:** os nove testes semânticos passaram com Rust `1.85.0` e `1.89.0`
+  e `cargo tree --locked` confirmou uma árvore com apenas a crate local. A
+  separação pura permite que futuros adaptadores guest e Anchor reutilizem o
+  significado sem importar SDKs incompatíveis.
+- **Evidência:** `cargo test --locked` com 9/9 testes em ambas as raias;
+  `cargo tree --locked` contendo somente `vericode-core`; Cargo.lock gerado
+  pelo Cargo; [`docs/d1c1-core-results.md`](d1c1-core-results.md).
+- **Risco aberto:** serialização, layout, endianness e algoritmo de hashing
+  continuam Draft v0. O D1a.3 provou uma receipt composta do `hello-world`
+  com journal `391`, não uma receipt Groth16 nem um journal VeriCode. Clippy e
+  rustfmt não estão instalados nas toolchains isoladas e não foram
+  adicionados. M1 permanece fora de verde.
+- **Próximo gate:** D1c2 deve primeiro escolher e testar explicitamente o wire
+  format público, então criar o guest mínimo usando a crate pura e produzir
+  receipts VeriCode reais para `PASS` e `FAIL`, sem rede ou Solana. Qualquer
+  alegação Groth16 exige conversão e verificação demonstradas separadamente.
