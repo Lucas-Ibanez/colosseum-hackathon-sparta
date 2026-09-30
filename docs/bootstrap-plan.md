@@ -1,22 +1,40 @@
 # Plano de bootstrap controlado D1a.2 + D1b0.1
 
-O D1b0.1 concluiu somente o ambiente WSL, os pacotes-base autorizados e o clone canônico. Nenhuma toolchain de produto foi instalada.
+O D1b0.1 concluiu somente o ambiente WSL, os pacotes-base autorizados e o
+clone canônico. As toolchains Rust/Anchor/Agave/RISC Zero executadas no D1a.3
+permanecem em uma raiz de spike isolada e não constituem o bootstrap D1b.
+Docker Engine foi posteriormente instalado de forma nativa no Ubuntu por ação
+humana H3 e está registrado separadamente abaixo.
 
 ## Estado do gate
 
 **D1b BLOQUEADO — SEM PERFIL PRONTO PARA INSTALAÇÃO.**
 
-A documentação oficial do Anchor 0.31.x recomenda Agave `2.1.0`, enquanto o workflow do tag `risc0-solana v3.0.0` instala Agave CLI `2.3.9` com Anchor CLI `0.31.1`. Os manifests e lockfiles desse tag registram o conjunto de crates usado, mas não demonstram que a referência funcione com CLI `2.1.0`. A divergência precisa ser resolvida por spike antes de instalar toolchains para o VeriCode.
+A documentação oficial do Anchor 0.31.x recomenda Agave `2.1.0`, enquanto o
+workflow do tag `risc0-solana v3.0.0` instala Agave CLI `2.3.9` com Anchor CLI
+`0.31.1`. O D1a.3 demonstrou que os gates host sem chave e os bytes ABI do
+exemplo passam nas duas raias, e escolheu a raia `2.1.0` como Perfil A
+candidato. Isso ainda não prova build SBF/CPI nem os testes negativos do
+`JournalV1` VeriCode.
 
-Não executar as antigas etapas D1b de Rust, RISC Zero, Agave, Anchor, Node ou Docker enquanto este bloqueio estiver aberto.
+Não executar as antigas etapas D1b de Rust, RISC Zero, Agave, Anchor ou Node
+enquanto este bloqueio estiver aberto. Docker já foi instalado exclusivamente
+para H3/H4 e não autoriza as demais etapas.
 
 O gate D1b0.1 não altera esse bloqueio: ele prepara apenas o sistema Linux e o clone.
 
-A D1a.2 também não altera o bloqueio: ela define em
+A D1a.2 também não altera o bloqueio: ela definiu em
 [`docs/d1a2-spike-plan.md`](d1a2-spike-plan.md) um protocolo auditável para
-as raias Anchor/Agave e zkVM. Nenhum comando de instalação ou teste de
-toolchain foi executado. A decisão permanece **PENDENTE** até confirmação
-humana, pin do Rust host da raia A e seleção exata de Docker.
+as raias Anchor/Agave e zkVM, então ainda sem executar instalações.
+
+A D1a.3 concluiu H1–H4 em ambiente externo isolado. Sete checkouts ficaram
+limpos e os locks foram preservados; Rust `1.81.0` falhou e o fallback
+`1.85.0` passou na raia A; a raia B passou com `1.89.0`; Docker Engine/Noble
+foi instalado e validado; dois builds efetivos repetiram ELF/ImageID; receipt
+e vetores ABI passaram, incluindo rejeição de ImageID/journal divergentes.
+Build SBF/CPI e testes negativos de `Job/mint/executor` não foram executados.
+Portanto D1b segue bloqueado e o conjunto escolhido é candidato, não Perfil A
+promovido.
 
 ## Pré-requisito separado: WSL2 + Ubuntu — concluído
 
@@ -44,18 +62,27 @@ Foi executado `apt-get update`, seguido da instalação explícita somente dos s
 
 O aviso `unable to access .../.config/git/ignore: Permission denied` permanece não bloqueante. Não alterar configuração global do Git; o `.gitignore` do repositório é a proteção relevante.
 
-## Spike obrigatório antes do bootstrap
+## Spike obrigatório antes do bootstrap — progresso D1a.3
 
-O próximo gate deve usar um ambiente descartável, preservar os lockfiles do tag e não criar código de produto:
+O spike usa ambiente isolado, preserva os lockfiles do tag e não cria código
+de produto. Estado das etapas:
 
-1. Resolver e registrar o commit da tag `boundless-xyz/risc0-solana v3.0.0`.
-2. Inventariar as versões efetivas dos dois lockfiles do `counter` e do lockfile de `solana-verifier`.
-3. Reproduzir primeiro a combinação declarada no workflow do tag: Anchor `0.31.1` + Agave CLI `2.3.9`. A action Rust usada pelo workflow aponta para `risc0/risc0@main`; o spike deve substituir essa referência flutuante por uma versão explicitamente registrada.
-4. Repetir com o perfil oficialmente recomendado pelo Anchor: Anchor `0.31.1` + Agave CLI `2.1.0`.
-5. Comparar build, testes, CPI, account metas, discriminadores e bytes de serialização sem atualizar dependências silenciosamente.
-6. Registrar falhas como falhas. Não alterar código, manifestos ou locks para forçar sucesso sem uma decisão separada.
+1. [x] Resolver e registrar o commit da tag
+   `boundless-xyz/risc0-solana v3.0.0`.
+2. [x] Inventariar e preservar os três lockfiles da referência e os dois
+   locks RISC Zero auditados.
+3. [x] Reproduzir os gates Cargo sem chave da raia do workflow: Anchor
+   `0.31.1` + Agave `2.3.9`, Rust pinado `1.89.0`.
+4. [x] Repetir os gates Cargo sem chave da raia recomendada pelo Anchor:
+   Anchor `0.31.1` + Agave `2.1.0`; Rust `1.81.0` falhou e `1.85.0` passou.
+5. [x] Comparar builds guest, ImageID, receipt, account metas e bytes de
+   serialização permitidos por H4; build SBF/CPI e campos VeriCode permanecem
+   gates separados.
+6. [x] Registrar falhas como falhas, sem alterar código, manifests ou locks.
 
-O exemplo oficial cria keypair e faz deploy local em seu workflow. Esses passos não estão autorizados nesta tarefa. O desenho do spike deverá isolar ou pedir autorização específica para qualquer ação futura que gere chaves.
+O exemplo oficial `counter` cria keypair, solicita airdrop e envia transações.
+Esses passos não foram autorizados nem executados. O `hello-world` RISC Zero,
+auditado como independente de Solana, foi usado para o build/receipt local.
 
 O protocolo D1a.2 separa o gate sem chaves do gate com wallet/deploy:
 `cargo metadata --locked`, `cargo tree --locked`, testes Rust sem validator e
@@ -72,7 +99,8 @@ Quando o spike demonstrar um único Perfil A e a decisão for atualizada, a orde
 2. Dependências nativas mínimas do Ubuntu, com versões efetivas registradas — **concluído no D1b0.1**.
 3. `rustup` e Rust host exato exigido pelo perfil.
 4. `rzup`, `cargo-risczero` e toolchain guest exatos do mesmo conjunto RISC Zero.
-5. Docker em versão exata **antes** do primeiro `cargo risczero build` e do gate de receipt.
+5. Docker em versão exata — **concluído em H3/H4**, antes do primeiro
+   `cargo risczero build` e do gate de receipt.
 6. Agave CLI exato demonstrado pelo spike.
 7. AVM/Anchor CLI exatos e crates correspondentes.
 8. Node e gerenciador somente quando existir front-end, cliente TS ou teste oficial que realmente os exija.
@@ -83,7 +111,8 @@ Cada etapa exigirá confirmação humana imediata. Os comandos de instalação d
 
 - Toolchains e caches devem ficar nos diretórios do usuário Linux (`~/.rustup`, `~/.cargo`, `~/.risc0` e equivalentes documentados pela ferramenta), nunca versionados.
 - Dependências de sistema ficam na distribuição WSL, registradas com versão e origem.
-- Docker altera o host/integração WSL e armazenamento de imagens; não é dependência vendorizada do repositório.
+- Docker Engine já altera o host WSL e armazena imagem/cache fora do
+  repositório; não é dependência vendorizada. O grupo `docker` é privilegiado.
 - Nunca copiar `.env`, wallet, keypair ou credencial entre Windows e WSL.
 
 ## Arquivos de versão futuros
@@ -118,12 +147,20 @@ Nenhum destes arquivos deve ser criado antes do Perfil A comprovado:
 
 - [x] O tag leve `risc0-solana v3.0.0` e o commit
   `ee415935d04a948f27a346b563391900bdad6486` foram registrados.
-- [ ] O exemplo `counter` foi testado com a raia do workflow, usando Rust pinado e locks preservados.
-- [ ] O exemplo foi testado com Anchor `0.31.1` + Agave `2.1.0`.
-- [ ] Há decisão documentada sobre a divergência `2.1.0` versus `2.3.9`.
-- [ ] CPI, discriminadores, account metas, seal/journal e serialização entre workspaces têm evidência real.
-- [ ] A versão Docker foi escolhida para o primeiro `cargo risczero build`.
+- [x] Os gates Rust sem chave do `counter` passaram na raia do workflow,
+  usando Rust pinado e locks preservados; build SBF e CPI seguem pendentes.
+- [x] Os gates Rust sem chave passaram com Anchor `0.31.1` + Agave `2.1.0`
+  e Rust host `1.85.0`; build SBF e CPI seguem pendentes.
+- [x] A divergência `2.1.0` versus `2.3.9` tem decisão documentada: `2.1.0`
+  no Perfil A candidato, `2.3.9` preservado como referência da CI.
+- [x] Discriminadores, instruction data, account metas, ownership,
+  seal/journal e serialização do exemplo têm evidência executável nas duas
+  raias.
+- [ ] CPI runtime e os testes negativos de `Job/mint/executor` do VeriCode têm
+  evidência real.
+- [x] Docker foi escolhido, instalado e validado; dois builds efetivos e o
+  receipt do ELF determinístico passaram.
 - [ ] Um único Perfil A substituiu o bloqueio na matriz.
-- [ ] Nenhuma wallet, keypair, `.env`, Program ID ou scaffold foi criado.
+- [x] Nenhuma wallet, keypair, `.env`, Program ID novo ou scaffold foi criado.
 
 Enquanto qualquer item acima permanecer aberto, D1b não pode começar.

@@ -8,6 +8,9 @@
 
 **D1a.2: protocolo definido; Router/CPI/deployments continuam não executados e não validados.**
 
+**D1a.3 concluído em H1–H4: toolchains, receipt zkVM e ABI host validados;
+build SBF, CPI e deployment não executados.**
+
 ## Objetivo
 
 Verificar uma receipt RISC Zero Groth16 por CPI em Solana e, somente após validar a prova e os campos críticos do journal contra o Job, permitir que o programa Anchor considere o release.
@@ -22,7 +25,7 @@ Verificar uma receipt RISC Zero Groth16 por CPI em Solana e, somente após valid
 - O [`Cargo.toml` do verificador Groth16](https://github.com/boundless-xyz/risc0-solana/blob/v3.0.0/solana-verifier/programs/groth_16_verifier/Cargo.toml) declara `anchor-lang 0.31.1`, `risc0-zkvm 3.0.3` e `solana-bn254 3.0.0`.
 - O [`Cargo.lock` do solana-verifier](https://github.com/boundless-xyz/risc0-solana/blob/v3.0.0/solana-verifier/Cargo.lock) resolve `anchor-lang 0.31.1`, `risc0-zkvm 3.0.3`, `risc0-groth16 3.0.2` e `solana-program 2.3.0`. As crates Solana separadas abrangem várias linhas: interfaces 1.x, crates 2.2–2.4, `solana-bn254`/`solana-define-syscall 3.0.0` e `solana-loader-v3-interface 5.0.0`.
 - O [`workflow de testes`](https://github.com/boundless-xyz/risc0-solana/blob/v3.0.0/.github/workflows/tests.yml) instala Agave CLI `2.3.9` e Anchor CLI `0.31.1` antes de `anchor test`. Ele também usa a action Rust `risc0/risc0/.github/actions/rustup@main`, que é flutuante e não pode ser tratada como pin de release.
-- O [`counter`](https://github.com/boundless-xyz/risc0-solana/tree/v3.0.0/examples/counter) é o exemplo de CPI consultado. Seus manifests e lockfiles foram lidos no tag exato; ele não foi clonado, compilado, executado ou implantado pelo VeriCode.
+- O [`counter`](https://github.com/boundless-xyz/risc0-solana/tree/v3.0.0/examples/counter) é o exemplo de CPI consultado. No D1a.3, o tag foi clonado em dois checkouts Linux isolados no commit exato; os workspaces on-chain foram resolvidos, checados e testados como Rust host nas duas raias. O guest `hello-world` do RISC Zero, não o host `counter`, foi usado no gate de receipt; nenhum build SBF, CPI ou deploy ocorreu.
 
 A versão da CLI Agave e as versões das crates Solana são dimensões diferentes. A presença de CLI `2.3.9` no workflow não transforma todas as crates em `2.3.9`, nem prova compatibilidade com a recomendação Anchor `2.1.0`.
 
@@ -40,27 +43,66 @@ observar seu efeito por `cargo metadata --locked` sem atualizar os locks.
 
 O [`examples/counter/Cargo.toml`](https://github.com/boundless-xyz/risc0-solana/blob/v3.0.0/examples/counter/Cargo.toml) define o workspace on-chain (`programs/*` e `shared`). O [`examples/counter/zkvm/Cargo.toml`](https://github.com/boundless-xyz/risc0-solana/blob/v3.0.0/examples/counter/zkvm/Cargo.toml) define outro workspace para host/methods. Isso demonstra isolamento estrutural, não compatibilidade automática.
 
-Para o VeriCode, um spike ainda precisa provar que ambos os lados concordam sobre:
+O D1a.3 provou no exemplo, nas duas raias:
 
-- Program ID e programa Router realmente invocado;
 - discriminadores, instrução e ordem/flags dos account metas da CPI;
 - formato exato do seal Groth16 e do journal público;
-- ImageID e campos do `JournalV1` ligados ao Job;
 - serialização Borsh e bytes produzidos por cada workspace.
 
+Continuam pendentes para o VeriCode:
+
+- Program ID, cluster e programa Router realmente invocado em runtime;
+- ImageID e campos do `JournalV1` ligados ao Job;
+- rejeição de Job, mint e executor divergentes;
+- owner/flags observados durante CPI real, não somente gerados pelos tipos.
+
 O workspace on-chain do `counter` resolve Borsh `0.10.4`; o lock zkVM contém Borsh `0.10.4` e `1.5.7` para dependências diferentes. A compatibilidade deve ser provada por esquema e testes de bytes, não inferida do nome da crate.
+
+### Divergência source/IDL encontrada no D1a.3
+
+No mesmo commit `ee415935d04a948f27a346b563391900bdad6486`, os IDLs
+versionados em `solana-verifier/idl/verifier_router.json` e
+`solana-verifier/idl/groth_16_verifier.json` não descrevem as assinaturas do
+source:
+
+- os IDLs registram `verify(proof, image_id, journal_digest, vk)`;
+- o Router source implementa `verify(seal, image_id, journal_digest)`;
+- o verificador Groth16 source implementa
+  `verify(proof, image_id, journal_digest)`;
+- o IDL Router referencia uma seed de argumento `selector` que não aparece na
+  lista de argumentos daquele IDL.
+
+O discriminador `verify` coincide (`85 a1 8d 30 78 c6 58 96`), mas o payload
+e a seed não. Portanto, o IDL versionado não pode ser promovido como contrato
+de ABI. A comparação executável das instruções geradas diretamente pelas
+crates passou nas raias A e B; regenerar/comparar o IDL continua pendente.
+
+Os gates Rust passaram nas duas raias: 12 testes do verificador Groth16 e os
+testes de identidade do Router/verificador inválido foram aprovados, além do
+teste do counter. Esses testes não exercitam CPI, validator, contas reais ou
+Program IDs e, por isso, não alteram `STATUS: NÃO VALIDADO`. Cargo também
+avisou que o `[patch]` no manifesto do host zkVM é ignorado por não estar na
+raiz do workspace, outra razão para não inferir compatibilidade da resolução.
+
+A inspeção também confirmou que `examples/counter/zkvm/host/src/main.rs` cria
+um `Keypair`, solicita airdrop e envia transações. Esse binário não foi
+executado sem H5, e a ausência dessa execução mantém Router/CPI como
+`STATUS: NÃO VALIDADO`.
 
 ## Divergência Anchor/Agave
 
 A documentação do Anchor 0.31.x recomenda Agave `2.1.0`. O workflow do Router no tag `v3.0.0` usa `2.3.9`. Não foi encontrada fonte oficial que demonstre o `counter` com `2.1.0`, nem autorização para reclassificar `2.3.9` como versão recomendada do Anchor.
 
-Conclusão: coexistência **a confirmar por spike**. Não há prova suficiente para chamá-la compatível e também não há evidência para chamá-la incompatível.
+Conclusão: os gates host/ABI passaram nas duas combinações. A raia
+Anchor/Agave `2.1.0` foi escolhida como candidata por seguir a recomendação
+oficial; coexistência SBF/CPI permanece **a confirmar por integração**. Não
+há evidência para chamá-la incompatível.
 
 ## Status por rede
 
 | Rede | Status | Evidência encontrada |
 | --- | --- | --- |
-| localnet | REFERÊNCIA OFICIAL, NÃO EXECUTADA | O tag contém `examples/counter` e `solana-verifier`; nenhum comando foi executado pelo VeriCode. |
+| localnet | REFERÊNCIA OFICIAL, NÃO EXECUTADA | O tag contém `examples/counter` e `solana-verifier`; somente gates host foram executados, sem validator, CPI ou transação localnet. |
 | Solana devnet | NÃO VALIDADO | Nenhum Program ID/deployment Solana devnet foi comprovado nas fontes oficiais consultadas. |
 | Solana mainnet-beta | NÃO VALIDADO | Nenhum Program ID/deployment Solana mainnet-beta foi comprovado nas fontes oficiais consultadas. |
 
@@ -75,12 +117,17 @@ Consequências:
 
 ## O que precisa ser provado
 
-1. Resolver e registrar o commit exato da tag `v3.0.0` no checkout do spike.
-2. Reproduzir o `counter` com toolchain Rust pinada e locks preservados.
-3. Comparar Anchor `0.31.1` + Agave `2.1.0` com a combinação do workflow, Anchor `0.31.1` + Agave `2.3.9`.
-4. Provar CPI e compatibilidade de bytes entre os workspaces; workspaces separados, sozinhos, não resolvem isso.
+1. [x] Resolver e registrar o commit exato da tag `v3.0.0`.
+2. [x] Reproduzir os gates host seguros do `counter` com Rust pinado e locks
+   preservados.
+3. [x] Comparar Anchor `0.31.1` + Agave `2.1.0` com Anchor `0.31.1` +
+   Agave `2.3.9` no escopo H4.
+4. [x] Comparar bytes, discriminadores, metas, flags, owners, seal e journal
+   gerados pelas crates; [ ] provar CPI runtime.
 5. Confirmar em fonte oficial o Program ID e o cluster antes de preencher qualquer variável.
-6. Validar receipt Groth16, ImageID e digest do journal; testar rejeição para Job, mint, executor, ImageID e journal divergentes.
+6. [x] Validar receipt local, ImageID e rejeição de ImageID/journal
+   divergentes; [ ] testar Job, mint e executor quando existir código
+   VeriCode autorizado.
 7. Comprovar devnet separadamente, se houver deployment oficial. Até lá, manter `STATUS: NÃO VALIDADO`.
 
 O workflow oficial executa `solana-keygen new` antes de `anchor test`.
@@ -99,5 +146,5 @@ negativos, está em [`docs/d1a2-spike-plan.md`](d1a2-spike-plan.md).
 - [Manifesto do programa `counter`](https://github.com/boundless-xyz/risc0-solana/blob/v3.0.0/examples/counter/programs/solana-counter/Cargo.toml)
 - [Lockfile on-chain do `counter`](https://github.com/boundless-xyz/risc0-solana/blob/v3.0.0/examples/counter/Cargo.lock)
 - [Lockfile zkVM do `counter`](https://github.com/boundless-xyz/risc0-solana/blob/v3.0.0/examples/counter/zkvm/Cargo.lock)
-- [Release notes Anchor 0.31.0 no tag `v0.31.1`](https://github.com/otter-sec/anchor/blob/v0.31.1/docs/content/docs/updates/release-notes/0-31-0.mdx)
+- [Release notes Anchor 0.31.0 no commit do tag `v0.31.1`](https://github.com/coral-xyz/anchor/blob/47284f8f0b9844c6b83234aa90f556bad00e12ed/docs/content/docs/updates/release-notes/0-31-0.mdx)
 - [Documentação RISC Zero de contratos verificadores](https://dev.risczero.com/api/blockchain-integration/contracts/verifier)

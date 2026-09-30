@@ -75,3 +75,35 @@ Registre decisões relevantes do projeto neste formato.
   depois autorizar um ambiente descartável e a fase sem chaves. Wallet,
   keypair, validator, deploy, airdrop e transações exigem autorização
   adicional separada.
+
+## 2026-09-28/29 — D1a.3: concluir H1–H4 e manter decisão pendente
+
+- **Data:** 2026-09-29
+- **Decisão:** manter `PENDENTE` e D1b bloqueado, mas registrar como Perfil A
+  candidato o lado Anchor/Solana com Rust `1.85.0`, Anchor/AVM/crates
+  `0.31.1` e Agave `2.1.0`, separado da raia zkVM com Rust host `1.89.0`,
+  guest `1.88.0`, `rzup 0.5.1` e componentes RISC Zero `3.0.3`. Preservar
+  Agave `2.3.9`/Rust `1.89.0` como raia B de referência, não como recomendação
+  Anchor.
+- **Motivo:** `1.81.0`, pin do source Agave `v2.1.0`, falhou no lock real;
+  `1.85.0` foi o único fallback oficial previsto e passou. As duas raias
+  passaram os gates host/ABI, mas a A é a alternativa conservadora que
+  preserva a recomendação Anchor. O critério D1a.2 ainda exige testes
+  negativos de `Job/mint/executor`, impossíveis sem o futuro código VeriCode,
+  além de CPI runtime sob autorização posterior.
+- **Evidência:** sete checkouts limpos; cinco hashes de lock preservados;
+  Docker Engine `29.8.1` e builder por digest; dois builds efetivos com ELF
+  SHA-256 `383b3e63ffd0387ad20c0dee3fa78cc9da25ee164773e59814f02312b5d3bb3f`
+  e ImageID
+  `ab2f61e0cc5244ee8ee0712a697251be92a2c6539faddf300ab56414dc69149d`
+  idênticos; receipt local válido; rejeições de ImageID/journal divergentes;
+  vetores ABI idênticos em A/B. Resultados completos em
+  [`docs/d1a3-spike-results.md`](d1a3-spike-results.md).
+- **Risco aberto:** os IDLs Router/Groth16 divergem do source; o patch Git do
+  host zkVM é ignorado; não houve build SBF, conta Solana real, CPI, Program ID
+  por rede ou deployment. O grupo `docker` é privilegiado e o tarball Agave
+  `v2.1.0` não possui digest oficial publicado.
+- **Próximo gate:** autorizar separadamente o contrato/harness puro Rust do
+  `JournalV1` para testar Job, mint e executor e regenerar/comparar IDLs. H5
+  continua proibido até decisão específica sobre keypair, validator, CPI e
+  rede.
