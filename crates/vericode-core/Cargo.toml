@@ -6,4 +6,5 @@ license = "Apache-2.0"
 description = "Pure semantic core for the restricted VeriCode MVP"
 
 [dependencies]
-# Intentionally empty: this crate uses only the Rust standard library.
+borsh = "=0.10.4"
+sha2 = "=0.10.9"

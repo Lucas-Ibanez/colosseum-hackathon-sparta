@@ -1,16 +1,22 @@
 # Arquitetura do MVP
 
-## Estado D1c1
+## Estado D1c2a
 
 A primeira implementação existe em `crates/vericode-core`. É uma crate Rust
-pura, `std`-only, que modela `Hash32`, `JobId`, `ImageId`, `Verdict`, os
-compromissos esperados e `JournalV1`. Ela valida igualdade semântica dos
-compromissos e trata `PASS` e `FAIL` como resultados normais.
+pura que modela `Hash32`, `JobId`, `ImageId`, `Verdict`, os compromissos
+esperados e `JournalV1`. D1c2a acrescenta um wire format Borsh `0.10.4`
+candidato, compromissos SHA-256 por `sha2 0.10.9` e um harness determinístico
+para um único registro de desenvolvimento restrito.
 
-Essa crate não serializa o journal, não calcula hashes, não executa artefato,
-não contém lógica Solana/Anchor/RISC Zero e não autoriza pagamentos. O único
-fixture de teste é um registro de desenvolvimento restrito e versionado; ele
-não representa suporte a código ou repositórios arbitrários.
+O registro contém somente versão, entrada `u32` e saída alegada `u32`. O
+harness aplica a especificação fixa `saída = entrada * 2`, sem I/O, e trata
+`PASS` e `FAIL` como resultados normais. Entrada malformada, versão
+incompatível e valor fora do limite retornam erro explícito.
+
+A crate não contém lógica Solana/Anchor/RISC Zero e não autoriza pagamentos.
+Borsh e SHA-2 são bibliotecas Rust puras fixadas pelo lock; não introduzem SDK
+de blockchain. O formato continua candidato local até validação por guest e
+por qualquer adaptador on-chain futuro.
 
 ## Fluxo
 
@@ -22,7 +28,7 @@ O fluxo acima é alvo de arquitetura, não evidência de integração já funcio
 
 | Componente | Responsabilidade | Não deve fazer |
 | --- | --- | --- |
-| Core Rust puro | Tipos de domínio, regra determinística, validação do artefato e `Verdict` | Depender de Solana, Anchor ou RISC Zero |
+| Core Rust puro | Tipos de domínio, bytes candidatos, hashes, regra determinística, validação do artefato e `Verdict` | Depender de Solana, Anchor ou RISC Zero; conferir autoridade de release |
 | Guest RISC Zero | Ler entrada restrita, chamar o core e publicar `JournalV1` com `PASS` ou `FAIL` | Tratar `FAIL` como panic/assert ou expor dados privados desnecessários |
 | Host | Preparar entrada, executar/provar, obter receipt e conferir journal localmente | Ser fonte de verdade para liberar fundos |
 | Programa Anchor | Manter Job/escrow e autorizar release/refund somente após validações do Job | Reexecutar regra de negócio, aceitar admin bypass ou confiar apenas no host |
@@ -32,6 +38,8 @@ O fluxo acima é alvo de arquitetura, não evidência de integração já funcio
 ## Fronteiras
 
 - O core é a única implementação da regra de negócio e deve compilar como Rust puro.
+- Host e futuro guest devem chamar a mesma API do core e comparar os vetores
+  candidatos byte a byte; nenhuma cópia paralela da regra é autorizada.
 - Guest e programa Anchor são adaptadores separados para alvos incompatíveis; nenhum importa APIs do outro.
 - O host é não confiável para a decisão final: ele transporta artefato, receipt e journal.
 - O contrato valida identidade do Job, destinatário, mint, compromissos críticos e, quando comprovado, a prova.

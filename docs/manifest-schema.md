@@ -1,28 +1,78 @@
 # JournalV1
 
-**Draft v0 — sujeito ao gate de receipt local**
+**Draft v1 candidato local — não congelado como ABI Anchor/Router**
 
-Este documento define os campos públicos mínimos e seus significados. Não define ainda a serialização final, layout binário, endianness ou ID de programa.
+Este documento separa o contrato semântico, o wire format candidato local e
+a futura ABI on-chain. D1c2a define bytes reproduzíveis para testes
+host/guest; não define ID de programa, receipt, seal, instrução Anchor ou ABI
+Router.
 
-## Estado D1c1 — estrutura semântica implementada
+## Estado D1c2a — wire format candidato implementado
+
+`crates/vericode-core` codifica `JournalV1` com Borsh `0.10.4`, fixado
+por versão exata e por `Cargo.lock`. O layout possui 165 bytes:
+
+| Offset | Tamanho | Campo | Codificação candidata |
+| ---: | ---: | --- | --- |
+| 0 | 4 | `schema_version` | `u32` little-endian |
+| 4 | 32 | `job_id` | bytes exatos |
+| 36 | 32 | `spec_hash` | bytes exatos |
+| 68 | 32 | `harness_hash` | bytes exatos |
+| 100 | 32 | `artifact_hash` | bytes exatos |
+| 132 | 32 | `image_id` | bytes exatos |
+| 164 | 1 | `verdict` | ordinal Borsh: `PASS=0`, `FAIL=1` |
+
+O decoder exige exatamente 165 bytes e rejeita truncamento, bytes
+excedentes, `schema_version` diferente de 1 e tag de verdict desconhecida.
+Vetores literais PASS/FAIL estão testados em
+`crates/vericode-core/src/lib.rs` e registrados em
+`docs/d1c2a-wire-harness-results.md`.
+
+Esta representação é o **wire format candidato local**. Ela ainda precisa ser
+consumida por um guest real no D1c2b e comparada separadamente com qualquer
+ABI Anchor/Router futura antes de congelamento público.
+
+## Hashing canônico D1c2a
+
+Os três compromissos usam SHA-256 por `sha2 0.10.9` sobre um domínio ASCII
+terminado em NUL seguido dos bytes Borsh canônicos:
+
+| Compromisso | Preimagem |
+| --- | --- |
+| `spec_hash` | `b"vericode:spec:v1\0" || borsh(spec)` |
+| `harness_hash` | `b"vericode:harness:v1\0" || borsh(harness_version)` |
+| `artifact_hash` | `b"vericode:artifact:v1\0" || borsh(artifact)` |
+
+O harness atual tem versão `1`. A especificação fixa é o registro
+`(schema_version=1, multiplier=2, max_input=1_000_000)`. O artefato de
+desenvolvimento é exclusivamente o registro
+`(schema_version, input, claimed_output)`, três `u32` little-endian,
+totalizando 12 bytes. Um registro válido recebe `PASS` somente quando
+`claimed_output == input * 2`; uma alegação diferente recebe `FAIL` como
+valor normal. Formato inválido, versão incompatível e entrada acima do limite
+são erros explícitos, não verdicts.
+
+Essas definições não aceitam código, arquivos, repositórios, patches, rede,
+relógio, RPC ou I/O externo e não conferem autoridade de pagamento.
+
+## Base D1c1 — estrutura semântica
 
 A crate Rust pura `crates/vericode-core` implementa a estrutura semântica
-inicial deste documento, sem dependências externas. `Hash32` contém exatamente
+inicial deste documento. `Hash32` contém exatamente
 32 bytes; `JobId` e `ImageId` são tipos distintos sobre esse valor fixo;
 `JournalV1` usa `schema_version: u32` internamente e contém todos os campos da
-tabela abaixo. Essas escolhas descrevem a API Rust atual, não congelam bytes
-públicos, layout, endianness, algoritmo de hash ou codificação.
+tabela abaixo.
 
 `JournalV1::validate_against` compara, em ordem explícita, versão, Job,
 especificação, harness, artefato e ImageID. Após todos os compromissos
 coincidirem, a API retorna tanto `Verdict::Pass` quanto `Verdict::Fail` como
 valores normais. `FAIL` não autoriza release.
 
-O wire format continua **Draft v0 e NÃO CONGELADO**. D1c1 não implementa
-serialização, guest, receipt VeriCode nem prova Groth16. A receipt local do
-D1a.3 pertence ao `hello-world` upstream, contém journal inteiro `391` e não
-foi demonstrada como Groth16 ou como journal do VeriCode; M1 permanece fora
-de verde.
+D1c1 não implementou serialização; D1c2a adicionou somente o candidato local
+acima. Ainda não há guest, receipt VeriCode nem prova Groth16. A receipt local
+do D1a.3 pertence ao `hello-world` upstream, contém journal inteiro `391` e
+não foi demonstrada como Groth16 ou como journal do VeriCode; M1 permanece
+fora de verde.
 
 | Campo | Tipo conceitual | Vínculo e fraude evitada |
 | --- | --- | --- |
@@ -49,6 +99,6 @@ Antes de release, o contrato deve comparar `schema_version`, `job_id`, `spec_has
 
 Executor, mint e destino do pagamento permanecem definidos no estado do Job e devem ser validados pelo contrato. Mudanças neste schema exigem atualização deste documento e registro em `docs/decisions.md`.
 
-D1c1 não adiciona executor ou mint ao journal e não confere autoridade de
+D1c2a não adiciona executor ou mint ao journal e não confere autoridade de
 release à crate pura. Essa ligação continua responsabilidade futura do estado
 do Job e do contrato Anchor, em gate separado.

@@ -133,3 +133,31 @@ Registre decisões relevantes do projeto neste formato.
   format público, então criar o guest mínimo usando a crate pura e produzir
   receipts VeriCode reais para `PASS` e `FAIL`, sem rede ou Solana. Qualquer
   alegação Groth16 exige conversão e verificação demonstradas separadamente.
+
+## 2026-09-30 — D1c2a: adotar wire format e hashing candidatos locais
+
+- **Data:** 2026-09-30
+- **Decisão:** adotar Borsh `0.10.4` como wire format candidato local de
+  `JournalV1`, com layout fixo de 165 bytes, e SHA-256 por `sha2 0.10.9`
+  para `spec_hash`, `harness_hash` e `artifact_hash`, sempre com domínios
+  distintos. Implementar um único artefato de desenvolvimento de 12 bytes e
+  a regra fixa `claimed_output == input * 2`. Autorizar D1c2b somente para
+  guest mínimo e receipts VeriCode locais `PASS`/`FAIL`.
+- **Motivo:** o tag exato `boundless-xyz/risc0-solana v3.0.0`, commit
+  `ee415935d04a948f27a346b563391900bdad6486`, declara Borsh `0.10.3`
+  para o código compartilhado e seus locks on-chain/zkVM resolvem
+  `0.10.4`; os mesmos locks resolvem `sha2 0.10.9`. Fixar essas versões
+  permite testar bytes idênticos sem inferir compatibilidade por semelhança.
+- **Evidência:** `Cargo.lock`
+  `191802b234a6aa0f6bb9ce58a61963c377aed435a2baa6dec9576d13d8283b87`;
+  20/20 testes e `cargo tree --locked` passaram com Rust `1.85.0` e
+  `1.89.0`; vetores e fontes exatas em
+  [`docs/d1c2a-wire-harness-results.md`](d1c2a-wire-harness-results.md).
+- **Risco aberto:** Borsh/SHA-2 ainda não foram compilados dentro de um guest
+  VeriCode; não existe ImageID nem receipt VeriCode. O wire format não está
+  congelado como ABI Anchor/Router, e receipt Groth16, Router/CPI, Program ID
+  e rede continuam não validados. Alterar semântica do harness exige nova
+  versão e novos vetores.
+- **Próximo gate:** D1c2b deve criar somente o guest mínimo, usar esta mesma
+  crate/lock, reproduzir os vetores no guest e gerar/verificar receipts locais
+  reais de `PASS` e `FAIL`, sem dev mode, wallet, Solana ou rede.
