@@ -161,3 +161,29 @@ Registre decisões relevantes do projeto neste formato.
 - **Próximo gate:** D1c2b deve criar somente o guest mínimo, usar esta mesma
   crate/lock, reproduzir os vetores no guest e gerar/verificar receipts locais
   reais de `PASS` e `FAIL`, sem dev mode, wallet, Solana ou rede.
+
+## 2026-10-01 — D1c2b.1: fixar cache Cargo offline da raia zkVM
+
+- **Data:** 2026-10-01
+- **Decisão:** criar uma `CARGO_HOME` persistente e exclusiva em
+  `~/.local/share/vericode-spikes/d1c2b/cargo`, gerar locks separados para a
+  workspace host/methods e para o guest com Cargo/Rust `1.89.0`, e liberar a
+  retomada restrita de D1c2b depois que `metadata` e `tree` passaram offline.
+- **Motivo:** a falha original era ausência de metadata de registry, não
+  incompatibilidade demonstrada. A semente pública da raia A chegou até
+  `bonsai-sdk`; acesso autorizado a `index.crates.io`/`static.crates.io`
+  completou a cache. Os pins diretos `risc0-zkvm` e `risc0-build` permaneceram
+  `3.0.3`, sem dependência Git.
+- **Evidência:** `zkvm/Cargo.lock`
+  `c55eecfa196a5db6cd79a153a586c68a9c688ec9c2a2ea98c56a3d9f2c18ced1`;
+  guest lock
+  `bb00f8e71f1f1e969e27803fbcacd103caa00f2397ac8043d465b3feb1835a50`;
+  quatro execuções `cargo metadata/tree --locked --offline` com exit `0`;
+  inventário e saídas em
+  [`docs/d1c2b1-cache-results.md`](d1c2b1-cache-results.md).
+- **Risco aberto:** restrições transitivas caret resolveram crates RISC Zero
+  posteriores às versões preservadas nos locks do tag `v3.0.3`; o lock local
+  é reproduzível, mas compilação e execução continuam não demonstradas.
+- **Próximo gate:** retomar D1c2b usando os locks sem regenerá-los e a cache
+  offline; preservar qualquer falha real. Guest, ELF, ImageID e receipts ainda
+  não existem.

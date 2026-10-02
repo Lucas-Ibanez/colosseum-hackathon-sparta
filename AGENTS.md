@@ -23,6 +23,7 @@ O VeriCode verifica somente um artefato serializado restrito com regra determin�
 - Não alterar schema ou journal sem atualizar explicitamente a documentação e registrar a decisão.
 - Segredos nunca entram no Git; usar somente nomes de variáveis e exemplos vazios.
 - Antes de alterar zkVM, Router, schema ou contrato, ler `docs/architecture.md`, `docs/manifest-schema.md`, `docs/zkvm-notes.md`, `docs/router-notes.md` e `docs/decisions.md`.
+- Antes de alterar escrow, política econômica, CLI/UI ou claims públicos, ler `docs/mvp-agent-operating-guide.md`.
 
 ## Definição de pronto
 

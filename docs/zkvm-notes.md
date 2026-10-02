@@ -31,6 +31,22 @@ A raia zkVM executada mantém Rust host `1.89.0`, Rust guest `1.88.0`,
 comandos ainda pendentes estão separados em
 [`docs/d1a3-spike-results.md`](d1a3-spike-results.md).
 
+## Cache Cargo D1c2b.1
+
+O gate D1c2b.1 criou a `CARGO_HOME` exclusiva
+`~/.local/share/vericode-spikes/d1c2b/cargo`. Depois de completar somente o
+registry público autorizado, as workspaces host/methods e guest passaram
+`cargo metadata --locked --offline` e `cargo tree --locked --offline` com
+Rust/Cargo `1.89.0`. Os locks locais preservam os pins diretos
+`risc0-zkvm 3.0.3` e `risc0-build 3.0.3`; hashes, checksums, inventário e
+comandos estão em
+[`docs/d1c2b1-cache-results.md`](d1c2b1-cache-results.md).
+
+As restrições transitivas dos crates publicados resolveram versões posteriores
+às registradas nos locks oficiais do tag `v3.0.3`. Isso é uma divergência
+explícita de lock, não evidência de compatibilidade. Build guest, ELF, ImageID
+e receipt VeriCode continuam não executados.
+
 O D1a.3 instalou, por ação humana, Docker Engine rootful dentro do WSL pelo
 repositório APT oficial Ubuntu/Noble, com
 `docker-ce 5:29.8.1-1~ubuntu.24.04~noble` e pacotes auxiliares exatos. O
