@@ -9,4 +9,3 @@ license = "Apache-2.0"
 [dependencies]
 risc0-zkvm = { version = "=3.0.3", default-features = false }
 vericode-core = { path = "../../../crates/vericode-core" }
-

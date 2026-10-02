@@ -23,4 +23,3 @@ fn main() {
 
     embed_methods_with_options(options);
 }
-

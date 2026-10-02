@@ -9,4 +9,3 @@ risc0-build = "=3.0.3"
 
 [package.metadata.risc0]
 methods = ["guest"]
-

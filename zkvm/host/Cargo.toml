@@ -9,4 +9,3 @@ bincode = "=1.3.3"
 risc0-zkvm = { version = "=3.0.3", features = ["disable-dev-mode", "prove"] }
 vericode-core = { path = "../../crates/vericode-core" }
 vericode-methods = { path = "../methods" }
-
