@@ -187,3 +187,187 @@ Registre decisões relevantes do projeto neste formato.
 - **Próximo gate:** retomar D1c2b usando os locks sem regenerá-los e a cache
   offline; preservar qualquer falha real. Guest, ELF, ImageID e receipts ainda
   não existem.
+
+## 2026-10-02 — D1c2b: bloquear no cache interno do builder Docker
+
+- **Data:** 2026-10-02
+- **Decisão:** manter D1c2b bloqueado antes do primeiro ELF e não desabilitar
+  `CARGO_NET_OFFLINE`, alterar locks ou baixar dependências dentro do builder.
+- **Motivo:** a imagem local fixada pelo digest `sha256:3e12f71b...d943eb3`
+  foi usada sem pull, mas seu registry Cargo interno não contém `borsh`. O
+  `risc0-build 3.0.3` não injeta automaticamente a `CARGO_HOME` D1c2b do host
+  no container, e o `cargo +risc0 fetch --locked` falhou offline.
+- **Evidência:** exit `101` no estágio Docker `[build 4/5]`, com
+  `no matching package named borsh found`; locks antes/depois idênticos; busca
+  temporária sem ELF ou receipt; relatório completo em
+  [`docs/d1c2b-guest-receipt-results.md`](d1c2b-guest-receipt-results.md).
+- **Risco aberto:** o mecanismo reproduzível para disponibilizar o registry
+  fixado dentro do builder ainda não foi escolhido. Sem isso não existem dois
+  builds, ImageID, journals guest nem receipts VeriCode.
+- **Próximo gate:** autorizar separadamente um bootstrap offline e auditável
+  do cache do builder — vendoring temporário ou imagem derivada local — sem
+  mudar versões/locks; depois retomar D1c2b desde o build A.
+
+## 2026-10-02 — D1c2b.2: manter bloqueio após falha de invocação do builder
+
+- **Data:** 2026-10-02
+- **Decisão:** aceitar o vendor temporário offline como inventário completo do
+  lock guest, mas não liberar D1c2b porque o fetch dentro do builder não foi
+  executado com sucesso.
+- **Motivo:** `cargo vendor --locked --offline` materializou as 154 crates,
+  porém o primeiro `docker run` terminou antes do Cargo com exit `127` e
+  `/bin/sh: 0: Can't open cargo`. A regra do gate proibiu corrigir e repetir
+  após qualquer falha.
+- **Evidência:** 154 checksums presentes; inventário de conteúdo
+  `6d4478599d837bc4c1549d952d80e11d1886b09f5c7d33be75d66cb806cdf335`;
+  staging somente-leitura, `--network none` e `--pull=never`; relatório em
+  [`docs/d1c2b2-builder-vendor-results.md`](d1c2b2-builder-vendor-results.md).
+- **Risco aberto:** a forma correta de invocar Cargo respeitando o entrypoint
+  da imagem fixa ainda não foi auditada, e `fetch`/`metadata` offline no
+  container continuam não comprovados.
+- **Próximo gate:** inspecionar `Entrypoint`/`Cmd` da imagem por leitura e
+  autorizar uma repetição única com o mesmo vendor, digest, locks e isolamento
+  de rede. Não retomar build ou proving antes de ambos os comandos passarem.
+
+## 2026-10-02 — D1c2b.2a: validar vendor no entrypoint do builder
+
+- **Data:** 2026-10-02
+- **Decisão:** liberar a retomada posterior de D1c2b somente a partir do
+  build do guest; o vendor passou resolução e metadata offline dentro do
+  builder.
+- **Motivo:** a imagem fixa declara `Entrypoint=["/bin/sh"]` e `Cmd=null`.
+  Passar o comando por `-c` corrigiu exclusivamente a invocação anterior;
+  `fetch` e `metadata` passaram com exit `0`, sem rede e sem pull.
+- **Evidência:** locks preservados, vendor com hash
+  `6d4478599d837bc4c1549d952d80e11d1886b09f5c7d33be75d66cb806cdf335` e
+  relatório em
+  [`docs/d1c2b2a-builder-entrypoint-results.md`](d1c2b2a-builder-entrypoint-results.md).
+- **Risco aberto:** compilação guest, ELF, ImageID, receipt VeriCode e proving
+  continuam não demonstrados. Router/CPI/devnet permanecem não validados.
+- **Próximo gate:** D1c2b, com build controlado do guest; não executar proving
+  ou rede blockchain como parte deste resultado.
+
+## 2026-10-02 — D1c2b.3: bloquear no build A por configuração vendor não descoberta
+
+- **Data:** 2026-10-02
+- **Decisão:** interromper D1c2b.3 após a falha do build A; não executar build
+  B, não mover a configuração Cargo e não alterar produto ou locks.
+- **Motivo:** o vendor reproduziu integralmente a evidência de D1c2b.2a, mas
+  o Dockerfile gerado por `risc0-build 3.0.3` executa a partir de `/src`. O
+  `cargo +risc0 fetch --locked` interno não consumiu a configuração em
+  `zkvm/methods/guest/.cargo/config.toml` e falhou offline procurando `borsh`
+  no índice crates.io interno.
+- **Evidência:** build A exit `101`; 154 crates/checksums e inventário
+  `6d4478599d837bc4c1549d952d80e11d1886b09f5c7d33be75d66cb806cdf335`;
+  locks preservados; `methods.rs` residual vazio; relatório em
+  [`docs/d1c2b3-guest-build-results.md`](d1c2b3-guest-build-results.md).
+- **Risco aberto:** ainda não há mecanismo auditado que torne a substituição
+  vendorizada visível à invocação real do build upstream. ELF, ImageID,
+  comparação A/B, receipts e proving VeriCode continuam inexistentes.
+- **Próximo gate:** autorizar separadamente a correção temporária do ponto de
+  descoberta da configuração Cargo no contexto `/src`, provar o fetch
+  offline pela mesma invocação do Dockerfile e só então repetir D1c2b.3.
+
+## 2026-10-02 — D1c2b.3a: validar vendor na raiz do contexto Docker
+
+- **Data:** 2026-10-02
+- **Decisão:** aceitar o vendor temporário em `/src/vendor`, acompanhado de
+  `/src/.cargo/config.toml`, como mecanismo auditado para a futura repetição
+  do build determinístico; liberar a retomada de D1c2b.3 sem executar o build
+  neste gate.
+- **Motivo:** o `risc0-build 3.0.3` gera `WORKDIR /src` e `COPY . .`. Com a
+  configuração na raiz do mesmo contexto, uma única execução offline do
+  Dockerfile de diagnóstico encontrou o vendor e concluiu `fetch` e
+  `metadata` com exit `0`.
+- **Evidência:** 154 crates/checksums, inventário
+  `6d4478599d837bc4c1549d952d80e11d1886b09f5c7d33be75d66cb806cdf335`;
+  `docker build --pull=false --network=none` sem tag; metadata de 652.545
+  bytes com SHA-256
+  `7274178febd20364c33b76d89dad4b315bbc144b3534dd23f66a6242e1c95f46`;
+  relatório em
+  [`docs/d1c2b3a-root-vendor-results.md`](d1c2b3a-root-vendor-results.md).
+- **Risco aberto:** o build A/B, ELF, ImageID, execução host e receipts
+  VeriCode ainda não foram produzidos. O mecanismo continua temporário e não
+  foi adicionado ao clone. Router/CPI/devnet permanecem não validados.
+- **Próximo gate:** repetir D1c2b.3 com staging raiz vendorizado, dois targets
+  independentes e comparação byte a byte; não antecipar host, receipt ou
+  proving.
+
+## 2026-10-02 — D1c2b.3b.1: remediar Rustup padrão criado por erro
+
+- **Data:** 2026-10-02
+- **Decisão:** aprovar a remediação e manter D1c2b.3b aguardando reinício
+  controlado.
+- **Motivo:** uma consulta sem `RUSTUP_HOME` criou a única toolchain padrão em
+  `/home/lucas/.rustup`. O Rustup isolado desinstalou exatamente
+  `1.89.0-x86_64-unknown-linux-gnu`; o root acidental foi removido após a
+  confirmação de que seus resíduos eram apenas diretórios vazios.
+- **Evidência:** [`docs/d1c2b3b-rustup-remediation.md`](d1c2b3b-rustup-remediation.md);
+  root padrão ausente depois, toolchain D1a.3 preservada, `.cargo` não tocado,
+  `zkvm/` e locks inalterados.
+- **Risco aberto:** D1c2b.3b ainda não gerou ELF, ImageID ou receipt VeriCode.
+  Todo comando futuro deve declarar `CARGO_HOME`, `RUSTUP_HOME`, `RISC0_HOME`
+  e `PATH` isolados.
+
+## 2026-10-02 — D1c2b.3b-retry: bloquear por MSRV do lock guest
+
+- **Data:** 2026-10-02
+- **Decisão:** interromper após a falha do build A; não iniciar build B, não
+  alterar locks/versões/toolchains e não avançar para host ou receipts.
+- **Motivo:** o builder usa `rustc 1.88.0-dev`, mas o lock guest fixa
+  `enum-ordinalize 4.4.2` e `enum-ordinalize-derive 4.4.2`; ambos declaram
+  `rust-version = "1.89"`. O compilador recusou a combinação com exit `101`.
+- **Evidência:** ambiente isolado; `/home/lucas/.rustup` permaneceu ausente;
+  vendor A com 154 crates/checksums e inventário `6d447859...cdf335`;
+  fetch passou, compilação guest falhou, `methods.rs` ficou vazio e nenhum
+  ELF/ImageID foi produzido. Relatório em
+  [`docs/d1c2b3b-deterministic-guest-build-results.md`](d1c2b3b-deterministic-guest-build-results.md).
+- **Risco aberto:** ainda não há dois builds, comparação byte a byte, ImageID,
+  execução host ou receipt VeriCode.
+- **Próximo gate:** auditar a cadeia transitiva e autorizar uma reconciliação
+  de lock/MSRV com fontes oficiais. Não repetir o build por inferência.
+
+## 2026-10-02 — D1c2b.3c: reconhecer candidato oficial de reconciliação MSRV
+
+- **Data:** 2026-10-02
+- **Decisão:** classificar o resultado como **CANDIDATO DE RECONCILIAÇÃO
+  COMPROVADO**, sem alterar o lock neste gate e sem liberar ainda a execução
+  do guest.
+- **Motivo:** `educe 0.6.0` aceita `enum-ordinalize ^4.2`; o lock gerado com
+  Rust host 1.89 escolheu `enum-ordinalize 4.4.2` e derive `4.4.2`, ambos com
+  MSRV 1.89, acima do builder guest 1.88. Os locks dos tags exatos
+  `risc0/risc0 v3.0.3` e `risc0-solana v3.0.0` preservam versões
+  `4.3.0`/`4.3.1`, ambas com MSRV 1.60 e checksums confirmados.
+- **Evidência:** árvore Cargo locked/offline; manifests e archives dos caches
+  isolados; locks oficiais nos commits `14b5d588…` e `ee415935…`; build D1a.3
+  do hello-world com builder 1.88; relatório em
+  [`docs/d1c2b3c-guest-msrv-lock-audit.md`](d1c2b3c-guest-msrv-lock-audit.md).
+- **Risco aberto:** o lock atual permanece incompatível; a evidência upstream
+  não substitui a futura alteração mecânica, novo vendor e dois builds do
+  guest VeriCode. Não existem ELF, ImageID ou receipts VeriCode.
+- **Próximo gate:** autorizar uma reconciliação exclusivamente de lock contra
+  o conjunto transitivo comprovado pelos tags, validar metadata/tree offline
+  e só então repetir os builds determinísticos. Não trocar builder, versões
+  diretas ou wire format.
+
+## 2026-10-02 — D1c2b.3d: manter bloqueio por cache offline incompleta
+
+- **Data:** 2026-10-02
+- **Decisão:** aceitar e manter a reconciliação mecânica do lock guest, mas
+  classificar o gate como **BLOQUEADO** até que a mesma `CARGO_HOME` consiga
+  concluir `metadata/tree --locked --offline`.
+- **Motivo:** o diff contém somente `risc0-groth16 3.0.5 -> 3.0.2`,
+  `enum-ordinalize 4.4.2 -> 4.3.0` e derive `4.4.2 -> 4.3.1`, com checksums
+  oficiais e `syn ^2` comprovado. Porém, a cache D1c2b possui apenas as
+  entradas de índice dessas versões, não seus archives; todos os comandos de
+  validação falharam offline no primeiro archive ausente.
+- **Evidência:** lock guest
+  `1116acef90aa4a1cddb74cae0ba9c03c92b825de478b9d0d2ac7d3d31656dbfa`;
+  lock host preservado `c55eecfa…`; `metadata`, `tree` e três árvores inversas
+  com exit `101`; relatório em
+  [`docs/d1c2b3d-guest-lock-reconciliation-results.md`](d1c2b3d-guest-lock-reconciliation-results.md).
+- **Risco aberto:** o lock final ainda não foi materializado/validado pela
+  home prescrita; não existem build guest, ELF, ImageID ou receipts VeriCode.
+- **Próximo gate:** autorizar a cópia offline apenas dos três archives
+  públicos exatos dos caches D1a.3 para a cache D1c2b, conferindo checksums,
+  e repetir metadata/tree antes de qualquer vendor ou build.

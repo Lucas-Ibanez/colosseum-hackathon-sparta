@@ -47,6 +47,46 @@ As restrições transitivas dos crates publicados resolveram versões posteriore
 explícita de lock, não evidência de compatibilidade. Build guest, ELF, ImageID
 e receipt VeriCode continuam não executados.
 
+## Tentativa D1c2b — cache interno do builder insuficiente
+
+Em 2026-10-02, o build VeriCode foi iniciado com Cargo/Rust host `1.89.0`,
+`RISC0_HOME` isolado, os dois locks preservados, `CARGO_NET_OFFLINE=true` e a
+imagem local fixada por
+`r0.1.88.0@sha256:3e12f71bacd27527a61dea96fa0e53e468c99aa261d3a1019b593f6dbd943eb3`.
+Docker alcançou a imagem local sem pull, mas o estágio
+`cargo +risc0 fetch --locked` falhou porque o registry interno da imagem não
+contém a entrada de índice de `borsh`, requerida por `vericode-core`.
+
+A `CARGO_HOME` criada em D1c2b.1 resolve o host, mas `risc0-build 3.0.3` não
+a monta nem copia automaticamente para o container. O gate parou sem
+desabilitar o modo offline, sem alterar locks e sem gerar ELF, ImageID ou
+receipt. O resultado completo está em
+[`docs/d1c2b-guest-receipt-results.md`](d1c2b-guest-receipt-results.md).
+
+D1c2b permanece bloqueado até uma decisão explícita sobre vendoring
+temporário ou cache/imagem Docker derivada e auditável. Isso não altera o
+estado de Router/CPI/devnet, que continua `STATUS: NÃO VALIDADO`.
+
+## D1c2b.2 — vendor completo, prova no builder bloqueada
+
+O gate D1c2b.2 criou somente em staging temporário um vendor offline das 154
+crates de registry do lock guest. As 154 crates possuem
+`.cargo-checksum.json`; o inventário tem 5.906 arquivos, 113.740.872 bytes e
+SHA-256 de conteúdo
+`6d4478599d837bc4c1549d952d80e11d1886b09f5c7d33be75d66cb806cdf335`.
+Nenhum vendor ou `.cargo/config.toml` foi adicionado ao clone.
+
+A primeira prova com a imagem fixa, `--network none`, `--pull=never`, staging
+somente-leitura e `CARGO_NET_OFFLINE=true` terminou antes do Cargo com exit
+`127` e `/bin/sh: 0: Can't open cargo`. Pela regra de parada do gate, não
+houve correção da invocação, repetição ou `cargo metadata` no container. O
+resultado completo está em
+[`docs/d1c2b2-builder-vendor-results.md`](d1c2b2-builder-vendor-results.md).
+
+D1c2b continua bloqueado: o vendor foi demonstrado no host, mas ainda não foi
+consumido com sucesso pelo builder. ELF, ImageID e receipt VeriCode continuam
+inexistentes, e Router/CPI/devnet permanece `STATUS: NÃO VALIDADO`.
+
 O D1a.3 instalou, por ação humana, Docker Engine rootful dentro do WSL pelo
 repositório APT oficial Ubuntu/Noble, com
 `docker-ce 5:29.8.1-1~ubuntu.24.04~noble` e pacotes auxiliares exatos. O
@@ -134,3 +174,142 @@ Dev mode não satisfaz esses gates. Falha de execução não pode ser apresentad
 - [`risc0/risc0 v3.0.3`](https://github.com/risc0/risc0/tree/v3.0.3)
 - [`examples/hello-world` em `v3.0.3`](https://github.com/risc0/risc0/tree/v3.0.3/examples/hello-world)
 - [`risc0-solana v3.0.0`, exemplo `counter`](https://github.com/boundless-xyz/risc0-solana/tree/v3.0.0/examples/counter)
+
+## D1c2b.2a — vendor validado dentro do builder
+
+O entrypoint da imagem local é `Entrypoint=["/bin/sh"]`, sem `Cmd` efetivo
+(`null`). Com o mesmo staging e vendor, o comando foi passado por `/bin/sh
+-c`. `cargo +risc0 fetch --locked --offline` passou com exit `0`, e `cargo
++risc0 metadata --locked --offline` também passou com exit `0`.
+
+O isolamento foi mantido por `--network none`, `CARGO_NET_OFFLINE=true`,
+`--pull=never` e mount `/src:ro`. Não houve build, ELF, ImageID, receipt ou
+proving. O relatório está em
+[`docs/d1c2b2a-builder-entrypoint-results.md`](d1c2b2a-builder-entrypoint-results.md).
+
+D1c2b pode retomar pelo build do guest. Router/CPI/devnet continuam
+`STATUS: NÃO VALIDADO`.
+
+## D1c2b.3 — build A bloqueado pela descoberta da configuração Cargo
+
+O staging foi recriado de `git archive HEAD`; o vendor repetiu 154 crates,
+154 checksums e o SHA-256 de conteúdo
+`6d4478599d837bc4c1549d952d80e11d1886b09f5c7d33be75d66cb806cdf335`.
+Mesmo assim, o build A disparado por `risc0-build 3.0.3` falhou no primeiro
+`cargo +risc0 fetch --locked` interno com `no matching package named borsh
+found`.
+
+A diferença observável em relação ao D1c2b.2a é o diretório de trabalho: o
+Dockerfile gerado usa `WORKDIR /src`, enquanto a configuração vendorizada
+permanece em `zkvm/methods/guest/.cargo/config.toml`. Nessa invocação real, a
+substituição por `vendor/` não foi consumida. O build B não foi iniciado e não
+existe ELF, SHA-256 de ELF ou ImageID VeriCode.
+
+Detalhes e saída real:
+[`docs/d1c2b3-guest-build-results.md`](d1c2b3-guest-build-results.md).
+D1c2b volta a ficar bloqueado antes da compilação guest. Router/CPI/devnet
+continuam `STATUS: NÃO VALIDADO`.
+
+## D1c2b.3a — vendor raiz detectado pelo Dockerfile real
+
+Um novo staging criado por `git archive HEAD` colocou o vendor somente na
+raiz (`/src/vendor`) e a configuração emitida pelo Cargo em
+`/src/.cargo/config.toml`. O inventário reproduziu 154 crates, 154 checksums,
+5.906 arquivos e SHA-256 de conteúdo
+`6d4478599d837bc4c1549d952d80e11d1886b09f5c7d33be75d66cb806cdf335`.
+
+Uma única execução de `docker build --pull=false --network=none`, sem tag,
+reproduziu `WORKDIR /src` e `COPY . .` do Dockerfile gerado por
+`risc0-build 3.0.3`. O `cargo +risc0 fetch --locked --offline` passou com
+exit `0`; o `cargo +risc0 metadata --locked --offline` também passou e gerou
+652.545 bytes, SHA-256
+`7274178febd20364c33b76d89dad4b315bbc144b3534dd23f66a6242e1c95f46`.
+
+Isso valida somente a descoberta do vendor no contexto real do builder. Não
+houve compilação, ELF, ImageID, receipt ou proving. O relatório completo está
+em
+[`docs/d1c2b3a-root-vendor-results.md`](d1c2b3a-root-vendor-results.md).
+D1c2b pode retomar pelo build determinístico A/B em gate posterior;
+Router/CPI/devnet continuam `STATUS: NÃO VALIDADO`.
+
+## D1c2b.3c — causa MSRV e candidato oficial de reconciliação
+
+A auditoria locked/offline reconstruiu o caminho do lock guest:
+`risc0-zkvm 3.0.3 -> risc0-groth16 3.0.5 -> arkworks 0.5.0 -> educe
+0.6.0 -> enum-ordinalize 4.4.2 -> enum-ordinalize-derive 4.4.2`.
+`educe` aceita `enum-ordinalize ^4.2`; como o lock foi criado com Rust host
+1.89 e o manifesto guest não declara `rust-version`, o resolver escolheu as
+duas versões `4.4.2`, ambas com MSRV `1.89`. O builder guest 1.88 não pode
+compilá-las.
+
+Os locks dos tags exatos `risc0/risc0 v3.0.3` e
+`boundless-xyz/risc0-solana v3.0.0` preservam
+`risc0-groth16 3.0.2`, `enum-ordinalize 4.3.0` e derive `4.3.1`. Os dois
+archives `enum` declaram MSRV `1.60` e seus SHA-256 coincidem com os checksums
+dos locks. O hello-world do tag RISC Zero já foi construído em D1a.3 com o
+mesmo builder guest 1.88. Por isso, a decisão é
+**CANDIDATO DE RECONCILIAÇÃO COMPROVADO**, não compatibilidade já aplicada.
+
+O lock VeriCode não foi alterado. Um gate posterior deve reconciliar o
+conjunto transitivo com os locks oficiais, preservar os pins diretos e repetir
+resolução offline, vendor e builds A/B. Até lá não há ELF, ImageID ou receipt
+VeriCode; Router/CPI/devnet continuam `STATUS: NÃO VALIDADO`. Detalhes em
+[`docs/d1c2b3c-guest-msrv-lock-audit.md`](d1c2b3c-guest-msrv-lock-audit.md).
+
+## D1c2b.3b.1 — remediação do Rustup padrão
+
+Durante o preflight de D1c2b.3b, uma consulta a `cargo +1.89.0` sem
+`RUSTUP_HOME` criou acidentalmente a toolchain padrão em
+`/home/lucas/.rustup/toolchains/1.89.0-x86_64-unknown-linux-gnu`.
+O root continha somente essa toolchain, diretórios vazios de downloads/tmp e
+seu `update-hashes`. A toolchain foi desinstalada com o Rustup isolado e
+`RUSTUP_AUTO_UPDATE=0`; os diretórios vazios foram removidos com alvos exatos.
+
+Após a remediação, `/home/lucas/.rustup` está ausente, a toolchain D1a.3
+continua em `~/.local/share/vericode-spikes/d1a3/homes/zkvm`, e
+`/home/lucas/.cargo` não foi tocado. A retomada de D1c2b.3b exige declarar
+explicitamente `CARGO_HOME`, `RUSTUP_HOME`, `RISC0_HOME` e `PATH` em todo
+comando Cargo/Rust. O build determinístico, ELF, ImageID e receipt VeriCode
+continuam não executados.
+
+## D1c2b.3b-retry — build guest bloqueado por MSRV transitivo
+
+A repetição controlada declarou `CARGO_HOME`, `RUSTUP_HOME`, `RISC0_HOME`,
+`PATH`, `RUSTUP_AUTO_UPDATE=0` e `CARGO_NET_OFFLINE=true` em todos os
+comandos Rust/RISC Zero. `/home/lucas/.rustup` permaneceu ausente. O staging
+A e o vendor raiz reproduziram 154 crates e o SHA-256 esperado
+`6d4478599d837bc4c1549d952d80e11d1886b09f5c7d33be75d66cb806cdf335`.
+
+O fetch interno passou, mas o build guest falhou com exit `101`: o lock fixa
+`enum-ordinalize 4.4.2` e `enum-ordinalize-derive 4.4.2`, cujos manifests
+declaram Rust mínimo `1.89`; o builder usa `rustc 1.88.0-dev`. O build B
+não foi iniciado. Restou apenas `methods.rs` vazio; não há ELF nem ImageID.
+
+O relatório está em
+[`docs/d1c2b3b-deterministic-guest-build-results.md`](d1c2b3b-deterministic-guest-build-results.md).
+D1c2b fica bloqueado até um gate explícito de reconciliação lock/MSRV.
+Router/CPI/devnet continuam `STATUS: NÃO VALIDADO`.
+
+## D1c2b.3d — lock reconciliado, validação offline bloqueada pela cache
+
+O lock guest foi alterado somente no conjunto comprovado pelos tags exatos:
+`risc0-groth16 3.0.5 -> 3.0.2`, `enum-ordinalize 4.4.2 -> 4.3.0` e
+`enum-ordinalize-derive 4.4.2 -> 4.3.1`. Os checksums coincidem com os locks
+oficiais; não houve package adicional ou removido. A referência interna do
+derive mudou de `syn 3.0.6` para o `syn 2.0.119` já presente, conforme o
+requisito `syn ^2` da versão `4.3.1`.
+
+O novo SHA-256 do lock guest é
+`1116acef90aa4a1cddb74cae0ba9c03c92b825de478b9d0d2ac7d3d31656dbfa`;
+o lock host/methods permaneceu
+`c55eecfa196a5db6cd79a153a586c68a9c688ec9c2a2ea98c56a3d9f2c18ced1`.
+Os pins diretos `risc0-zkvm = 3.0.3` e `risc0-build = 3.0.3` não mudaram.
+
+A decisão do gate é **BLOQUEADO**: `metadata`, `tree` e as árvores inversas
+locked/offline terminaram com exit `101`, pois a `CARGO_HOME` D1c2b contém o
+índice, mas não o archive `enum-ordinalize 4.3.0` nem os outros dois archives
+reconciliados. Nenhum artefato foi copiado de outra home sem autorização. O
+relatório está em
+[`docs/d1c2b3d-guest-lock-reconciliation-results.md`](d1c2b3d-guest-lock-reconciliation-results.md).
+Não há ELF, ImageID ou receipt VeriCode; Router/CPI/devnet continuam
+`STATUS: NÃO VALIDADO`.
