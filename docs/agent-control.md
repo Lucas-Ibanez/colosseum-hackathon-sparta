@@ -20,16 +20,17 @@ push.
 - Árvore inicial: limpa; `git diff --check` com exit `0`.
 - `/home/lucas/.rustup`: ausente.
 - Lock host/methods: SHA-256
+  `f52366893cfb3024c5643041e70bf773063781b319fdbe2f5c0e5fa37340e226`
+  após reconciliação D1c2b.3h; valor de baseline:
   `c55eecfa196a5db6cd79a153a586c68a9c688ec9c2a2ea98c56a3d9f2c18ced1`.
 - Lock guest reconciliado: SHA-256
   `1116acef90aa4a1cddb74cae0ba9c03c92b825de478b9d0d2ac7d3d31656dbfa`.
 
 ## Gate atual
 
-`D1c2b.3h` — registrar e auditar os dois builds determinísticos concluídos;
-após commit local limitado, executar receipts VeriCode reais para PASS e
-FAIL e os testes negativos, mantendo erro operacional distinto de
-`Verdict::Fail`.
+`D1c2b.3i` — executar receipts VeriCode locais reais para PASS e FAIL e os
+testes negativos com o artefato final D1c2b.3h, mantendo erro operacional
+distinto de `Verdict::Fail`.
 
 ## Estado
 
@@ -39,21 +40,24 @@ FAIL e os testes negativos, mantendo erro operacional distinto de
 
 - Leitura e auditoria do clone, locks, caches e toolchains isoladas.
 - Criar documentação e evidência estritamente pertencentes ao gate atual.
-- O uso adicional de `lane-a/cargo` e `lane-b/cargo` foi autorizado e
-  consumido somente para fechar o archive `risc0-groth16-3.0.2.crate`;
-  nenhuma cópia adicional está autorizada por inferência.
+- O uso adicional de `lane-a/cargo` e `lane-b/cargo` foi autorizado para
+  fechar o archive guest `risc0-groth16-3.0.2.crate`; depois, a retomada
+  humana autorizou dez archives host exatos de `lane-a/cargo`. Essas
+  autorizações já foram consumidas; nenhuma cópia adicional está autorizada
+  por inferência.
 - Usar somente como cache destino
   `/home/lucas/.local/share/vericode-spikes/d1c2b/cargo`.
-- Copiar somente archives `.crate` exigidos pelo lock guest atual, ausentes
-  na cache destino e cujo SHA-256 coincida exatamente com o checksum do lock.
+- Preservar a cache D1c2b já fechada; nenhuma nova cópia de archive é
+  necessária ou autorizada para o gate de receipts.
 - Executar Cargo/Rust/RISC Zero somente com `CARGO_HOME`, `RUSTUP_HOME`,
   `RISC0_HOME`, `PATH`, `RUSTUP_AUTO_UPDATE=0` e `CARGO_NET_OFFLINE=true`
   explicitamente declarados conforme o protocolo D1c2b.
 - Criar vendor e targets somente em diretórios temporários auditáveis.
 - Fazer a correção mínima `no_std + alloc` no core puro necessária para o
   guest real, preservando versões, locks, serialização, hashing e semântica.
-- Usar um dos métodos combinados A/B byte a byte idênticos para proving local
-  real, sem dev mode, e verificar receipt, ImageID e journal esperado.
+- Usar um dos métodos finais A/B byte a byte idênticos, SHA-256
+  `e09ba8cf…78f5` e ImageID `4da06f90…fb1a`, para proving local real, sem dev
+  mode, e verificar receipt, ImageID e journal esperado.
 - Criar commit local após validação integral e auditoria somente leitura de
   cada gate.
 
@@ -93,33 +97,30 @@ FAIL e os testes negativos, mantendo erro operacional distinto de
 
 ## Riscos abertos
 
-- Os dois builds oficiais A/B terminaram e produziram ELF e método combinado
+- Os dois builds finais A/B terminaram e produziram ELF e método combinado
   idênticos; os artefatos permanecem efêmeros em `/tmp`.
-- O lock host/methods atualmente resolve transitivas `risc0-circuit-* 4.0.5`
-  incompatíveis com APIs de `risc0-zkvm 3.0.3`; isso não impede compilar o
-  pacote isolado `vericode-methods`, mas pode bloquear receipts posteriores.
-- A reexecução dos testes host do core ficou bloqueada offline pelo archive
-  ausente `cfg-if 1.0.3`; nenhum lock ou fonte foi ampliado.
 - Ainda não existem receipts VeriCode PASS/FAIL comprovados.
 - O build upstream não expõe isolamento de rede Docker; Cargo deve permanecer
   explicitamente offline e a ausência de pull deve ser comprovada.
+- O BuildKit reutilizou bytes antigos para um arquivo com mesmo
+  caminho/tamanho/timestamp; o workaround limitado a timestamp foi
+  reproduzido e os dois vendors finais foram comparados integralmente.
 - Router/CPI/devnet permanecem `STATUS: NÃO VALIDADO`.
 
 ## Última auditoria
 
-D1c2b.3g em 2026-10-02: dois exports do commit `be23e01`, dois vendors
-461/461 auditados, nonces e targets diferentes. Ambos os builds do pacote
-`vericode-methods` terminaram com exit `0`; ELF de 147.880 bytes e método
-combinado de 180.304 bytes passaram `cmp` e SHA-256. `methods.rs` e dois
-cálculos independentes com `r0vm` deram ImageID `35b05ee4…bf41`.
+D1c2b.3h em 2026-10-03: lock host limitado a onze versões compatíveis, hash
+`f5236689…e226`; metadata/tree/inversas locked/offline passaram; host compilou
+e 2/2 testes passaram. Dois vendors finais 467/467 e dois targets separados
+produziram ELF de 147.876 bytes e método combinado de 180.300 bytes idênticos
+por `cmp`; dois `r0vm` deram ImageID `4da06f90…fb1a`.
 
 ## Próxima transição permitida
 
-Validar integralmente o relatório D1c2b.3g, diff, locks, segredos e ausência
+Validar integralmente o relatório D1c2b.3h, diff, locks, segredos e ausência
 de artefatos no clone; realizar auditoria somente leitura e criar commit
-local limitado. Depois, tentar o host/receipt atual locked/offline com o
-método já validado. Se a incompatibilidade conhecida do lock host se
-confirmar, documentar o diagnóstico e não alterar lock sem gate explícito.
+local limitado. Depois, executar o host final locked/offline para produzir e
+verificar receipts PASS/FAIL e os testes negativos, sempre sem dev mode.
 
 ## Modelo e esforço do próximo gate
 

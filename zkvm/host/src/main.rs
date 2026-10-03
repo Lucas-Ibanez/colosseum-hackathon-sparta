@@ -177,7 +177,8 @@ fn effective_image_id() -> Result<Digest, AnyError> {
 }
 
 fn digest_bytes(digest: &Digest) -> [u8; IMAGE_ID_SIZE] {
-    *digest.as_bytes()
+    let bytes: &[u8; IMAGE_ID_SIZE] = digest.as_ref();
+    *bytes
 }
 
 fn canonical_artifact(scenario: Scenario) -> Result<Vec<u8>, AnyError> {

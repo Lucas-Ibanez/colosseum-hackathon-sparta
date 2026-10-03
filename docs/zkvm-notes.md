@@ -424,3 +424,27 @@ para A e B. O relatório completo está em
 O gate está **GO** para receipts VeriCode locais reais após commit/auditoria.
 Ainda não há receipt; Router/CPI/devnet continuam
 `STATUS: NÃO VALIDADO`.
+
+## D1c2b.3h — lock host compatível e artefato guest final
+
+O lock host anterior misturava `risc0-zkvm 3.0.3` com transitivas mais novas
+e falhava por incompatibilidade de API. Onze versões foram reconciliadas
+offline contra o lock oficial cacheado da mesma crate; `risc0-zkvm 3.0.3` e
+`risc0-zkvm-platform 2.2.3` foram preservados. O novo lock tem SHA-256
+`f52366893cfb3024c5643041e70bf773063781b319fdbe2f5c0e5fa37340e226`.
+
+Metadata, árvore completa e onze árvores inversas passaram locked/offline. O
+host compilou depois de uma adaptação tipada de `Digest` sem efeito no wire
+format, e seus 2/2 testes passaram.
+
+A nova união dos locks tem 467 crates. Dois vendors independentes foram
+comparados integralmente e dois builds em targets separados produziram ELF
+de 147.876 bytes/SHA-256 `63fac491…5408` e método combinado de 180.300
+bytes/SHA-256 `e09ba8cf…78f5`, ambos idênticos por `cmp`. Arrays gerados e
+dois `r0vm` coincidiram no ImageID
+`4da06f90da75ec8980c943ce017d69c48370fddbf3aa27689d375d78fac0fb1a`.
+
+O relatório completo está em
+[`docs/d1c2b3h-host-lock-and-final-build-results.md`](d1c2b3h-host-lock-and-final-build-results.md).
+O gate está **GO** para receipts locais reais. Router/CPI/devnet continuam
+`STATUS: NÃO VALIDADO`.

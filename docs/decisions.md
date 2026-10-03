@@ -470,3 +470,25 @@ Registre decisões relevantes do projeto neste formato.
   observada; nenhum lock está autorizado a mudar por inferência.
 - **Próximo gate:** usar o método validado no host real locked/offline para
   PASS, FAIL e negativos; manter `Verdict::Fail` como saída normal.
+
+## 2026-10-03 — D1c2b.3h: reconciliar o lock host e refazer os builds finais
+
+- **Data:** 2026-10-03
+- **Decisão:** aceitar o conjunto host compatível comprovado pelo lock oficial
+  de `risc0-zkvm 3.0.3` e classificar o gate como **GO** para receipts locais
+  reais após commit auditado.
+- **Motivo:** o lock anterior resolvia circuitos/zkp novos e falhava com sete
+  erros de API. A reconciliação estrita de onze versões fechou offline,
+  compilou o host e passou 2/2 testes. Como os paths do vendor combinado
+  mudaram, dois builds independentes do guest final foram refeitos em vez de
+  reutilizar o artefato anterior.
+- **Evidência:** lock host `f5236689…e226`; metadata/tree e onze inversas
+  passaram; vendors A/B 467/467 iguais; ELF final 147.876 bytes e SHA-256
+  `63fac491…5408`; método 180.300 bytes e SHA-256 `e09ba8cf…78f5`; dois
+  `r0vm` deram ImageID `4da06f90…fb1a`; relatório em
+  [`docs/d1c2b3h-host-lock-and-final-build-results.md`](d1c2b3h-host-lock-and-final-build-results.md).
+- **Risco aberto:** artefatos são temporários; ainda não existe receipt
+  VeriCode PASS/FAIL. A limitação de isolamento de rede do builder upstream
+  permanece explícita. Router/CPI/devnet continuam `STATUS: NÃO VALIDADO`.
+- **Próximo gate:** executar o host real sem dev mode, produzir receipts PASS
+  e FAIL, verificar ImageID/journals e executar todos os negativos exigidos.
