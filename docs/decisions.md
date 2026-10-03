@@ -451,3 +451,22 @@ Registre decisões relevantes do projeto neste formato.
 - **Próximo gate:** commit local limitado, dois exports independentes desse
   commit, vendors da união auditados, targets separados e compilação isolada
   de `vericode-methods`, seguida de comparação integral antes de receipts.
+
+## 2026-10-02 — D1c2b.3g: aceitar os dois builds determinísticos
+
+- **Data:** 2026-10-02
+- **Decisão:** classificar o gate como **GO** para receipts locais reais,
+  somente após auditoria e commit da evidência de build.
+- **Motivo:** A e B partiram de exports independentes do commit `be23e01`,
+  vendors próprios da união dos locks, targets separados e nonces distintos.
+  Ambos os builds oficiais de `vericode-methods` passaram; ELF e método
+  combinado são idênticos byte a byte.
+- **Evidência:** ELF 147.880 bytes/SHA-256 `3fc668df…c42d`; método combinado
+  180.304 bytes/SHA-256 `5c3c82c4…88bc`; array de ImageID igual em ambos os
+  `methods.rs`; dois `r0vm --id` iguais a `35b05ee4…bf41`; relatório em
+  [`docs/d1c2b3g-deterministic-build-results.md`](d1c2b3g-deterministic-build-results.md).
+- **Risco aberto:** os artefatos são temporários e não há receipt VeriCode.
+  O lock host pode impedir proving por incompatibilidade transitiva já
+  observada; nenhum lock está autorizado a mudar por inferência.
+- **Próximo gate:** usar o método validado no host real locked/offline para
+  PASS, FAIL e negativos; manter `Verdict::Fail` como saída normal.

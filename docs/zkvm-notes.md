@@ -400,3 +400,27 @@ O build amplo também revelou incompatibilidade no lock host entre
 risco explícito para receipts. O relatório está em
 [`docs/d1c2b3g1-core-no-std-results.md`](d1c2b3g1-core-no-std-results.md).
 Router/CPI/devnet continuam `STATUS: NÃO VALIDADO`.
+
+## D1c2b.3g — builds A/B determinísticos
+
+Dois exports do commit `be23e01` receberam vendors independentes da união
+exata dos locks (461 crates, 22.560 arquivos de conteúdo verificados em cada
+um), configuração raiz idêntica, nonces diferentes e targets separados.
+Metadata host e guest resolveu todos os pacotes registry dentro de cada
+vendor.
+
+Os dois builds isolados de `vericode-methods` terminaram com exit `0` usando
+a imagem guest local fixada pelo digest `3e12f71…3eb3`, Cargo offline e sem
+pull. O ELF guest A/B tem 147.880 bytes e SHA-256 `3fc668df…c42d`; o método
+combinado A/B tem 180.304 bytes e SHA-256 `5c3c82c4…88bc`. Ambos passaram
+`cmp` byte a byte.
+
+O array de ImageID emitido nos dois `methods.rs` é idêntico. Chamadas
+separadas de `r0vm --id` produziram
+`35b05ee4e627a02f5f7f24b350f99afa4c75cdd8ab556d0e8be0380b5a6fbf41`
+para A e B. O relatório completo está em
+[`docs/d1c2b3g-deterministic-build-results.md`](d1c2b3g-deterministic-build-results.md).
+
+O gate está **GO** para receipts VeriCode locais reais após commit/auditoria.
+Ainda não há receipt; Router/CPI/devnet continuam
+`STATUS: NÃO VALIDADO`.

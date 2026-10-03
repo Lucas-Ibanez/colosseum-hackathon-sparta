@@ -26,9 +26,10 @@ push.
 
 ## Gate atual
 
-`D1c2b.3g.1` — validar e auditar a correção mínima que torna
-`vericode-core` compatível com o guest `no_std`, sem alterar schema, wire,
-hashing, locks ou código em `zkvm/`; somente depois retomar os dois builds.
+`D1c2b.3h` — registrar e auditar os dois builds determinísticos concluídos;
+após commit local limitado, executar receipts VeriCode reais para PASS e
+FAIL e os testes negativos, mantendo erro operacional distinto de
+`Verdict::Fail`.
 
 ## Estado
 
@@ -51,6 +52,8 @@ hashing, locks ou código em `zkvm/`; somente depois retomar os dois builds.
 - Criar vendor e targets somente em diretórios temporários auditáveis.
 - Fazer a correção mínima `no_std + alloc` no core puro necessária para o
   guest real, preservando versões, locks, serialização, hashing e semântica.
+- Usar um dos métodos combinados A/B byte a byte idênticos para proving local
+  real, sem dev mode, e verificar receipt, ImageID e journal esperado.
 - Criar commit local após validação integral e auditoria somente leitura de
   cada gate.
 
@@ -90,39 +93,33 @@ hashing, locks ou código em `zkvm/`; somente depois retomar os dois builds.
 
 ## Riscos abertos
 
-- A correção `no_std` compilou um ELF guest real em probe isolado, mas ainda
-  depende de dois builds oficiais a partir do commit auditado.
-- O build requer um vendor da união dos locks host e guest: o vendor apenas
-  guest não contém as dependências do build script host. A união auditada
-  contém 461 pacotes registry.
+- Os dois builds oficiais A/B terminaram e produziram ELF e método combinado
+  idênticos; os artefatos permanecem efêmeros em `/tmp`.
 - O lock host/methods atualmente resolve transitivas `risc0-circuit-* 4.0.5`
   incompatíveis com APIs de `risc0-zkvm 3.0.3`; isso não impede compilar o
   pacote isolado `vericode-methods`, mas pode bloquear receipts posteriores.
 - A reexecução dos testes host do core ficou bloqueada offline pelo archive
   ausente `cfg-if 1.0.3`; nenhum lock ou fonte foi ampliado.
-- Ainda não existem dois ELF VeriCode, ImageID VeriCode ou receipts VeriCode
-  PASS/FAIL comprovados.
+- Ainda não existem receipts VeriCode PASS/FAIL comprovados.
 - O build upstream não expõe isolamento de rede Docker; Cargo deve permanecer
   explicitamente offline e a ausência de pull deve ser comprovada.
 - Router/CPI/devnet permanecem `STATUS: NÃO VALIDADO`.
 
 ## Última auditoria
 
-D1c2b.3g.1 em 2026-10-02: o diff limitado do core foi reproduzido em staging
-e compilado com a toolchain guest real, imagem local fixada por digest,
-`--pull=never`, `--network none`, Cargo locked/offline e flags oficiais do
-builder. O probe gerou ELF32 RISC-V de 147.880 bytes, SHA-256 `3fc668…c42d`.
-As tentativas anteriores e seus diagnósticos permanecem registradas; não há
-ImageID ou alegação de build final.
+D1c2b.3g em 2026-10-02: dois exports do commit `be23e01`, dois vendors
+461/461 auditados, nonces e targets diferentes. Ambos os builds do pacote
+`vericode-methods` terminaram com exit `0`; ELF de 147.880 bytes e método
+combinado de 180.304 bytes passaram `cmp` e SHA-256. `methods.rs` e dois
+cálculos independentes com `r0vm` deram ImageID `35b05ee4…bf41`.
 
 ## Próxima transição permitida
 
-Validar integralmente diff, locks, segredos e artefatos; realizar auditoria
-somente leitura e criar commit local limitado para D1c2b.3g.1. Depois, criar
-dois contextos temporários independentes a partir desse commit, reproduzir e
-auditar em cada um o vendor da união dos locks, usar targets separados e
-compilar somente `vericode-methods`. Executar A e somente depois B. Não
-iniciar receipts antes da comparação integral dos ELF e ImageIDs.
+Validar integralmente o relatório D1c2b.3g, diff, locks, segredos e ausência
+de artefatos no clone; realizar auditoria somente leitura e criar commit
+local limitado. Depois, tentar o host/receipt atual locked/offline com o
+método já validado. Se a incompatibilidade conhecida do lock host se
+confirmar, documentar o diagnóstico e não alterar lock sem gate explícito.
 
 ## Modelo e esforço do próximo gate
 
