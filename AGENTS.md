@@ -18,6 +18,7 @@ O VeriCode verifica somente um artefato serializado restrito com regra determin�
 
 ## Protocolo de trabalho
 
+- Antes de qualquer trabalho D1 automatizado, ler `docs/agent-control.md`.
 - Executar uma tarefa pequena por vez: planejar, alterar, testar, registrar evidência real e revisar o diff.
 - Não substituir falha por mock nem apresentar dev mode, stub ou fallback como sucesso real.
 - Não alterar schema ou journal sem atualizar explicitamente a documentação e registrar a decisão.
