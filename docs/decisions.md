@@ -428,3 +428,26 @@ Registre decisões relevantes do projeto neste formato.
   `/tmp` é efêmero. Router/CPI/devnet permanecem `STATUS: NÃO VALIDADO`.
 - **Próximo gate:** dois contextos/targets separados, imagem local por digest,
   Cargo offline e comparação byte a byte, tamanho, SHA-256 e ImageID.
+
+## 2026-10-02 — D1c2b.3g.1: tornar o core compatível com `no_std`
+
+- **Data:** 2026-10-02
+- **Decisão:** aceitar a alteração mínima `no_std + alloc` no core e
+  desativar as features padrão de `borsh`/`sha2`, com **GO** restrito para os
+  dois builds independentes após commit auditado.
+- **Motivo:** o builder guest real rejeitou o core anterior por `duplicate
+  lang item panic_impl`; o runtime RISC Zero é `no_std`, enquanto as features
+  padrão das dependências ativavam `std`. A correção preserva versões,
+  locks, wire format, hashes e regra de verdict.
+- **Evidência:** staging com fontes byte a byte iguais ao diff; Docker local
+  por digest, sem pull e sem rede; guest locked/offline compilado com flags
+  oficiais; ELF32 RISC-V de 147.880 bytes e SHA-256 `3fc668df…c42d`;
+  relatório em
+  [`docs/d1c2b3g1-core-no-std-results.md`](d1c2b3g1-core-no-std-results.md).
+- **Risco aberto:** o probe não é um dos dois builds finais e não tem
+  ImageID. O lock host possui incompatibilidade transitiva para receipts, e
+  os testes host deste gate não iniciaram porque falta o archive offline
+  `cfg-if 1.0.3`. Router/CPI/devnet permanecem `STATUS: NÃO VALIDADO`.
+- **Próximo gate:** commit local limitado, dois exports independentes desse
+  commit, vendors da união auditados, targets separados e compilação isolada
+  de `vericode-methods`, seguida de comparação integral antes de receipts.

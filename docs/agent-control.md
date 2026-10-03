@@ -26,10 +26,9 @@ push.
 
 ## Gate atual
 
-`D1c2b.3g` — executar dois builds reais e independentes do guest com contextos
-e targets separados, vendor final auditado, Cargo offline e imagem local
-fixada por digest; depois comparar ELF byte a byte, tamanho, SHA-256 e
-ImageID antes de qualquer receipt.
+`D1c2b.3g.1` — validar e auditar a correção mínima que torna
+`vericode-core` compatível com o guest `no_std`, sem alterar schema, wire,
+hashing, locks ou código em `zkvm/`; somente depois retomar os dois builds.
 
 ## Estado
 
@@ -50,6 +49,8 @@ ImageID antes de qualquer receipt.
   `RISC0_HOME`, `PATH`, `RUSTUP_AUTO_UPDATE=0` e `CARGO_NET_OFFLINE=true`
   explicitamente declarados conforme o protocolo D1c2b.
 - Criar vendor e targets somente em diretórios temporários auditáveis.
+- Fazer a correção mínima `no_std + alloc` no core puro necessária para o
+  guest real, preservando versões, locks, serialização, hashing e semântica.
 - Criar commit local após validação integral e auditoria somente leitura de
   cada gate.
 
@@ -89,10 +90,16 @@ ImageID antes de qualquer receipt.
 
 ## Riscos abertos
 
-- A compatibilidade integral do guest com Rust guest `1.88.0-dev` ainda
-  depende de build VeriCode real após o fechamento offline.
-- O vendor final foi criado e auditado, mas seu consumo em dois builds guest
-  independentes ainda não foi comprovado.
+- A correção `no_std` compilou um ELF guest real em probe isolado, mas ainda
+  depende de dois builds oficiais a partir do commit auditado.
+- O build requer um vendor da união dos locks host e guest: o vendor apenas
+  guest não contém as dependências do build script host. A união auditada
+  contém 461 pacotes registry.
+- O lock host/methods atualmente resolve transitivas `risc0-circuit-* 4.0.5`
+  incompatíveis com APIs de `risc0-zkvm 3.0.3`; isso não impede compilar o
+  pacote isolado `vericode-methods`, mas pode bloquear receipts posteriores.
+- A reexecução dos testes host do core ficou bloqueada offline pelo archive
+  ausente `cfg-if 1.0.3`; nenhum lock ou fonte foi ampliado.
 - Ainda não existem dois ELF VeriCode, ImageID VeriCode ou receipts VeriCode
   PASS/FAIL comprovados.
 - O build upstream não expõe isolamento de rede Docker; Cargo deve permanecer
@@ -101,21 +108,21 @@ ImageID antes de qualquer receipt.
 
 ## Última auditoria
 
-D1c2b.3f em 2026-10-02: staging novo exportado do commit `3c505a8`; vendor
-final com 154 crates, 154 checksums, 5.904 arquivos e 113.733.052 bytes.
-Todos os 154 checksums de pacote e 5.750 hashes de arquivo coincidiram com o
-lock/conteúdo declarado, sem ausência, extra ou divergência. Metadata
-confirmou 154/154 paths registry sob o vendor e tree passou locked/offline.
-Não houve segredo, artefato no clone, rede, Docker ou build.
+D1c2b.3g.1 em 2026-10-02: o diff limitado do core foi reproduzido em staging
+e compilado com a toolchain guest real, imagem local fixada por digest,
+`--pull=never`, `--network none`, Cargo locked/offline e flags oficiais do
+builder. O probe gerou ELF32 RISC-V de 147.880 bytes, SHA-256 `3fc668…c42d`.
+As tentativas anteriores e seus diagnósticos permanecem registradas; não há
+ImageID ou alegação de build final.
 
 ## Próxima transição permitida
 
-Validar e auditar o registro D1c2b.3f e criar commit local limitado. Depois,
-criar dois contextos temporários independentes a partir do commit auditado,
-com vendors reproduzidos/auditados e targets separados. Confirmar imagem
-local/digest e ausência de pull; executar build A e somente após sua conclusão
-executar build B. Não iniciar receipts antes da comparação integral dos ELF e
-ImageIDs.
+Validar integralmente diff, locks, segredos e artefatos; realizar auditoria
+somente leitura e criar commit local limitado para D1c2b.3g.1. Depois, criar
+dois contextos temporários independentes a partir desse commit, reproduzir e
+auditar em cada um o vendor da união dos locks, usar targets separados e
+compilar somente `vericode-methods`. Executar A e somente depois B. Não
+iniciar receipts antes da comparação integral dos ELF e ImageIDs.
 
 ## Modelo e esforço do próximo gate
 

@@ -5,8 +5,12 @@
 //! development harness. It has no payment authority and no blockchain or
 //! zkVM dependency.
 
+#![no_std]
 #![forbid(unsafe_code)]
 
+extern crate alloc;
+
+use alloc::vec::Vec;
 use borsh::{BorshDeserialize, BorshSerialize};
 use sha2::{Digest, Sha256};
 

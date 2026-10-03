@@ -373,3 +373,30 @@ em [`docs/d1c2b3f-final-vendor-results.md`](d1c2b3f-final-vendor-results.md).
 O gate está **GO** para dois builds independentes com contextos e targets
 separados. Ainda não há ELF, ImageID ou receipt VeriCode. Router/CPI/devnet
 continuam `STATUS: NÃO VALIDADO`.
+
+## D1c2b.3g.1 — core compatível com o runtime guest `no_std`
+
+O primeiro build efetivo confirmou que o vendor apenas guest era insuficiente
+para o build script host e que o vendor correto precisa representar a união
+dos locks. Essa união foi produzida offline com 461 pacotes registry e todos
+os checksums de pacote/arquivo passaram.
+
+Com o vendor de união, o Docker alcançou a ligação do guest e revelou
+`duplicate lang item panic_impl`: `vericode-core` ativava `std` pelas
+features padrão de `borsh` e `sha2`, enquanto o runtime guest RISC Zero é
+`no_std`. O core passou a declarar `#![no_std]`, usar `alloc::vec::Vec` e
+desativar somente essas features padrão. Versões, locks, wire format,
+hashing e regra de verdict não mudaram.
+
+Um probe em target novo, com a imagem local fixada por digest,
+`--pull=never`, `--network none`, Cargo locked/offline e as flags oficiais do
+builder, terminou com exit `0`. O ELF32 RISC-V tem 147.880 bytes e SHA-256
+`3fc668dfd97db52343df267c2148aa49181c813a426a9549782743e09fc6c42d`.
+Ele prova a compatibilidade do ajuste, mas não substitui os dois builds
+finais nem fornece ImageID.
+
+O build amplo também revelou incompatibilidade no lock host entre
+`risc0-zkvm 3.0.3` e transitivas `risc0-circuit-* 4.0.5`; isso permanece
+risco explícito para receipts. O relatório está em
+[`docs/d1c2b3g1-core-no-std-results.md`](d1c2b3g1-core-no-std-results.md).
+Router/CPI/devnet continuam `STATUS: NÃO VALIDADO`.
