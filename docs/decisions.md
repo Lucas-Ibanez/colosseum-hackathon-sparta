@@ -513,3 +513,21 @@ Registre decisões relevantes do projeto neste formato.
 - **Próximo gate:** auditoria final somente leitura do histórico, árvore,
   locks, relatórios, hashes e fronteiras; depois marcar o controle como
   `CONCLUÍDO` e completar o Goal somente se nada obrigatório restar.
+
+## 2026-10-03 — D1c2b.3j: concluir exclusivamente o marco D1c2b
+
+- **Data:** 2026-10-03
+- **Decisão:** marcar D1c2b como **CONCLUÍDO** e parar.
+- **Motivo:** a auditoria final separada recertificou Git limpo, locks/grafos
+  offline, vendors A/B, dois builds determinísticos, ImageID, testes host,
+  receipts PASS/FAIL reais e todos os negativos. Nenhuma tarefa obrigatória
+  permanece.
+- **Evidência:** relatório final em
+  [`docs/d1c2b3j-final-audit.md`](d1c2b3j-final-audit.md); matriz integral de
+  conclusão; HEAD auditado `d866e73`; ImageID `4da06f90…fb1a`; receipts
+  persistidos reverificados e não Fake.
+- **Limites:** receipts locais `Composite`, artefatos efêmeros e nenhuma
+  alegação ZK on-chain. Router/CPI/devnet continuam
+  `STATUS: NÃO VALIDADO`.
+- **Próxima transição:** nenhuma dentro de D1c2b. Qualquer escopo posterior
+  exige nova autoridade e objetivo separado.

@@ -466,3 +466,16 @@ O relatório completo está em
 [`docs/d1c2b3i-local-receipts-results.md`](d1c2b3i-local-receipts-results.md).
 Não houve rede ou artefato no Git. Os receipts são `Composite`, não Groth16;
 Router/CPI/devnet continuam `STATUS: NÃO VALIDADO`.
+
+## D1c2b.3j — auditoria final
+
+A auditoria final recertificou em etapa separada: Git limpo; locks e grafos
+host/guest locked/offline; dois vendors de 467 crates integralmente iguais;
+ELF/método A/B idênticos; dois ImageIDs `r0vm`; 2/2 testes host; e três
+receipts `Composite` persistidos, não Fake, com PASS/FAIL e negativos
+reverificados.
+
+O relatório e a matriz de conclusão estão em
+[`docs/d1c2b3j-final-audit.md`](d1c2b3j-final-audit.md). D1c2b está
+`CONCLUÍDO`. Não há autorização para avançar além dele; Router/CPI/devnet
+continuam `STATUS: NÃO VALIDADO`.

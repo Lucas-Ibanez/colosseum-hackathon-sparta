@@ -28,40 +28,21 @@ push.
 
 ## Gate atual
 
-`D1c2b.3j` — realizar auditoria final independente do marco: conferir
-histórico, árvore, locks, evidências, hashes, receipts e fronteiras; concluir
-somente se nenhuma tarefa obrigatória permanecer.
+`D1c2b.3j` — auditoria final independente concluída; histórico, árvore,
+locks, evidências, hashes, receipts e fronteiras recertificados.
 
 ## Estado
 
-`GO`
+`CONCLUÍDO`
 
 ## Ações autorizadas
 
-- Leitura e auditoria do clone, locks, caches e toolchains isoladas.
-- Criar documentação e evidência estritamente pertencentes ao gate atual.
-- O uso adicional de `lane-a/cargo` e `lane-b/cargo` foi autorizado para
-  fechar o archive guest `risc0-groth16-3.0.2.crate`; depois, a retomada
-  humana autorizou dez archives host exatos de `lane-a/cargo`. Essas
-  autorizações já foram consumidas; nenhuma cópia adicional está autorizada
-  por inferência.
-- Usar somente como cache destino
-  `/home/lucas/.local/share/vericode-spikes/d1c2b/cargo`.
-- Preservar a cache D1c2b já fechada; nenhuma nova cópia de archive é
-  necessária ou autorizada para o gate de receipts.
-- Executar Cargo/Rust/RISC Zero somente com `CARGO_HOME`, `RUSTUP_HOME`,
-  `RISC0_HOME`, `PATH`, `RUSTUP_AUTO_UPDATE=0` e `CARGO_NET_OFFLINE=true`
-  explicitamente declarados conforme o protocolo D1c2b.
-- Criar vendor e targets somente em diretórios temporários auditáveis.
-- Fazer a correção mínima `no_std + alloc` no core puro necessária para o
-  guest real, preservando versões, locks, serialização, hashing e semântica.
-- Usar um dos métodos finais A/B byte a byte idênticos, SHA-256
-  `e09ba8cf…78f5` e ImageID `4da06f90…fb1a`, para proving local real, sem dev
-  mode, e verificar receipt, ImageID e journal esperado.
-- Auditar somente leitura os receipts temporários D1c2b.3i e seus hashes;
-  nenhum novo proving é necessário salvo diagnóstico novo.
-- Criar commit local após validação integral e auditoria somente leitura de
-  cada gate.
+- Validar o diff documental final, criar um commit local limitado, confirmar
+  Git limpo e completar o Goal.
+- Leitura final do clone e das evidências temporárias somente para confirmar
+  a conclusão.
+- Nenhuma nova cópia, alteração de código/lock, build ou execução de proving
+  está autorizada sob este objetivo concluído.
 
 ## Ações proibidas
 
@@ -79,6 +60,9 @@ somente se nenhuma tarefa obrigatória permanecer.
 - Duas escritas simultâneas no mesmo clone.
 
 ## Evidências exigidas
+
+Todas as evidências abaixo estão satisfeitas e recertificadas no relatório
+D1c2b.3j:
 
 - Inventário completo do fechamento do lock e lista exata dos archives
   inicialmente ausentes.
@@ -99,6 +83,8 @@ somente se nenhuma tarefa obrigatória permanecer.
 
 ## Riscos abertos
 
+- Nenhuma tarefa obrigatória permanece dentro do objetivo D1c2b. Os itens a
+  seguir são limitações residuais, não autorização de trabalho adicional.
 - Os dois builds finais A/B terminaram e produziram ELF e método combinado
   idênticos; os artefatos permanecem efêmeros em `/tmp`.
 - Receipts PASS/FAIL reais foram comprovados, mas permanecem efêmeros em
@@ -112,28 +98,23 @@ somente se nenhuma tarefa obrigatória permanecer.
 
 ## Última auditoria
 
-D1c2b.3i em 2026-10-03: host local sem dev mode executou PASS/FAIL e produziu
-três receipts `Composite` de 221.540 bytes. PASS/FAIL verificaram contra
-ImageID `4da06f90…fb1a`; três negativos foram rejeitados. Auditor temporário
-independente desserializou os arquivos, excluiu `Fake`, repetiu verificação e
-revalidou journals/negativos.
+D1c2b.3j em 2026-10-03: Git/ambiente e fronteiras limpos; locks e quatro
+comandos metadata/tree recertificados offline; vendors A/B 467/467 e 23.182
+arquivos integralmente iguais; ELF/método/ImageID A/B idênticos; 2/2 testes
+host; receipts PASS/FAIL/wrong-image reverificados, não Fake, e três negativos
+rejeitados. Matriz final sem tarefa obrigatória restante.
 
 ## Próxima transição permitida
 
-Validar integralmente o relatório D1c2b.3i, diff, locks, segredos e ausência
-de artefatos no clone; realizar auditoria somente leitura e criar commit
-local limitado. Depois, auditar o marco inteiro a partir do Git limpo. Se
-todas as condições persistentes estiverem sustentadas, atualizar este
-controle para `CONCLUÍDO`, criar o commit final auditado e completar o Goal.
+Nenhuma transição dentro de D1c2b. Validar o diff documental final, criar o
+commit local limitado, confirmar Git limpo e completar o Goal. Parar antes de
+qualquer escopo proibido; trabalho posterior exige nova autoridade e objetivo.
 
 ## Modelo e esforço do próximo gate
 
-- Papel requerido: análise de dependências/locks e segurança, equivalente a
-  GPT-5.6 Sol com esforço `high`.
+- Não há próximo gate dentro deste objetivo.
 - Limitação da superfície: seleção dinâmica de modelo e criação de subagente
   com modelo específico não estão disponíveis. O controlador seguirá
-  sequencialmente com o modelo efetivo desta sessão e esforço operacional
-  `high`; nenhuma delegação inexistente será simulada.
-- Executor único: este controlador.
-- Auditoria: etapa separada, independente e somente leitura após a conclusão
-  do executor e antes de qualquer transição ou commit.
+  sem simular delegação inexistente.
+- Executor único e auditoria separada somente leitura foram mantidos até a
+  conclusão.
