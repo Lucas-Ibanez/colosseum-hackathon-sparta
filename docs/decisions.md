@@ -390,3 +390,23 @@ Registre decisões relevantes do projeto neste formato.
   builds, ELF, ImageID e receipts VeriCode permanecem não executados.
 - **Próximo gate:** exigir autorização humana para uma fonte local adicional
   exata do único archive restante, validando SHA-256 antes de qualquer cópia.
+
+## 2026-10-02 — D1c2b.3e-retry: fechar o lock guest offline
+
+- **Data:** 2026-10-02
+- **Decisão:** classificar o gate como **GO** para produzir o vendor
+  temporário auditável do lock reconciliado.
+- **Motivo:** após autorização humana explícita, três cópias locais do
+  archive restante foram encontradas em `lane-a`/`lane-b`, todas idênticas e
+  com o checksum exato. Uma única cópia levou a cache destino a 154/154
+  archives válidos; metadata, árvore completa e quatro inversas passaram
+  locked/offline.
+- **Evidência:** `risc0-groth16-3.0.2.crate` com 40.149 bytes e SHA-256
+  `724285dc…fae9`; zero archive ausente ou divergente; seis comandos Cargo
+  com exit `0`; relatório em
+  [`docs/d1c2b3e-offline-lock-closure-results.md`](d1c2b3e-offline-lock-closure-results.md).
+- **Risco aberto:** o vendor do lock final, os dois builds, ELF, ImageID e
+  receipts VeriCode ainda não existem. Router/CPI/devnet permanecem
+  `STATUS: NÃO VALIDADO`.
+- **Próximo gate:** criar e auditar vendor novo em staging temporário, sem
+  reutilizar hashes do lock anterior e sem iniciar build antes da auditoria.

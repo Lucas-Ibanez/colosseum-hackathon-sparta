@@ -26,21 +26,21 @@ push.
 
 ## Gate atual
 
-`D1c2b.3e` — fechar offline o lock guest copiando para a cache destino
-somente archives exigidos, ausentes, presentes na fonte local autorizada e
-com SHA-256 igual ao checksum do lock; depois validar metadata, tree e
-árvores inversas locked/offline.
+`D1c2b.3f` — produzir em diretório temporário um vendor novo, completo e
+auditável do lock guest reconciliado, validando paths, checksums, conteúdo e
+ausência de configuração indevida ou segredos antes de qualquer build.
 
 ## Estado
 
-`AGUARDANDO_AUTORIZAÇÃO`
+`GO`
 
 ## Ações autorizadas
 
 - Leitura e auditoria do clone, locks, caches e toolchains isoladas.
 - Criar documentação e evidência estritamente pertencentes ao gate atual.
-- Usar somente como fonte de archives
-  `/home/lucas/.local/share/vericode-spikes/d1a3/homes/zkvm/cargo`.
+- O uso adicional de `lane-a/cargo` e `lane-b/cargo` foi autorizado e
+  consumido somente para fechar o archive `risc0-groth16-3.0.2.crate`;
+  nenhuma cópia adicional está autorizada por inferência.
 - Usar somente como cache destino
   `/home/lucas/.local/share/vericode-spikes/d1c2b/cargo`.
 - Copiar somente archives `.crate` exigidos pelo lock guest atual, ausentes
@@ -88,8 +88,6 @@ com SHA-256 igual ao checksum do lock; depois validar metadata, tree e
 
 ## Riscos abertos
 
-- A cache destino contém 153 dos 154 archives do lock guest reconciliado;
-  `risc0-groth16 3.0.2` está ausente na única cache-fonte autorizada.
 - A compatibilidade integral do guest com Rust guest `1.88.0-dev` ainda
   depende de build VeriCode real após o fechamento offline.
 - O vendor precisa ser recriado do lock final e auditado; hashes antigos não
@@ -102,23 +100,21 @@ com SHA-256 igual ao checksum do lock; depois validar metadata, tree e
 
 ## Última auditoria
 
-Execução D1c2b.3e em 2026-10-02: 154 archives inventariados; 151 inicialmente
-válidos no destino; dois copiados da fonte autorizada com checksum exato;
-`risc0-groth16 3.0.2` ausente em toda a raiz-fonte; cache final 153/154;
-`metadata`, `tree` e três árvores inversas terminaram com exit `101` no
-archive restante, mantendo modo offline. Locks e `zkvm/` permaneceram
-inalterados. A auditoria somente leitura confirmou 153/154 archives válidos,
-zero checksum divergente, diff exclusivamente documental, ausência de
-segredos/artefatos locais e `git diff --check` com exit `0`.
+Retomada D1c2b.3e em 2026-10-02: autorização humana explícita permitiu
+inspecionar somente `lane-a/cargo` e `lane-b/cargo` para o archive restante.
+Três candidatos idênticos tinham o checksum exato; uma única cópia de
+`lane-a` levou a cache a 154/154 archives válidos, zero ausentes e zero
+divergências. `metadata`, `tree` e quatro árvores inversas locked/offline
+terminaram com exit `0`. Locks e `zkvm/` permaneceram inalterados; Git não
+registrou artefato nem arquivo ignorado novo.
 
 ## Próxima transição permitida
 
-Validar e auditar o registro D1c2b.3e e criar commit local limitado. Depois,
-somente uma autorização humana explícita pode ampliar a fonte para localizar
-`risc0-groth16-3.0.2.crate`. Copiar apenas se o SHA-256 for exatamente
-`724285dc79604abfb2d40feaefe3e335420a6b293511661f77d6af62f1f5fae9`;
-então repetir metadata/tree e as inversas locked/offline. Vendor/build
-continuam proibidos até todos passarem.
+Validar e auditar o registro final de D1c2b.3e e criar commit local limitado.
+Depois, criar um staging temporário limpo a partir do commit auditado,
+produzir o vendor do lock guest com Cargo locked/offline e inventariar seu
+conteúdo. Build A/B continua proibido até o vendor passar por auditoria
+somente leitura e o controle registrar a próxima transição.
 
 ## Modelo e esforço do próximo gate
 

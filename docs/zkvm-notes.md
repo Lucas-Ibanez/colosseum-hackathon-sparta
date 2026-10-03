@@ -331,3 +331,23 @@ D1c2b está `AGUARDANDO_AUTORIZAÇÃO` para uma fonte local adicional e exata do
 único archive, sempre condicionada ao checksum do lock. Não há vendor final,
 ELF, ImageID ou receipt VeriCode; Router/CPI/devnet continuam
 `STATUS: NÃO VALIDADO`.
+
+## D1c2b.3e-retry — lock guest fechado offline
+
+Com autorização humana explícita, a busca foi ampliada somente para as caches
+locais D1a.3 `lane-a/cargo` e `lane-b/cargo`. Três cópias de
+`risc0-groth16-3.0.2.crate` foram encontradas; todas tinham 40.149 bytes,
+eram idênticas por `cmp` e tinham o SHA-256 do lock
+`724285dc79604abfb2d40feaefe3e335420a6b293511661f77d6af62f1f5fae9`.
+Uma única cópia de `lane-a` foi feita para a cache D1c2b.
+
+O inventário integral final passou com 154/154 archives válidos, zero
+ausentes e zero divergências. `cargo metadata --locked --offline`, `cargo
+tree --locked --offline` e as inversas de `risc0-groth16 3.0.2`,
+`enum-ordinalize 4.3.0`, derive `4.3.1` e `syn 2.0.119` passaram com exit `0`
+no ambiente isolado. Nenhuma rede foi usada, e locks/`zkvm/` permaneceram
+inalterados.
+
+O gate está **GO** somente para recriar e auditar o vendor do lock final. Não
+há ainda dois builds, ELF, ImageID ou receipt VeriCode. Router/CPI/devnet
+continuam `STATUS: NÃO VALIDADO`.
