@@ -33,7 +33,7 @@ com SHA-256 igual ao checksum do lock; depois validar metadata, tree e
 
 ## Estado
 
-`GO`
+`AGUARDANDO_AUTORIZAÇÃO`
 
 ## Ações autorizadas
 
@@ -88,8 +88,8 @@ com SHA-256 igual ao checksum do lock; depois validar metadata, tree e
 
 ## Riscos abertos
 
-- A cache destino ainda não demonstrou conter todos os archives do lock guest
-  reconciliado.
+- A cache destino contém 153 dos 154 archives do lock guest reconciliado;
+  `risc0-groth16 3.0.2` está ausente na única cache-fonte autorizada.
 - A compatibilidade integral do guest com Rust guest `1.88.0-dev` ainda
   depende de build VeriCode real após o fechamento offline.
 - O vendor precisa ser recriado do lock final e auditado; hashes antigos não
@@ -102,19 +102,23 @@ com SHA-256 igual ao checksum do lock; depois validar metadata, tree e
 
 ## Última auditoria
 
-Preflight somente leitura em 2026-10-02: raiz e Git corretos; branch `main`;
-HEAD `0d55e44a69ed13325d8a33deea00840bde6540db`; árvore limpa;
-`git diff --check` exit `0`; filesystem Linux; `/home/lucas/.rustup` ausente;
-documentação obrigatória, relatórios `docs/d1*.md`, manifests e registros dos
-locks relevantes lidos. Nenhuma mutação ocorreu durante o preflight.
+Execução D1c2b.3e em 2026-10-02: 154 archives inventariados; 151 inicialmente
+válidos no destino; dois copiados da fonte autorizada com checksum exato;
+`risc0-groth16 3.0.2` ausente em toda a raiz-fonte; cache final 153/154;
+`metadata`, `tree` e três árvores inversas terminaram com exit `101` no
+archive restante, mantendo modo offline. Locks e `zkvm/` permaneceram
+inalterados. A auditoria somente leitura confirmou 153/154 archives válidos,
+zero checksum divergente, diff exclusivamente documental, ausência de
+segredos/artefatos locais e `git diff --check` com exit `0`.
 
 ## Próxima transição permitida
 
-Se o controle persistente passar diff, higiene e auditoria, criar commit local
-limitado. Depois executar apenas `D1c2b.3e`. Avançar para vendor/build somente
-se metadata/tree e as árvores inversas passarem locked/offline. Qualquer
-archive ausente, checksum divergente ou fonte fora da allowlist muda o estado
-para `BLOQUEADO` ou `AGUARDANDO_AUTORIZAÇÃO`, conforme a causa.
+Validar e auditar o registro D1c2b.3e e criar commit local limitado. Depois,
+somente uma autorização humana explícita pode ampliar a fonte para localizar
+`risc0-groth16-3.0.2.crate`. Copiar apenas se o SHA-256 for exatamente
+`724285dc79604abfb2d40feaefe3e335420a6b293511661f77d6af62f1f5fae9`;
+então repetir metadata/tree e as inversas locked/offline. Vendor/build
+continuam proibidos até todos passarem.
 
 ## Modelo e esforço do próximo gate
 

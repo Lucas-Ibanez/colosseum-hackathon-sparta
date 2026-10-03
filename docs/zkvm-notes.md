@@ -313,3 +313,21 @@ relatório está em
 [`docs/d1c2b3d-guest-lock-reconciliation-results.md`](d1c2b3d-guest-lock-reconciliation-results.md).
 Não há ELF, ImageID ou receipt VeriCode; Router/CPI/devnet continuam
 `STATUS: NÃO VALIDADO`.
+
+## D1c2b.3e — cache guest permanece com um archive ausente
+
+O inventário integral do lock guest encontrou 154 archives de registry. A
+cache D1c2b possuía 151 válidos. A única fonte autorizada continha e validou
+`enum-ordinalize 4.3.0` e `enum-ordinalize-derive 4.3.1`, que foram copiados
+individualmente; ela não contém `risc0-groth16 3.0.2` em nenhum caminho.
+
+A cache destino agora contém 153/154 archives exigidos. Com escrita local na
+cache e rede desabilitada, `metadata`, `tree` e as três árvores inversas
+falharam com exit `101` exclusivamente porque o archive restante exigiria
+download. Nenhuma fonte alternativa foi usada. O resultado está em
+[`docs/d1c2b3e-offline-lock-closure-results.md`](d1c2b3e-offline-lock-closure-results.md).
+
+D1c2b está `AGUARDANDO_AUTORIZAÇÃO` para uma fonte local adicional e exata do
+único archive, sempre condicionada ao checksum do lock. Não há vendor final,
+ELF, ImageID ou receipt VeriCode; Router/CPI/devnet continuam
+`STATUS: NÃO VALIDADO`.

@@ -371,3 +371,22 @@ Registre decisões relevantes do projeto neste formato.
 - **Próximo gate:** autorizar a cópia offline apenas dos três archives
   públicos exatos dos caches D1a.3 para a cache D1c2b, conferindo checksums,
   e repetir metadata/tree antes de qualquer vendor ou build.
+
+## 2026-10-02 — D1c2b.3e: aguardar fonte para o archive restante
+
+- **Data:** 2026-10-02
+- **Decisão:** classificar o gate como **AGUARDANDO_AUTORIZAÇÃO** depois de
+  copiar e validar somente dois dos três archives ausentes; não usar outra
+  cache nem rede por inferência.
+- **Motivo:** o inventário completo encontrou 154 pacotes registry: 151 já
+  válidos no destino, dois archives válidos na única fonte permitida e
+  `risc0-groth16 3.0.2` ausente em toda essa raiz. Após as duas cópias, Cargo
+  avançou offline até falhar exclusivamente nesse archive restante.
+- **Evidência:** cache destino em 153/154; checksums dos dois archives
+  copiados iguais ao lock; `metadata`, `tree` e três inversas com exit `101`;
+  relatório em
+  [`docs/d1c2b3e-offline-lock-closure-results.md`](d1c2b3e-offline-lock-closure-results.md).
+- **Risco aberto:** o lock guest final ainda não fecha offline; vendor,
+  builds, ELF, ImageID e receipts VeriCode permanecem não executados.
+- **Próximo gate:** exigir autorização humana para uma fonte local adicional
+  exata do único archive restante, validando SHA-256 antes de qualquer cópia.
