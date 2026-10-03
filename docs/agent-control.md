@@ -28,9 +28,9 @@ push.
 
 ## Gate atual
 
-`D1c2b.3i` — executar receipts VeriCode locais reais para PASS e FAIL e os
-testes negativos com o artefato final D1c2b.3h, mantendo erro operacional
-distinto de `Verdict::Fail`.
+`D1c2b.3j` — realizar auditoria final independente do marco: conferir
+histórico, árvore, locks, evidências, hashes, receipts e fronteiras; concluir
+somente se nenhuma tarefa obrigatória permanecer.
 
 ## Estado
 
@@ -58,6 +58,8 @@ distinto de `Verdict::Fail`.
 - Usar um dos métodos finais A/B byte a byte idênticos, SHA-256
   `e09ba8cf…78f5` e ImageID `4da06f90…fb1a`, para proving local real, sem dev
   mode, e verificar receipt, ImageID e journal esperado.
+- Auditar somente leitura os receipts temporários D1c2b.3i e seus hashes;
+  nenhum novo proving é necessário salvo diagnóstico novo.
 - Criar commit local após validação integral e auditoria somente leitura de
   cada gate.
 
@@ -99,7 +101,8 @@ distinto de `Verdict::Fail`.
 
 - Os dois builds finais A/B terminaram e produziram ELF e método combinado
   idênticos; os artefatos permanecem efêmeros em `/tmp`.
-- Ainda não existem receipts VeriCode PASS/FAIL comprovados.
+- Receipts PASS/FAIL reais foram comprovados, mas permanecem efêmeros em
+  `/tmp`; são `Composite`, não Groth16.
 - O build upstream não expõe isolamento de rede Docker; Cargo deve permanecer
   explicitamente offline e a ausência de pull deve ser comprovada.
 - O BuildKit reutilizou bytes antigos para um arquivo com mesmo
@@ -109,18 +112,19 @@ distinto de `Verdict::Fail`.
 
 ## Última auditoria
 
-D1c2b.3h em 2026-10-03: lock host limitado a onze versões compatíveis, hash
-`f5236689…e226`; metadata/tree/inversas locked/offline passaram; host compilou
-e 2/2 testes passaram. Dois vendors finais 467/467 e dois targets separados
-produziram ELF de 147.876 bytes e método combinado de 180.300 bytes idênticos
-por `cmp`; dois `r0vm` deram ImageID `4da06f90…fb1a`.
+D1c2b.3i em 2026-10-03: host local sem dev mode executou PASS/FAIL e produziu
+três receipts `Composite` de 221.540 bytes. PASS/FAIL verificaram contra
+ImageID `4da06f90…fb1a`; três negativos foram rejeitados. Auditor temporário
+independente desserializou os arquivos, excluiu `Fake`, repetiu verificação e
+revalidou journals/negativos.
 
 ## Próxima transição permitida
 
-Validar integralmente o relatório D1c2b.3h, diff, locks, segredos e ausência
+Validar integralmente o relatório D1c2b.3i, diff, locks, segredos e ausência
 de artefatos no clone; realizar auditoria somente leitura e criar commit
-local limitado. Depois, executar o host final locked/offline para produzir e
-verificar receipts PASS/FAIL e os testes negativos, sempre sem dev mode.
+local limitado. Depois, auditar o marco inteiro a partir do Git limpo. Se
+todas as condições persistentes estiverem sustentadas, atualizar este
+controle para `CONCLUÍDO`, criar o commit final auditado e completar o Goal.
 
 ## Modelo e esforço do próximo gate
 

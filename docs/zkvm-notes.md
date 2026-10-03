@@ -448,3 +448,21 @@ O relatório completo está em
 [`docs/d1c2b3h-host-lock-and-final-build-results.md`](d1c2b3h-host-lock-and-final-build-results.md).
 O gate está **GO** para receipts locais reais. Router/CPI/devnet continuam
 `STATUS: NÃO VALIDADO`.
+
+## D1c2b.3i — receipts locais PASS/FAIL
+
+Com `RISC0_PROVER=local`, `RISC0_EXECUTOR=local`, dev/Bonsai removidos do
+ambiente e as features `prove` + `disable-dev-mode`, o host executou PASS e
+FAIL e produziu três receipts reais `Composite` de 221.540 bytes. PASS e FAIL
+verificaram contra o ImageID final `4da06f90…fb1a`; FAIL permaneceu verdict
+normal.
+
+Os negativos de ImageID de verificação, ImageID fornecido no journal e Job ID
+divergente foram rejeitados. Um auditor temporário independente desserializou
+os três arquivos persistidos, excluiu `Fake`, repetiu `Receipt::verify` e
+revalidou os journals e negativos.
+
+O relatório completo está em
+[`docs/d1c2b3i-local-receipts-results.md`](d1c2b3i-local-receipts-results.md).
+Não houve rede ou artefato no Git. Os receipts são `Composite`, não Groth16;
+Router/CPI/devnet continuam `STATUS: NÃO VALIDADO`.

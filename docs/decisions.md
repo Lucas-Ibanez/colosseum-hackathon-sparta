@@ -492,3 +492,24 @@ Registre decisões relevantes do projeto neste formato.
   permanece explícita. Router/CPI/devnet continuam `STATUS: NÃO VALIDADO`.
 - **Próximo gate:** executar o host real sem dev mode, produzir receipts PASS
   e FAIL, verificar ImageID/journals e executar todos os negativos exigidos.
+
+## 2026-10-03 — D1c2b.3i: aceitar receipts locais reais
+
+- **Data:** 2026-10-03
+- **Decisão:** classificar o gate como **GO** para a auditoria final do marco
+  D1c2b.
+- **Motivo:** o prover local real, com dev mode desabilitado por feature e
+  removido do ambiente, produziu receipts PASS, FAIL e wrong-image do tipo
+  `Composite`. O host e um auditor temporário independente verificaram os
+  arquivos, journals e negativos.
+- **Evidência:** três receipts de 221.540 bytes com hashes distintos; PASS e
+  FAIL verificam contra ImageID `4da06f90…fb1a`; `Verdict::Fail` é saída
+  normal; wrong verify ImageID, journal ImageID divergente e Job ID divergente
+  foram rejeitados; relatório em
+  [`docs/d1c2b3i-local-receipts-results.md`](d1c2b3i-local-receipts-results.md).
+- **Risco aberto:** receipts são efêmeros e `Composite`, não Groth16. Nenhuma
+  alegação on-chain foi feita; Router/CPI/devnet continuam
+  `STATUS: NÃO VALIDADO`.
+- **Próximo gate:** auditoria final somente leitura do histórico, árvore,
+  locks, relatórios, hashes e fronteiras; depois marcar o controle como
+  `CONCLUÍDO` e completar o Goal somente se nada obrigatório restar.
