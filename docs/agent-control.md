@@ -26,9 +26,10 @@ push.
 
 ## Gate atual
 
-`D1c2b.3f` — produzir em diretório temporário um vendor novo, completo e
-auditável do lock guest reconciliado, validando paths, checksums, conteúdo e
-ausência de configuração indevida ou segredos antes de qualquer build.
+`D1c2b.3g` — executar dois builds reais e independentes do guest com contextos
+e targets separados, vendor final auditado, Cargo offline e imagem local
+fixada por digest; depois comparar ELF byte a byte, tamanho, SHA-256 e
+ImageID antes de qualquer receipt.
 
 ## Estado
 
@@ -90,8 +91,8 @@ ausência de configuração indevida ou segredos antes de qualquer build.
 
 - A compatibilidade integral do guest com Rust guest `1.88.0-dev` ainda
   depende de build VeriCode real após o fechamento offline.
-- O vendor precisa ser recriado do lock final e auditado; hashes antigos não
-  podem ser reutilizados como evidência do conjunto reconciliado.
+- O vendor final foi criado e auditado, mas seu consumo em dois builds guest
+  independentes ainda não foi comprovado.
 - Ainda não existem dois ELF VeriCode, ImageID VeriCode ou receipts VeriCode
   PASS/FAIL comprovados.
 - O build upstream não expõe isolamento de rede Docker; Cargo deve permanecer
@@ -100,21 +101,21 @@ ausência de configuração indevida ou segredos antes de qualquer build.
 
 ## Última auditoria
 
-Retomada D1c2b.3e em 2026-10-02: autorização humana explícita permitiu
-inspecionar somente `lane-a/cargo` e `lane-b/cargo` para o archive restante.
-Três candidatos idênticos tinham o checksum exato; uma única cópia de
-`lane-a` levou a cache a 154/154 archives válidos, zero ausentes e zero
-divergências. `metadata`, `tree` e quatro árvores inversas locked/offline
-terminaram com exit `0`. Locks e `zkvm/` permaneceram inalterados; Git não
-registrou artefato nem arquivo ignorado novo.
+D1c2b.3f em 2026-10-02: staging novo exportado do commit `3c505a8`; vendor
+final com 154 crates, 154 checksums, 5.904 arquivos e 113.733.052 bytes.
+Todos os 154 checksums de pacote e 5.750 hashes de arquivo coincidiram com o
+lock/conteúdo declarado, sem ausência, extra ou divergência. Metadata
+confirmou 154/154 paths registry sob o vendor e tree passou locked/offline.
+Não houve segredo, artefato no clone, rede, Docker ou build.
 
 ## Próxima transição permitida
 
-Validar e auditar o registro final de D1c2b.3e e criar commit local limitado.
-Depois, criar um staging temporário limpo a partir do commit auditado,
-produzir o vendor do lock guest com Cargo locked/offline e inventariar seu
-conteúdo. Build A/B continua proibido até o vendor passar por auditoria
-somente leitura e o controle registrar a próxima transição.
+Validar e auditar o registro D1c2b.3f e criar commit local limitado. Depois,
+criar dois contextos temporários independentes a partir do commit auditado,
+com vendors reproduzidos/auditados e targets separados. Confirmar imagem
+local/digest e ausência de pull; executar build A e somente após sua conclusão
+executar build B. Não iniciar receipts antes da comparação integral dos ELF e
+ImageIDs.
 
 ## Modelo e esforço do próximo gate
 

@@ -351,3 +351,25 @@ inalterados.
 O gate está **GO** somente para recriar e auditar o vendor do lock final. Não
 há ainda dois builds, ELF, ImageID ou receipt VeriCode. Router/CPI/devnet
 continuam `STATUS: NÃO VALIDADO`.
+
+## D1c2b.3f — vendor auditável do lock final
+
+Um staging novo do commit `3c505a8` produziu o vendor raiz locked/offline do
+lock guest reconciliado. Ele contém 154 crates, 154 arquivos
+`.cargo-checksum.json`, 5.904 arquivos regulares e 113.733.052 bytes. O
+inventário de paths tem SHA-256 `dc242b5e…35d7a`; o inventário de conteúdo,
+`3217344b…da05`.
+
+Um parser independente associou exatamente os 154 checksums do lock aos
+manifests correspondentes. Os 5.750 arquivos declarados pelas crates foram
+relidos: zero ausente, divergente ou extra não listado. Três configurações
+Cargo internas e checksummed foram inspecionadas e contêm somente flags/alias
+de documentação, sem fonte, registry, rede, token ou credencial.
+
+Metadata confirmou 156 pacotes totais e todos os 154 pacotes registry sob os
+paths do vendor; tree também passou locked/offline. O relatório completo está
+em [`docs/d1c2b3f-final-vendor-results.md`](d1c2b3f-final-vendor-results.md).
+
+O gate está **GO** para dois builds independentes com contextos e targets
+separados. Ainda não há ELF, ImageID ou receipt VeriCode. Router/CPI/devnet
+continuam `STATUS: NÃO VALIDADO`.

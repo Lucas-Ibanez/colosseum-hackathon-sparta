@@ -410,3 +410,21 @@ Registre decisões relevantes do projeto neste formato.
   `STATUS: NÃO VALIDADO`.
 - **Próximo gate:** criar e auditar vendor novo em staging temporário, sem
   reutilizar hashes do lock anterior e sem iniciar build antes da auditoria.
+
+## 2026-10-02 — D1c2b.3f: aprovar vendor do lock guest final
+
+- **Data:** 2026-10-02
+- **Decisão:** classificar o gate como **GO** para dois builds independentes
+  do guest, ainda sem autorizar receipts antes da comparação dos ELF/ImageID.
+- **Motivo:** staging novo do commit `3c505a8` produziu, locked/offline, um
+  vendor que corresponde exatamente aos 154 pacotes registry do lock final.
+  Checksums de pacote e 5.750 hashes de arquivo passaram; metadata resolveu
+  154/154 pacotes por paths no vendor e tree passou.
+- **Evidência:** 154 crates, 154 `.cargo-checksum.json`, 5.904 arquivos,
+  113.733.052 bytes; hashes de paths `dc242b5e…` e conteúdo `3217344b…`;
+  relatório em
+  [`docs/d1c2b3f-final-vendor-results.md`](d1c2b3f-final-vendor-results.md).
+- **Risco aberto:** ainda não existe ELF ou ImageID VeriCode, e o vendor em
+  `/tmp` é efêmero. Router/CPI/devnet permanecem `STATUS: NÃO VALIDADO`.
+- **Próximo gate:** dois contextos/targets separados, imagem local por digest,
+  Cargo offline e comparação byte a byte, tamanho, SHA-256 e ImageID.
