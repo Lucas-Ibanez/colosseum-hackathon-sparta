@@ -776,3 +776,75 @@ Registre decisões relevantes do projeto neste formato.
 - **Risco aberto:** revisão adversarial separada pendente
   (`docs/handoffs/d2c1-to-review-d2b-d2c.md`); demais riscos do D2c/D2d
   inalterados.
+
+## 2026-10-04 — R-D2: revisão adversarial do D2b/D2c/D2c.1 (REPROVADO para o D2e)
+
+- **Data:** 2026-10-04
+- **Decisão:** a revisão adversarial separada (Opus 5.5, max, somente leitura)
+  reprova o início do D2e como especificado em `docs/handoffs/d2d-to-d2e.md`.
+  O código on-chain de `create_job`/`fund`/`refund_on_timeout` não tem achado
+  alto explorável; o bloqueio vem da política que o D2e levaria on-chain.
+- **Motivo:**
+  - F-01 (crítico, latente): qualquer pessoa gera um journal FAIL vinculado a
+    qualquer Job avaliando um artefato arbitrário (o guest recebe `job_id`,
+    artefato e `image_id` do provador); `refund_on_fail` aceita esse journal
+    em qualquer slot, inclusive enquanto o release do PASS é possível.
+  - F-02 (alto, latente): o buyer escolhe `image_id`/`spec_hash`/`harness_hash`
+    em `create_job` e, portanto, o guest que decide o veredito.
+  - F-03 (alto, latente): o plano do D2e não fixa o selector do Router; o dono
+    do Router pode registrar um verificador arbitrário.
+- **Evidência:** HEAD `42b4f58`; core 36/36 nas duas raias; `.so`
+  `d66ac76b…` reproduzido; escrow 12/12, fixtures 2/2; 10 PoCs fora do clone,
+  10/10; [`docs/r-d2-adversarial-review-results.md`](r-d2-adversarial-review-results.md).
+- **Risco aberto:** F-04 upgrade authority (alto, bloqueia D4); F-05 mint sem
+  allowlist (médio, bloqueia D4); F-06 a F-11 baixos; Router em devnet
+  `NÃO VALIDADO`.
+- **Registro:** feito por sessão com permissão de escrita a partir da resposta
+  da revisão (que não podia editar arquivos).
+
+## 2026-10-04 — Decisões humanas para o D2b.1 (correção do R-D2)
+
+- **Data:** 2026-10-04
+- **Decisão humana:** adotar as recomendações do agente para F-01, F-02, F-07,
+  F-08 e F-11 no gate D2b.1.
+  1. **F-01 — opção (A), compromisso de entrega assinado pelo executor.**
+     - `deliver(artifact_hash)` só a partir de `Funded`, só pelo executor
+       (signer), uma única vez, até o prazo (inclusive).
+     - Só o hash fica on-chain, com a mesma semântica de
+       `hash_restricted_artifact` do journal.
+     - `release` e `refund_on_fail` exigem `Delivered { h }` e journal com
+       `artifact_hash == h`.
+     - `refund_on_timeout` aceita `Funded` e `Delivered` após o prazo.
+     - **Divergência explícita** do guia §5 ("o programa registra o
+       `artifact_hash` apenas na liquidação") e da decisão D2a.1 ("o executor
+       não pré-registra"). Motivo: R-D2 F-01. Com o guest atual, o registro
+       só na liquidação permite que qualquer pessoa force um refund com um
+       FAIL de artefato arbitrário. A precedência (`docs/project-context.md`)
+       admite decisão humana posterior que registre a divergência e o motivo.
+  2. **F-02 — termos admitidos da v1.** `create_job` mantém os parâmetros
+     (IDL estável), mas rejeita:
+     - `spec_hash` diferente de `hash_restricted_spec(&RESTRICTED_SPEC_V1)`;
+     - `harness_hash` diferente de
+       `hash_harness_version(DETERMINISTIC_HARNESS_VERSION)`, ambos calculados
+       pelo core como fonte única;
+     - `image_id` diferente da constante `ADMITTED_IMAGE_ID_V1 =
+       4da06f90da75ec8980c943ce017d69c48370fddbf3aa27689d375d78fac0fb1a`
+       (ELF D1c2b preservado).
+  3. **F-07 — janela de prazo.**
+     `Clock.slot + MIN_DEADLINE_WINDOW_SLOTS <= deadline_slot <= Clock.slot +
+     MAX_DEADLINE_WINDOW_SLOTS`, com `MIN = 1_500` (≈ 10 min a 400 ms/slot,
+     cobrindo a prova Groth16 de cerca de 90 s com margem) e
+     `MAX = 1_512_000` (≈ 7 dias). O executor deve ser diferente das PDAs do
+     Job e do vault.
+  4. **F-08 e F-11 no próprio D2b.1:** `address = job.mint` nas contas de mint
+     e as lacunas de teste do R-D2.
+- **Mantido para o D2e:** F-03 (selector `73c457ba` e PDA do verifier entry
+  fixados), F-06 (ATA canônica), F-12 (digest sobre os 165 bytes e
+  `job.image_id`). Antes do D4: F-04 e F-05.
+- **Limitação declarada:** a spec v1 de desenvolvimento aceita qualquer par
+  `(n, 2n)` escolhido pelo executor. A decisão (A) impede terceiros de trocar
+  o artefato, mas não torna a tarefa não trivial. Os claims devem dizer isso.
+- **Risco aberto:** o ImageID admitido depende do ELF D1c2b preservado; um
+  rebuild do guest com o core atual exige recertificação e atualização da
+  constante.
+- **Próximo gate:** D2b.1, conforme `docs/handoffs/r-d2-to-d2b1.md`.

@@ -80,9 +80,11 @@ projeto está tecnicamente entre **D2 e D3** (D2c concluído).
 - Caminho forte comprovado em processo no D2d (Groth16 + Router). O D2c.1
   fechou o risco de freeze authority do mint e versionou as fixtures Groth16.
   Próximos passos:
-  1. revisão adversarial separada do D2b/D2c/D2c.1
-     (`docs/handoffs/d2c1-to-review-d2b-d2c.md`);
-  2. `release`/`refund_on_fail` com CPI ao Router no `vericode_escrow` (D2e). Depois, devnet, que exige confirmar o Program ID e o dono do Router
+  1. revisão adversarial R-D2 concluída: **REPROVADO** para o D2e
+     (`docs/r-d2-adversarial-review-results.md`);
+  2. D2b.1: vincular a liquidação ao artefato entregue e aos termos admitidos
+     da v1 (`docs/handoffs/r-d2-to-d2b1.md`);
+  3. D2e reescrito pelo D2b.1 (`docs/handoffs/d2b1-to-d2e.md`). Depois, devnet, que exige confirmar o Program ID e o dono do Router
   ou implantar um Router próprio, a decidir.
 - Wallets de devnet: o agente está autorizado a criar keypairs efêmeros de
   devnet/localnet (D2a.2), sob as restrições do princípio 9 de `AGENTS.md`.
@@ -91,7 +93,7 @@ projeto está tecnicamente entre **D2 e D3** (D2c concluído).
 
 | Tema | Guia de produto | Repositório | Resolução |
 | --- | --- | --- | --- |
-| `artifact_hash` | registrado pelo programa apenas na liquidação; comparar job, spec, harness, ImageID | D2b: registrado na liquidação | **resolvido (D2a.1/D2b)** |
+| `artifact_hash` | registrado pelo programa apenas na liquidação; comparar job, spec, harness, ImageID | D2b registrava só na liquidação; o R-D2 (F-01) mostrou que isso permite refund por FAIL de artefato arbitrário | **divergência decidida pelo humano (D2b.1):** compromisso de entrega assinado pelo executor (`deliver`) antes da liquidação |
 | Refund em `Fail` | `Fail` válido devolve ao buyer | D2b: `refund_on_fail`, em qualquer slot | **resolvido (D2b)** |
 | Timeout | refund somente após `deadline_slot`; antes falha | D2b: `current_slot > deadline_slot`, slot como entrada | **resolvido (D2b)** |
 | Estados | `Draft, Funded, Proving, Submitted, Released, Refunded, Failed` | D2b: `Created, Funded, Released, Refunded`; `Proving/Submitted/Failed` são worker/UI | **resolvido (decisão humana D2b)** |

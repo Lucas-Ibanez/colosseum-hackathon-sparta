@@ -1,48 +1,39 @@
-# Controle autônomo — D2c.1
+# Controle autônomo — R-D2 registrado; próximo D2b.1
 
 ## Objetivo atual
 
-`D2c.1`:
-1. rejeitar no `create_job` mints com freeze authority;
-2. versionar no repositório os vetores Groth16 PASS/FAIL do D2d como fixtures
-   em hex;
-3. preparar o prompt da revisão adversarial separada do D2b/D2c/D2c.1.
+Registrar a revisão adversarial R-D2 (reprovação do D2e) e preparar o gate
+D2b.1 com as decisões humanas já tomadas.
 
 ## Marcos anteriores
 
 - D2a `4d7e18f`, D2a.1 `0622709`, D2a.2 `402426f`, D2b `58838ae`.
-- D2c: `a10f026` (programa) e `ec980e9` (docs; Perfil A).
-- D2d: `9a18f71` (GO: Groth16 + Router em `solana-program-test`).
+- D2c `a10f026`/`ec980e9`, D2d `9a18f71`, D2c.1 `42b4f58`.
+- R-D2: revisão somente leitura sobre `42b4f58`, veredito **REPROVADO** para
+  o D2e; registrada no commit `docs: record R-D2 adversarial review`.
 
 ## Baseline
 
-- Raiz `/home/lucas/src/vericode`; branch `main`; HEAD de baseline `9a18f71`.
-- Locks inalterados no gate:
+- Raiz `/home/lucas/src/vericode`; branch `main`; HEAD de baseline `42b4f58`.
+- `.so` `d66ac76b…`; escrow 12/12; fixtures 2/2; core 36/36.
+- Locks:
   - raiz `191802b2…`; host `f5236689…`; guest `1116acef…`;
   - `anchor/` `19a1db26…`; `anchor/tests-local` `be94760a…`.
-- Ambientes isolados: `vericode-spikes/d2c` (Perfil A) e `vericode-spikes/d2d`
-  (spike e artefatos persistentes).
 
 ## Gate atual
 
-`D2c.1` — mint sem freeze authority e fixtures Groth16.
+`R-D2` (registro) → próximo `D2b.1`.
 
 ## Estado
 
-`CONCLUÍDO`.
-- `.so` `d66ac76b…`.
-- Escrow 12/12 e fixtures 2/2.
-- IDL com 3 instruções e 25 erros.
-- Core 36/36.
-
-**Commit pendente de autorização humana.** Mensagem sugerida:
-`anchor: reject freezable mints and add Groth16 fixtures (D2c.1)`.
+R-D2 registrado. `D2b.1` liberado com decisões humanas fechadas (F-01 opção A,
+F-02 termos admitidos, F-07 janela de prazo, F-08/F-11 incluídos).
+`docs/handoffs/d2d-to-d2e.md` está marcado como **SUBSTITUÍDO**.
 
 ## Decisões humanas registradas
 
-- D2a.1, D2a.2, D2b, D2c e D2d (`docs/decisions.md`).
-- D2c.1: resolver freeze authority e fixtures antes do D2e; revisão
-  adversarial em outra sessão.
+- D2a.1, D2a.2, D2b, D2c, D2d, D2c.1 e "Decisões humanas para o D2b.1"
+  (`docs/decisions.md`).
 
 ## Ações proibidas (permanentes salvo novo objetivo)
 
@@ -58,18 +49,16 @@
 
 ## Riscos abertos
 
-- Revisão adversarial separada do D2b/D2c/D2c.1: pendente.
-- Upgrade authority, squatting de `job_id`, rent.
-- Router em devnet não confirmado; CPI do escrow inexistente (D2e).
-- Margem de RAM do prover; ImageID não recertificado. As fixtures dependem do
-  ELF D1c2b preservado em `vericode-spikes/d2d/artifacts`.
-- O WSL reinicia e limpa `/tmp`: manter artefatos sempre em
-  `~/.local/share/vericode-spikes`.
+- F-01/F-02/F-07 (a corrigir no D2b.1).
+- F-03, F-06, F-12 (condições do D2e).
+- F-04 e F-05 (bloqueiam D4).
+- F-09, F-13, F-14, F-15 (baixos/informativos).
+- Spec v1 trivial: qualquer `(n, 2n)` passa.
+- ImageID admitido depende do ELF D1c2b preservado.
+- O WSL reinicia e limpa `/tmp`.
 - Calendário: dia D8; prazo por volta de 8 out.
 
 ## Próxima transição permitida
 
-1. Revisão adversarial separada, somente leitura, conforme
-   `docs/handoffs/d2c1-to-review-d2b-d2c.md`.
-2. Depois, `D2e` conforme `docs/handoffs/d2d-to-d2e.md`, tratando antes os
-   achados bloqueantes da revisão.
+`D2b.1`, conforme `docs/handoffs/r-d2-to-d2b1.md`, em sessão nova (Opus 5.5,
+xhigh, Plan Mode).

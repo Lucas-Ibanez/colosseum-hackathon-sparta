@@ -1,5 +1,10 @@
 # D2e — `release` e `refund_on_fail` no `vericode_escrow` com CPI ao Verifier Router
 
+> **SUBSTITUÍDO — NÃO EXECUTAR.** A revisão adversarial R-D2 reprovou este
+> plano (F-01, F-02, F-03; `docs/r-d2-adversarial-review-results.md`). O D2e
+> será reescrito pelo gate D2b.1 em `docs/handoffs/d2b1-to-d2e.md`. Este
+> arquivo permanece apenas como histórico.
+
 ## Identificação
 - Gate: `D2e`  ·  Dias da sequência: D6/D7 (instrução Anchor integrada ao
   Router; prova errada rejeitada antes do happy path)  ·  Marcos do guia: M3
