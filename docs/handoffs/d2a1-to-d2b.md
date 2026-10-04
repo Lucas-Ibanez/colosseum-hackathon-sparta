@@ -23,14 +23,16 @@
 - `crates/vericode-core/src/lib.rs` e `crates/vericode-core/src/escrow.rs`
 
 ## Preflight
-- `pwd`; raiz Git; branch; HEAD (esperado: commit D2a.1 sobre `4d7e18f`);
+- `pwd`; raiz Git; branch; HEAD (esperado: commit D2a.2 sobre o D2a.1
+  `0622709`);
   `git status --short` (esperado: vazio); `git diff --check`.
 - Preservar qualquer alteração existente; sem reset, checkout destrutivo,
   clean ou stash.
 
 ## Checagem da tarefa anterior
-- `git log --oneline -3` deve mostrar o commit D2a.1, `4d7e18f` (D2a) e
-  `a3eb9e0`.
+- `git log --oneline -4` deve mostrar o commit D2a.2
+  (`docs: record delegated toolchain and devnet key authority`),
+  `0622709` (D2a.1), `4d7e18f` (D2a) e `a3eb9e0`.
 - Existem `docs/context/guia-mvp-agentes-de-codigo.md`,
   `docs/context/sequencia-mvp.md`, `docs/project-context.md`,
   `docs/handoff-protocol.md` e este arquivo.
@@ -184,6 +186,7 @@ env -i HOME=$HOME CARGO_HOME=$B/lane-a/cargo RUSTUP_HOME=$B/lane-a/rustup \
 1. arquivos modificados; 2. testes e saídas reais; 3. invariantes;
 4. decisões pendentes; 5. riscos; 6. confirmação de que Anchor, Solana,
 Router, wallet, Docker, rede e deploy não foram usados; 7. prompt da próxima
-fase, segundo `docs/handoff-protocol.md`. O próximo gate provável é a decisão
-humana do Perfil A Anchor/Agave (D1b), que bloqueia custódia SPL, devnet e
-Router.
+fase, segundo `docs/handoff-protocol.md`. O próximo gate é o **D2c**: o
+agente escolhe o Perfil A Anchor/Agave (autoridade delegada na decisão D2a.2)
+com evidência de build SBF e fontes oficiais pinadas, e inicia o skeleton
+Anchor local com custódia SPL, sem devnet nem Router.

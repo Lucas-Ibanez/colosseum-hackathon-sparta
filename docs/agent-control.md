@@ -1,11 +1,11 @@
-# Controle autônomo — D2a.1
+# Controle autônomo — D2a.2
 
 ## Objetivo atual
 
-`D2a.1` — registrar o guia de produto e a sequência do MVP como documentos de
-contexto, unificar a precedência, tabelar conflitos com o estado do
-repositório e instituir o protocolo de handoff. Somente documentação; nenhum
-código alterado.
+`D2a.2` — registrar as autorizações humanas de 2026-10-04 (Perfil A
+delegado, keypairs efêmeros de devnet/localnet, README) nos documentos de
+regra e contexto. Somente documentação; nenhum código, lock, ferramenta ou
+keypair criado.
 
 ## Marcos anteriores
 
@@ -20,24 +20,32 @@ código alterado.
 ## Baseline
 
 - Raiz: `/home/lucas/src/vericode`; branch `main`.
-- HEAD de baseline do D2a.1: `4d7e18f` (D2a).
+- HEAD de baseline do D2a.2: `0622709` (D2a.1).
 - Lock raiz `191802b2…3b87`; host `f5236689…e226`; guest `1116acef…dbfa`.
 - Toolchains de teste do core: homes isoladas D1a.3 `lane-a` (Rust `1.85.0`)
   e `lane-b` (Rust `1.89.0`), offline.
 
 ## Gate atual
 
-`D2a.1` — contexto de produto e protocolo de handoff.
+`D2a.2` — registro das autorizações humanas: Perfil A delegado ao agente,
+keypairs efêmeros de devnet/localnet autorizados e README corrigido. O D2a.1
+(contexto de produto e protocolo de handoff) foi concluído no commit
+`0622709`.
 
 ## Estado
 
-`CONCLUÍDO`. Commits locais autorizados pelo humano nesta sessão; push não
-autorizado.
+`CONCLUÍDO`, alterações ainda sem commit: o commit
+`docs: record delegated toolchain and devnet key authority` aguarda
+autorização explícita. Push não autorizado.
 
 ## Decisões humanas registradas
 
 - Guia de produto prevalece sobre o D2a quanto a `artifact_hash`
   (`docs/decisions.md`, D2a.1).
+- Escolha do Perfil A Anchor/Agave delegada ao agente, a ser feita no D2c com
+  evidência (`docs/decisions.md`, D2a.2).
+- Agente pode criar keypairs efêmeros somente de devnet/localnet, fora do
+  clone, `0600`, sem exibir segredos (`AGENTS.md` §9; D2a.2).
 - `JobV1` rejeita `buyer == executor` (D2a, mantido).
 
 ## Ações proibidas (permanentes salvo novo objetivo)
@@ -45,7 +53,8 @@ autorizado.
 - Rede, instalação de ferramentas, Docker sem gate explícito.
 - Alterar locks, `JournalV1`, wire format ou `docs/manifest-schema.md` sem
   decisão registrada.
-- Wallet, seed, keypair, chave privada, `.env` real ou Program ID.
+- Keypair fora de gate autorizado, de mainnet, dentro do clone ou com segredo
+  exibido; seed/chave privada impressa ou versionada; `.env` real versionado.
 - Solana, Anchor, validator, airdrop, transação, deploy, Router/CPI sem gate
   autorizado.
 - Mock, stub ou fallback apresentado como sucesso real.
@@ -55,16 +64,15 @@ autorizado.
 
 - Projeto tecnicamente no D2 em 2026-10-04 (dia D8 do calendário); entrega
   prevista por volta de 8 out.
-- Perfil A Anchor/Agave não aprovado: D1b bloqueado; sem Anchor, SPL, devnet
-  ou Router.
+- Perfil A Anchor/Agave ainda não escolhido (delegado ao agente, gate D2c);
+  até lá, sem Anchor, SPL, devnet ou Router.
 - Código D2a ainda contém o pré-registro `Delivered` substituído.
-- Mapeamento de estados do guia, release após prazo, gatilho on-chain e
-  wallets devnet: decisões humanas pendentes (`docs/project-context.md`).
+- Mapeamento de estados do guia, release após prazo e gatilho on-chain:
+  decisões humanas pendentes, a confirmar no Plan Mode do D2b.
 - ImageID `4da06f90…fb1a` não recertificado após o D2a.
-- README ainda descreve status "Preflight".
 
 ## Próxima transição permitida
 
 `D2b` — alinhar a política pura de escrow ao guia de produto, conforme
-`docs/handoffs/d2a1-to-d2b.md`. Paralelamente, o humano deve decidir o
-Perfil A (D1b), que é o bloqueio do caminho crítico D2–D4.
+`docs/handoffs/d2a1-to-d2b.md`. Em seguida, o D2c: escolha do Perfil A pelo
+agente e skeleton Anchor local com custódia SPL.

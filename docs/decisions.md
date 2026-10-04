@@ -607,3 +607,35 @@ Registre decisões relevantes do projeto neste formato.
   até o D2b.
 - **Próximo gate:** D2b — alinhar a política pura de escrow ao guia, conforme
   `docs/handoffs/d2a1-to-d2b.md`.
+
+## 2026-10-04 — D2a.2: delegar Perfil A, autorizar keypairs devnet e corrigir README
+
+- **Data:** 2026-10-04
+- **Decisão humana explícita:**
+  1. o agente tem livre escolha da combinação Anchor/Agave (Perfil A),
+     considerando o histórico do projeto, os objetivos do MVP e a
+     documentação oficial;
+  2. o agente tem livre poder para criar keypairs;
+  3. o agente pode corrigir o README quando necessário e validado.
+- **Aplicação registrada:**
+  - Perfil A: a escolha será feita no gate D2c, por critério verificável —
+    combinação que compila SBF o programa VeriCode e o exemplo `counter` de
+    `risc0-solana v3.0.0` com locks preservados, preferindo a fidelidade ao
+    Router (cuja CI usa Agave `2.3.9`) se ambas passarem, e registrando o
+    motivo. Observação prévia, não decisão: o lock do Router resolve
+    `solana-program 2.3.0`, e o Agave `2.1.0` não publica digest oficial do
+    tarball. Instalações seguem homes isolados e pins exatos, sem alterar o
+    perfil Ubuntu padrão.
+  - Keypairs: o princípio 9 de `AGENTS.md` passa a permitir que o agente crie
+    keypairs efêmeros **somente de devnet/localnet**, em gate autorizado, fora
+    do clone, com permissão `0600`, sem exibir seed phrase ou chave privada e
+    publicando apenas chaves públicas. Continuam proibidos: versionar,
+    imprimir ou solicitar segredos; mainnet; dinheiro real.
+  - README: atualizado somente com capacidades comprovadas por relatório.
+- **Motivo:** remover os dois bloqueios humanos do caminho crítico D2–D4
+  dentro do prazo, sem afrouxar evidência, isolamento ou claims.
+- **Risco aberto:** a interpretação de "livre poder" foi limitada a
+  devnet/localnet e a gates autorizados; ampliar isso exige nova decisão.
+  Router/CPI/devnet continuam `STATUS: NÃO VALIDADO`.
+- **Próximo gate:** D2b (política de escrow alinhada ao guia), seguido do D2c
+  (Perfil A e skeleton Anchor local com custódia SPL).

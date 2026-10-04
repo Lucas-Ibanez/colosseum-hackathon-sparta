@@ -73,10 +73,12 @@ projeto está tecnicamente no **D2**.
 - O atraso é de cerca de seis dias de calendário. O guia (§3) manda cortar
   primeiro interface e extras, nunca receipt real, vínculo Job–journal,
   escrow básico, cenário negativo ou explicação de limites.
-- Bloqueio principal: **decisão humana do Perfil A Anchor/Agave** (D1b).
-  Sem ela não há programa Anchor, custódia SPL, devnet nem Router.
-- Wallets de devnet (guia §12) conflitam com o princípio 9 de `AGENTS.md`;
-  é necessária decisão humana antes do D4 (ver conflitos).
+- Bloqueio principal: **Perfil A Anchor/Agave ainda não escolhido** (D1b).
+  Desde a decisão D2a.2 a escolha está delegada ao agente, com base em
+  evidência executada e documentação oficial; será feita no gate D2c. Sem
+  ela não há programa Anchor, custódia SPL, devnet nem Router.
+- Wallets de devnet: o agente está autorizado a criar keypairs efêmeros de
+  devnet/localnet (D2a.2), sob as restrições do princípio 9 de `AGENTS.md`.
 
 ## Conflitos conhecidos e resolução
 
@@ -87,5 +89,6 @@ projeto está tecnicamente no **D2**.
 | Timeout | refund somente após `deadline_slot`; antes falha | D2a: sem prazo | adotado do guia; implementar no D2b com slot como entrada, sem relógio |
 | Estados | `Draft, Funded, Proving, Submitted, Released, Refunded, Failed` | D2a: `Created, Funded, Delivered, Released` | o D2b deve propor o mapeamento on-chain × worker/UI e pedir confirmação no Plan Mode |
 | Release após o prazo | não definido | não definido | decisão humana exigida no D2b |
-| Wallets devnet | usar wallets efêmeras | `AGENTS.md` §9 proíbe agente criar/imprimir/solicitar keypair | mantido o §9; antes do D4, decisão humana sobre quem cria as wallets e onde ficam, fora do Git e do prompt |
+| Wallets devnet | usar wallets efêmeras | `AGENTS.md` §9 proibia o agente de criar keypair | **resolvido (D2a.2):** agente pode criar keypairs efêmeros só de devnet/localnet, fora do clone, `0600`, sem exibir segredo; §9 atualizado |
+| Perfil Anchor/Agave | não fixa versões | D1b bloqueado; candidato A = Anchor `0.31.1` + Agave `2.1.0`; Router CI usa `2.3.9` | **delegado ao agente (D2a.2):** escolher no gate D2c com evidência de build SBF e fontes oficiais pinadas |
 | Precedência | evidência > docs oficiais > guia > decisões | guia operacional antigo colocava decisões acima dos contratos | unificada acima |

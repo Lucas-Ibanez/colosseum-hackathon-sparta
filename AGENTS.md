@@ -14,7 +14,7 @@ O VeriCode verifica somente um artefato serializado restrito com regra determin�
 6. O contrato só libera fundos para o executor e mint definidos no Job, após prova e journal correspondentes ao Job.
 7. Não existe admin bypass.
 8. Sem prova Router/CPI realmente validada, não alegar verificação ZK on-chain. Atestado de plataforma é fallback explicitamente nomeado, nunca prova ZK.
-9. Nunca criar, imprimir, versionar ou solicitar seed phrase, keypair, chave privada ou `.env` real.
+9. Nunca imprimir, versionar ou solicitar seed phrase, keypair, chave privada ou `.env` real. Exceção autorizada (decisão D2a.2): o agente pode criar keypairs efêmeros **somente para devnet/localnet** (buyer, executor, payer/deployer, mint de Test USDC), em gate autorizado, armazenados fora do clone com permissão `0600`, sem exibir seed phrase ou chave privada, publicando apenas chaves públicas; nunca mainnet ou dinheiro real.
 
 ## Documentos de contexto
 

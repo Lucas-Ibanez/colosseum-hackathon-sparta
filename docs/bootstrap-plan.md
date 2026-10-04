@@ -10,6 +10,11 @@ humana H3 e está registrado separadamente abaixo.
 
 **D1b BLOQUEADO — SEM PERFIL PRONTO PARA INSTALAÇÃO.**
 
+> Atualização 2026-10-04 (decisão D2a.2): a escolha do Perfil A foi delegada
+> ao agente, que deve fundamentá-la em evidência executada e documentação
+> oficial pinada no gate D2c. O bloqueio continua até essa escolha ser
+> registrada em `docs/decisions.md`.
+
 A documentação oficial do Anchor 0.31.x recomenda Agave `2.1.0`, enquanto o
 workflow do tag `risc0-solana v3.0.0` instala Agave CLI `2.3.9` com Anchor CLI
 `0.31.1`. O D1a.3 demonstrou que os gates host sem chave e os bytes ABI do
