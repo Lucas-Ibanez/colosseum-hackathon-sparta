@@ -1,15 +1,18 @@
-//! Local VeriCode escrow program (gate D2c).
+//! Local VeriCode escrow program (gates D2c, D2b.1).
 //!
 //! The program persists immutable Job terms, custodies the Job mint in a
 //! vault owned by the Job PDA and settles only through the pure policy in
-//! `vericode-core`. Economic checks (identities, mint, amount, state and
-//! deadline) are delegated to the core; Anchor constraints only validate
-//! account structure (PDAs, owners, signers and account types).
+//! `vericode-core`. Economic checks (identities, admitted v1 terms, deadline
+//! window, delivery, mint, amount and state) are delegated to the core.
+//! Anchor constraints and the program check account structure (PDAs,
+//! owners, signers, account types and the Job mint address) and two custody
+//! preconditions on Solana accounts: a mint without freeze authority and an
+//! executor that is not a program account of the Job.
 //!
-//! This gate implements `create_job`, `fund` and `refund_on_timeout`. Release
-//! and refund on `Fail` need a verified journal and are not implemented: no
-//! receipt, seal, Groth16, Router or CPI verification exists here. There is
-//! no administrative instruction.
+//! This program implements `create_job`, `fund`, `deliver` and
+//! `refund_on_timeout`. Release and refund on `Fail` need a verified journal
+//! and are not implemented: no receipt, seal, Groth16, Router or CPI
+//! verification exists here. There is no administrative instruction.
 
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, TransferChecked};
@@ -27,12 +30,25 @@ pub const JOB_SEED: &[u8] = b"job";
 pub const VAULT_SEED: &[u8] = b"vault";
 /// Layout version of [`JobAccount`].
 pub const JOB_ACCOUNT_VERSION: u8 = 1;
+/// ImageID of the deterministic D1c2b guest, the only guest a v1 Job admits:
+/// `4da06f90da75ec8980c943ce017d69c48370fddbf3aa27689d375d78fac0fb1a`.
+///
+/// A rebuild of the guest must be recertified before this value changes.
+pub const ADMITTED_IMAGE_ID_V1: [u8; 32] = [
+    0x4d, 0xa0, 0x6f, 0x90, 0xda, 0x75, 0xec, 0x89,
+    0x80, 0xc9, 0x43, 0xce, 0x01, 0x7d, 0x69, 0xc4,
+    0x83, 0x70, 0xfd, 0xdb, 0xf3, 0xaa, 0x27, 0x68,
+    0x9d, 0x37, 0x5d, 0x78, 0xfa, 0xc0, 0xfb, 0x1a,
+];
 
 #[program]
 pub mod vericode_escrow {
     use super::*;
 
     /// Creates the Job PDA with immutable terms and an empty vault owned by it.
+    ///
+    /// Only the admitted v1 specification, harness and guest image are
+    /// accepted, with a deadline inside the creation window of the core.
     pub fn create_job(
         ctx: Context<CreateJob>,
         job_id: [u8; 32],
@@ -56,6 +72,15 @@ pub mod vericode_escrow {
             ImageId::new(image_id),
         )
         .map_err(job_error)?;
+        // The Job PDA can only sign through this program and the vault cannot
+        // sign at all: such an executor could never deliver nor be paid.
+        require!(
+            executor != ctx.accounts.job.key() && executor != ctx.accounts.vault.key(),
+            VericodeEscrowError::ExecutorIsProgramAccount
+        );
+        terms
+            .admit(ImageId::new(ADMITTED_IMAGE_ID_V1), Clock::get()?.slot)
+            .map_err(job_error)?;
 
         let job = &mut ctx.accounts.job;
         job.version = JOB_ACCOUNT_VERSION;
@@ -109,7 +134,30 @@ pub mod vericode_escrow {
         Ok(())
     }
 
-    /// Refunds the buyer once the current slot is past the deadline.
+    /// Records, once and up to the deadline, the executor's commitment to the
+    /// delivered artifact.
+    ///
+    /// Only the Job executor may sign it. `artifact_hash` has the semantics
+    /// of `vericode_core::hash_restricted_artifact`, the same as the journal
+    /// `artifact_hash`; no token moves.
+    pub fn deliver(ctx: Context<Deliver>, artifact_hash: [u8; 32]) -> Result<()> {
+        let job = &ctx.accounts.job;
+        let terms = job.terms()?;
+        let next = terms
+            .deliver(
+                job.status.to_core(),
+                ExecutorId::new(ctx.accounts.executor.key().to_bytes()),
+                Hash32::new(artifact_hash),
+                Clock::get()?.slot,
+            )
+            .map_err(escrow_error)?;
+
+        ctx.accounts.job.status = EscrowStatus::from_core(next);
+        Ok(())
+    }
+
+    /// Refunds the buyer once the current slot is past the deadline, whether
+    /// or not the executor delivered.
     ///
     /// Permissionless: any fee payer may crank it. The destination must be a
     /// token account of the Job mint owned by the Job buyer.
@@ -185,6 +233,7 @@ pub struct Fund<'info> {
     pub buyer: Signer<'info>,
     #[account(mut, seeds = [JOB_SEED, job.job_id.as_ref()], bump = job.bump)]
     pub job: Account<'info, JobAccount>,
+    #[account(address = job.mint @ VericodeEscrowError::MintMismatch)]
     pub mint: Account<'info, Mint>,
     #[account(mut)]
     pub buyer_token: Account<'info, TokenAccount>,
@@ -194,9 +243,17 @@ pub struct Fund<'info> {
 }
 
 #[derive(Accounts)]
+pub struct Deliver<'info> {
+    pub executor: Signer<'info>,
+    #[account(mut, seeds = [JOB_SEED, job.job_id.as_ref()], bump = job.bump)]
+    pub job: Account<'info, JobAccount>,
+}
+
+#[derive(Accounts)]
 pub struct RefundOnTimeout<'info> {
     #[account(mut, seeds = [JOB_SEED, job.job_id.as_ref()], bump = job.bump)]
     pub job: Account<'info, JobAccount>,
+    #[account(address = job.mint @ VericodeEscrowError::MintMismatch)]
     pub mint: Account<'info, Mint>,
     #[account(mut, seeds = [VAULT_SEED, job.key().as_ref()], bump = job.vault_bump)]
     pub vault: Account<'info, TokenAccount>,
@@ -248,6 +305,9 @@ impl JobAccount {
 }
 
 /// On-chain encoding of the core [`EscrowState`].
+///
+/// The Borsh tag of each variant is part of the account layout: new
+/// variants are only ever appended.
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, Eq, PartialEq, InitSpace)]
 pub enum EscrowStatus {
     Created,
@@ -255,6 +315,7 @@ pub enum EscrowStatus {
     Released { artifact_hash: [u8; 32] },
     RefundedOnFail { artifact_hash: [u8; 32] },
     RefundedOnTimeout,
+    Delivered { artifact_hash: [u8; 32] },
 }
 
 impl EscrowStatus {
@@ -263,6 +324,9 @@ impl EscrowStatus {
         match state {
             EscrowState::Created => Self::Created,
             EscrowState::Funded => Self::Funded,
+            EscrowState::Delivered { artifact_hash } => Self::Delivered {
+                artifact_hash: artifact_hash.into_bytes(),
+            },
             EscrowState::Released { artifact_hash } => Self::Released {
                 artifact_hash: artifact_hash.into_bytes(),
             },
@@ -293,11 +357,17 @@ impl EscrowStatus {
             Self::RefundedOnTimeout => EscrowState::Refunded {
                 reason: RefundReason::Timeout,
             },
+            Self::Delivered { artifact_hash } => EscrowState::Delivered {
+                artifact_hash: Hash32::new(artifact_hash),
+            },
         }
     }
 }
 
 /// Program errors; each core rejection maps to exactly one variant.
+///
+/// Codes are `6000 + index` and part of the public interface: new variants
+/// are only ever appended.
 #[error_code]
 pub enum VericodeEscrowError {
     #[msg("Escrow amount must be greater than zero")]
@@ -350,6 +420,22 @@ pub enum VericodeEscrowError {
     UnsupportedAccountVersion,
     #[msg("Mint has a freeze authority and could freeze the vault")]
     MintHasFreezeAuthority,
+    #[msg("Job has no delivery to settle")]
+    NotDelivered,
+    #[msg("Executor already delivered")]
+    AlreadyDelivered,
+    #[msg("Deliverer is not the Job executor")]
+    DelivererMismatch,
+    #[msg("Specification hash is not the admitted v1 specification")]
+    SpecNotAdmitted,
+    #[msg("Harness hash is not the admitted v1 harness")]
+    HarnessNotAdmitted,
+    #[msg("Image ID is not the admitted v1 guest")]
+    ImageIdNotAdmitted,
+    #[msg("Deadline slot is outside the creation window")]
+    DeadlineOutOfWindow,
+    #[msg("Executor is a program account of the Job")]
+    ExecutorIsProgramAccount,
 }
 
 fn amount_error(error: AmountError) -> Error {
@@ -364,6 +450,10 @@ fn job_error(error: JobError) -> Error {
         JobError::ZeroIdentity(JobParty::Executor) => VericodeEscrowError::ZeroExecutor.into(),
         JobError::ZeroIdentity(JobParty::Mint) => VericodeEscrowError::ZeroMint.into(),
         JobError::BuyerIsExecutor => VericodeEscrowError::BuyerIsExecutor.into(),
+        JobError::SpecNotAdmitted => VericodeEscrowError::SpecNotAdmitted.into(),
+        JobError::HarnessNotAdmitted => VericodeEscrowError::HarnessNotAdmitted.into(),
+        JobError::ImageIdNotAdmitted => VericodeEscrowError::ImageIdNotAdmitted.into(),
+        JobError::DeadlineOutOfWindow => VericodeEscrowError::DeadlineOutOfWindow.into(),
     }
 }
 
@@ -397,6 +487,9 @@ fn escrow_error(error: EscrowError) -> Error {
         EscrowError::VerdictNotFail => VericodeEscrowError::VerdictNotFail,
         EscrowError::DeadlineNotReached => VericodeEscrowError::DeadlineNotReached,
         EscrowError::DeadlinePassed => VericodeEscrowError::DeadlinePassed,
+        EscrowError::NotDelivered => VericodeEscrowError::NotDelivered,
+        EscrowError::AlreadyDelivered => VericodeEscrowError::AlreadyDelivered,
+        EscrowError::DelivererMismatch => VericodeEscrowError::DelivererMismatch,
     };
     code.into()
 }
