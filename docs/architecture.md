@@ -26,7 +26,8 @@ para buyer, executor e mint, `Amount` não nulo, `JobV1` imutável com
 `deadline_slot`, estados `Created`/`Funded`/`Released`/`Refunded`, erros
 explícitos e três liquidações. `Pass` vinculado ao Job libera ao executor até
 o prazo; `Fail` vinculado devolve ao buyer em qualquer slot; timeout devolve
-ao buyer somente após o prazo. O `artifact_hash` é registrado na liquidação.
+ao buyer somente após o prazo. O `artifact_hash` era registrado na liquidação
+(substituído no D2b.1 pelo compromisso de entrega, abaixo).
 A política é um predicado puro: não custodia fundos, não transfere tokens,
 não verifica receipt/prova e recebe o slot como entrada. Detalhes em
 [`docs/escrow-state-machine.md`](escrow-state-machine.md).
@@ -45,11 +46,28 @@ processo (`solana-program-test 2.3.9`) e nunca implantado. Ainda não existem
 `release`, `refund_on_fail` nem verificação de prova. Especificação em
 [`docs/escrow-program.md`](escrow-program.md).
 
+## Estado D2b.1
+
+A revisão adversarial R-D2 mostrou que, sem compromisso de entrega, não
+existe "o" artefato do Job: qualquer pessoa provava um FAIL de artefato
+arbitrário para qualquer `job_id`. O D2b.1 vincula a liquidação à entrega:
+
+- `deliver(artifact_hash)`, assinado só pelo executor, uma única vez, até o
+  prazo, grava `Delivered { artifact_hash }`;
+- `release` e `refund_on_fail` (core) exigem o journal desse artefato;
+- o timeout devolve ao buyer a partir de `Funded` ou `Delivered`;
+- `create_job` só admite a spec, o harness e o ImageID da v1, e um prazo na
+  janela de 1.500 a 1.512.000 slots.
+
+"Artefato vinculado ao Job" passa a significar: o artefato cujo hash o
+executor comprometeu com `deliver`. Isso está testado no core e no programa
+local; a verificação da receipt on-chain continua pendente (D2e).
+
 ## Fluxo
 
-`Buyer cria Job e deposita Test USDC` -> `Executor fornece artefato restrito` -> `host executa o harness e gera receipt` -> `contrato valida prova e journal contra o Job` -> `release ao executor em PASS válido ou refund conforme as regras do Job`
+`Buyer cria Job (termos da v1) e deposita Test USDC` -> `Executor entrega e compromete o hash do artefato (deliver)` -> `host executa o harness e gera receipt` -> `contrato valida prova e journal contra o Job e a entrega` -> `release ao executor em PASS válido ou refund conforme as regras do Job`
 
-O fluxo acima é alvo de arquitetura, não evidência de integração já funcional. As condições de release, refund e timeout estão especificadas e testadas como política pura (`docs/escrow-state-machine.md`); ainda não há programa on-chain que as aplique.
+O fluxo acima é alvo de arquitetura, não evidência de integração já funcional. As condições de entrega, release, refund e timeout estão especificadas e testadas como política pura (`docs/escrow-state-machine.md`). O programa local aplica criação, depósito, entrega e timeout; release e refund por `FAIL` ainda não existem on-chain.
 
 ## Componentes e responsabilidades
 

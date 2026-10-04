@@ -39,10 +39,10 @@ evidência nem um escopo proibido.
 
 | Módulo do guia | Caminho no repositório | Estado |
 | --- | --- | --- |
-| `core-logic/` | `crates/vericode-core` | tipos, Borsh, SHA-256, harness restrito, `JournalV1`, política pura de escrow alinhada ao guia (D2b) |
+| `core-logic/` | `crates/vericode-core` | tipos, Borsh, SHA-256, harness restrito, `JournalV1`, política pura de escrow alinhada ao guia (D2b) e vinculada à entrega do executor, com termos admitidos e janela de prazo (D2b.1) |
 | `zk-guest/` | `zkvm/methods/guest` | guest real; dois builds determinísticos; ImageID `4da06f90…fb1a` (antes do D2a) |
 | `zk-host/` | `zkvm/host` | receipts locais reais PASS/FAIL `Composite`; compressão Groth16 demonstrada por harness fora do clone (D2d) |
-| `anchor-program/` | `anchor/programs/vericode-escrow` (workspace `anchor/`, testes em `anchor/tests-local`) | D2c: `create_job`, `fund`, `refund_on_timeout` com vault PDA; testado em processo; sem `release`/`refund_on_fail`, Router ou deploy |
+| `anchor-program/` | `anchor/programs/vericode-escrow` (workspace `anchor/`, testes em `anchor/tests-local`) | D2c/D2b.1: `create_job` (termos da v1, janela de prazo), `fund`, `deliver`, `refund_on_timeout` com vault PDA; testado em processo; sem `release`/`refund_on_fail`, Router ou deploy |
 | `worker-api/` | inexistente | não iniciado |
 | `frontend/` | inexistente | não iniciado |
 
@@ -58,14 +58,14 @@ subtarefa do dia D2. O dia é marco de escopo, não data de calendário.
 ## Estado da sequência (evidência, 2026-10-04)
 
 Data de calendário: 2026-10-04, que corresponde ao dia D8 do cronograma. O
-projeto está tecnicamente entre **D2 e D3** (D2c concluído).
+projeto está tecnicamente entre **D2 e D3** (D2b.1 concluído).
 
 | Dia | Situação | Evidência / lacuna |
 | --- | --- | --- |
 | D0 | técnico concluído; administrativo fora do repositório | `docs/toolchain-matrix.md`, `docs/router-notes.md`, `docs/d1a3-spike-results.md`; inscrição, outreach e pitch não são rastreados aqui |
 | D1 | concluído (técnico) | crate e guest (D1c1–D1c2b); manifesto em `docs/manifest-schema.md`; Anchor skeleton e Perfil A (D2c); README corrigido (D2a.2) |
 | D2 | concluído (técnico) | GATE 48H atendido: receipts locais reais PASS/FAIL (`docs/d1c2b3i-local-receipts-results.md`); máquina de estados testada em Rust puro (D2b); custódia SPL em vault PDA testada em processo (D2c); vídeo fora do repositório |
-| D3 | parcial | journal com job_id, artifact, harness, versão e verdict; provas PASS/FAIL; create/fund/refund por timeout on-chain local testados (D2c); **falta** `release`/`refund_on_fail` com caminho de verificação (Router/CPI ou fallback atestado) |
+| D3 | parcial | journal com job_id, artifact, harness, versão e verdict; provas PASS/FAIL; create/fund/refund por timeout on-chain local testados (D2c); compromisso de entrega (`deliver`) e termos admitidos da v1 testados localmente (D2b.1); **falta** `release`/`refund_on_fail` com caminho de verificação (Router/CPI ou fallback atestado) |
 | D4 | não iniciado | escrow em devnet com Test USDC e Explorer |
 | D5/D6 | spike GO (D2d) | receipts Groth16 PASS/FAIL reais verificadas pelo Verifier Router em `solana-program-test`, com negativos antes do positivo; falta CPI a partir do `vericode_escrow` (D2e) e Router em devnet |
 | D7–D12 | não iniciados | CLI E2E, estados ruins on-chain, worker e UI |
@@ -82,10 +82,13 @@ projeto está tecnicamente entre **D2 e D3** (D2c concluído).
   Próximos passos:
   1. revisão adversarial R-D2 concluída: **REPROVADO** para o D2e
      (`docs/r-d2-adversarial-review-results.md`);
-  2. D2b.1: vincular a liquidação ao artefato entregue e aos termos admitidos
-     da v1 (`docs/handoffs/r-d2-to-d2b1.md`);
-  3. D2e reescrito pelo D2b.1 (`docs/handoffs/d2b1-to-d2e.md`). Depois, devnet, que exige confirmar o Program ID e o dono do Router
-  ou implantar um Router próprio, a decidir.
+  2. D2b.1 concluído: liquidação vinculada ao artefato entregue e aos termos
+     admitidos da v1 (`docs/d2b1-delivery-binding-results.md`);
+  3. D2e (`docs/handoffs/d2b1-to-d2e.md`): `release`/`refund_on_fail` a
+     partir de `Delivered`, com CPI ao Router e selector fixado;
+  4. revisão adversarial separada de D2b.1 + D2e;
+  5. devnet, que exige confirmar o Program ID e o dono do Router ou implantar
+     um Router próprio (a decidir), além de F-04 e F-05.
 - Wallets de devnet: o agente está autorizado a criar keypairs efêmeros de
   devnet/localnet (D2a.2), sob as restrições do princípio 9 de `AGENTS.md`.
 
@@ -93,10 +96,10 @@ projeto está tecnicamente entre **D2 e D3** (D2c concluído).
 
 | Tema | Guia de produto | Repositório | Resolução |
 | --- | --- | --- | --- |
-| `artifact_hash` | registrado pelo programa apenas na liquidação; comparar job, spec, harness, ImageID | D2b registrava só na liquidação; o R-D2 (F-01) mostrou que isso permite refund por FAIL de artefato arbitrário | **divergência decidida pelo humano (D2b.1):** compromisso de entrega assinado pelo executor (`deliver`) antes da liquidação |
+| `artifact_hash` | registrado pelo programa apenas na liquidação; comparar job, spec, harness, ImageID | D2b registrava só na liquidação; o R-D2 (F-01) mostrou que isso permite refund por FAIL de artefato arbitrário | **resolvido (D2b.1), divergência decidida pelo humano:** compromisso de entrega assinado pelo executor (`deliver`) antes da liquidação; testado no core e no programa local |
 | Refund em `Fail` | `Fail` válido devolve ao buyer | D2b: `refund_on_fail`, em qualquer slot | **resolvido (D2b)** |
 | Timeout | refund somente após `deadline_slot`; antes falha | D2b: `current_slot > deadline_slot`, slot como entrada | **resolvido (D2b)** |
-| Estados | `Draft, Funded, Proving, Submitted, Released, Refunded, Failed` | D2b: `Created, Funded, Released, Refunded`; `Proving/Submitted/Failed` são worker/UI | **resolvido (decisão humana D2b)** |
+| Estados | `Draft, Funded, Proving, Submitted, Released, Refunded, Failed` | D2b: `Created, Funded, Released, Refunded`; `Proving/Submitted/Failed` são worker/UI; D2b.1 acrescenta `Delivered` (econômico, não terminal) | **resolvido (decisão humana D2b; `Delivered` por D2b.1)** |
 | Release após o prazo | não definido | D2b: `Pass` só até `deadline_slot`, inclusive | **resolvido (decisão humana D2b)** |
 | Wallets devnet | usar wallets efêmeras | `AGENTS.md` §9 proibia o agente de criar keypair | **resolvido (D2a.2):** agente pode criar keypairs efêmeros só de devnet/localnet, fora do clone, `0600`, sem exibir segredo; §9 atualizado |
 | Perfil Anchor/Agave | não fixa versões | D2c: Anchor `0.31.1` + Agave `2.3.9` + Rust `1.89.0` (Agave `2.1.0` falha no `counter`) | **resolvido (D2c, autoridade D2a.2)** |

@@ -95,7 +95,29 @@ Nenhum desses valores substitui outro. O mesmo artefato pode ser avaliado por es
 
 ## Validação pelo contrato
 
-Antes de release, o contrato deve comparar `schema_version`, `job_id`, `spec_hash`, `harness_hash` e `image_id` com os valores autorizados pelo Job. O `artifact_hash` deve coincidir com o compromisso aceito/registrado para a entrega daquele Job antes da liquidação. Somente `verdict = PASS` pode habilitar release; `FAIL` é válido como prova de execução, mas não autoriza pagamento ao executor.
+Antes de release ou de refund por `FAIL`, o contrato deve comparar `schema_version`, `job_id`, `spec_hash`, `harness_hash` e `image_id` com os valores autorizados pelo Job. O `artifact_hash` deve coincidir com o compromisso de entrega registrado pelo executor daquele Job antes da liquidação. Somente `verdict = PASS` pode habilitar release; `FAIL` é válido como prova de execução, mas não autoriza pagamento ao executor.
+
+Estado D2b.1 (política no core e programa local, sem verificação de prova on-chain):
+
+- O compromisso de entrega é a instrução `deliver(artifact_hash)`:
+  - assinada pelo executor do Job;
+  - aceita uma única vez, a partir de `Funded` e até `deadline_slot`;
+  - grava `Delivered { artifact_hash }`;
+  - `artifact_hash` tem a semântica de `hash_restricted_artifact`, a mesma
+    deste journal.
+- `release` e `refund_on_fail` exigem `Delivered { h }` e um journal com
+  `artifact_hash == h`; senão, `ArtifactHashMismatch` (código 6017).
+- `create_job` só admite o `spec_hash` e o `harness_hash` da v1, calculados
+  pelo core, e o ImageID `4da06f90…fb1a`. Os valores comparados com o
+  journal são, portanto, os da v1.
+- O `image_id` do journal é cópia de uma entrada do provador (R-D2 F-12). O
+  vínculo com o guest vem da verificação da receipt contra o `image_id` do
+  Job, não deste campo.
+- Divergência do guia §5 ("registrado apenas na liquidação"), decidida pelo
+  humano (`docs/decisions.md`, D2b.1).
+
+Este schema não mudou no D2b.1: `JournalV1`, o wire format de 165 bytes e os
+hashes canônicos são os mesmos.
 
 Executor, mint e destino do pagamento permanecem definidos no estado do Job e devem ser validados pelo contrato. Mudanças neste schema exigem atualização deste documento e registro em `docs/decisions.md`.
 

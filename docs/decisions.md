@@ -766,6 +766,9 @@ Registre decisões relevantes do projeto neste formato.
 - **Motivo:** sem a regra, o buyer poderia congelar o vault e impedir o
   pagamento ao executor. O SPL Token `7.0.0` impede adicionar freeze
   authority depois (`MintCannotFreeze`), então a checagem na criação basta.
+  *Errata D2b.1 (R-D2 F-10):* o `7.0.0` é o crate cliente; o programa
+  executado nos testes é o `spl_token-3.5.0.so` do `solana-program-test
+  2.3.9`, no qual o comportamento foi confirmado. Repetir em devnet.
   As fixtures tornam o D2e reproduzível sem Docker nem prova.
 - **Evidência:** `.so` `d66ac76b…`; escrow 12/12; fixtures 2/2; IDL com 3
   instruções e 25 erros; core 36/36; locks inalterados;
@@ -848,3 +851,58 @@ Registre decisões relevantes do projeto neste formato.
   rebuild do guest com o core atual exige recertificação e atualização da
   constante.
 - **Próximo gate:** D2b.1, conforme `docs/handoffs/r-d2-to-d2b1.md`.
+
+## 2026-10-04 — D2b.1: vincular a liquidação à entrega do executor e aos termos admitidos da v1
+
+- **Data:** 2026-10-04
+- **Decisões aplicadas:** as "Decisões humanas para o D2b.1" acima (F-01
+  opção A, F-02, F-07, F-08, F-11), sem decisão de produto nova.
+- **Desenho técnico aprovado no Plan Mode:**
+
+  | Item | Onde | Conteúdo |
+  | --- | --- | --- |
+  | `JobV1::deliver(state, deliverer, artifact_hash, current_slot)` | core | só de `Funded`, só o executor, até o prazo, uma vez → `Delivered { artifact_hash }` |
+  | `release` / `refund_on_fail` | core | só de `Delivered { h }`, com `validate_against` sobre `h` (`ArtifactHashMismatch`); de `Funded` → `NotDelivered` |
+  | `refund_on_timeout` | core | aceita `Funded` e `Delivered` |
+  | `JobV1::admit(admitted_image_id, current_slot)` | core | spec e harness da v1 calculados pelo core; ImageID igual ao parâmetro; janela `MIN = 1_500`, `MAX = 1_512_000` por `checked_sub`, sem overflow; hash incalculável não admite nada |
+  | `ADMITTED_IMAGE_ID_V1`, leitura do `Clock` | programa | o core é compilado no guest, então a constante do ImageID no core seria circular |
+  | executor ≠ PDA do Job e do vault | programa | pré-condição sobre endereços Solana, como a regra de freeze |
+  | `address = job.mint @ MintMismatch` | programa | contas mint de `fund` e `refund_on_timeout` (F-08) |
+
+  - Erros novos no fim: core `NotDelivered`, `AlreadyDelivered`,
+    `DelivererMismatch`, `SpecNotAdmitted`, `HarnessNotAdmitted`,
+    `ImageIdNotAdmitted`, `DeadlineOutOfWindow`; programa 6025–6032
+    (6032 `ExecutorIsProgramAccount`).
+  - `EscrowStatus::Delivered` com tag 5; 6000–6024 e tags 0–4 inalterados;
+    `INIT_SPACE` 276.
+- **Divergência explícita do guia §5 e do D2a.1:** o `artifact_hash` deixa de
+  ser registrado "apenas na liquidação" e passa a ser compromisso de entrega
+  do executor. Motivo: R-D2 F-01, registrado na decisão humana acima.
+- **Errata F-10:**
+  - `MintCannotFreeze` atribuído ao programa executado `spl_token-3.5.0.so`;
+  - "constraints validam somente estrutura" corrigido;
+  - unicidade do `job_id` qualificada "por implantação" (F-15);
+  - "artefato vinculado ao Job" redefinido como o artefato do `deliver`;
+  - a frase "em nenhum slot dois destinos competem" foi substituída pela
+    propriedade testada `at_most_one_destination_per_state_and_slot`, com
+    premissa explícita;
+  - o relatório `docs/d2c1-mint-freeze-and-fixtures-results.md` ficou fora do
+    escopo do gate; a errata está aqui e no relatório D2b.1.
+- **Evidência:**
+  - core 42/42 nas duas raias, sem warnings;
+  - 5 mutações mortas, incluindo a política F-01;
+  - `.so` `ea0dd92c…1a37`;
+  - escrow 24/24, layout 4/4, fixtures 2/2;
+  - contra o `.so` do D2c.1, 11 dos 24 testes falham onde a correção atua
+    (F-08: `3` do SPL em vez de 6011);
+  - `create_job` 22.083 → 36.267 CU; `deliver` 4.949 CU;
+  - IDL com 4 instruções e 33 erros;
+  - locks inalterados;
+  - [`docs/d2b1-delivery-binding-results.md`](d2b1-delivery-binding-results.md).
+- **Risco aberto:**
+  - ImageID admitido não recertificado (guest não reconstruído; `escrow.rs`
+    está na crate do guest);
+  - spec v1 trivial;
+  - F-03, F-06 e F-12 para o D2e; F-04 e F-05 antes do D4;
+  - revisão adversarial de D2b.1 + D2e pendente.
+- **Próximo gate:** D2e, conforme `docs/handoffs/d2b1-to-d2e.md`.
