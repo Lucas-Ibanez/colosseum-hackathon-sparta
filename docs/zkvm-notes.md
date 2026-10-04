@@ -479,3 +479,26 @@ O relatório e a matriz de conclusão estão em
 [`docs/d1c2b3j-final-audit.md`](d1c2b3j-final-audit.md). D1c2b está
 `CONCLUÍDO`. Não há autorização para avançar além dele; Router/CPI/devnet
 continuam `STATUS: NÃO VALIDADO`.
+
+## D2d — receipts Groth16 do VeriCode
+
+As receipts `Composite` PASS e FAIL do D1c2b foram comprimidas para
+**Groth16** por `default_prover().compress(&ProverOpts::groth16(), …)`
+(`risc0-zkvm 3.0.3`).
+
+Execução:
+- recursão local com `RECURSION_SRC_PATH` apontando para o
+  `recursion_zkr.zip` real (`744b999f…`); o arquivo do checkout é ponteiro
+  LFS;
+- `shrink_wrap` via Docker com a imagem
+  `risczero/risc0-groth16-prover:v2025-04-03.1`, puxada por digest amd64
+  `sha256:7f173963…e331` (5,21 GB).
+
+Resultado:
+- 84,9 s e 83,2 s de compressão; pico do container de cerca de 6,25 GiB
+  (com swap) nos 7,6 GiB do WSL;
+- receipts de 827 bytes, verificadas localmente contra `4da06f90…fb1a`;
+- ImageID errado rejeitado; journals iguais aos `Composite`.
+
+O caminho CUDA exige GPU e não foi usado. Detalhes em
+[`docs/d2d-groth16-router-spike-results.md`](d2d-groth16-router-spike-results.md).

@@ -24,7 +24,7 @@ Ainda não implementado: release ao executor e refund por `FAIL` on-chain, verif
 ## Limitações atuais
 
 - Não há verificação on-chain; Router/CPI/devnet: `STATUS: NÃO VALIDADO`.
-- As receipts locais são `Composite`, não Groth16.
+- As receipts do repositório são `Composite`. Receipts Groth16 do VeriCode foram produzidas e verificadas pelo Verifier Router apenas em `solana-program-test` local, num spike fora do repositório (D2d); o escrow ainda não usa essa verificação.
 - Não há deploy nem transação em nenhuma rede.
 - O artefato atual é um registro de desenvolvimento (`saída = entrada * 2`), não código arbitrário.
 - O programa de escrow só existe localmente e ainda não libera pagamento ao executor.

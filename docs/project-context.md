@@ -41,7 +41,7 @@ evidência nem um escopo proibido.
 | --- | --- | --- |
 | `core-logic/` | `crates/vericode-core` | tipos, Borsh, SHA-256, harness restrito, `JournalV1`, política pura de escrow alinhada ao guia (D2b) |
 | `zk-guest/` | `zkvm/methods/guest` | guest real; dois builds determinísticos; ImageID `4da06f90…fb1a` (antes do D2a) |
-| `zk-host/` | `zkvm/host` | receipts locais reais PASS/FAIL `Composite` |
+| `zk-host/` | `zkvm/host` | receipts locais reais PASS/FAIL `Composite`; compressão Groth16 demonstrada por harness fora do clone (D2d) |
 | `anchor-program/` | `anchor/programs/vericode-escrow` (workspace `anchor/`, testes em `anchor/tests-local`) | D2c: `create_job`, `fund`, `refund_on_timeout` com vault PDA; testado em processo; sem `release`/`refund_on_fail`, Router ou deploy |
 | `worker-api/` | inexistente | não iniciado |
 | `frontend/` | inexistente | não iniciado |
@@ -66,7 +66,9 @@ projeto está tecnicamente entre **D2 e D3** (D2c concluído).
 | D1 | concluído (técnico) | crate e guest (D1c1–D1c2b); manifesto em `docs/manifest-schema.md`; Anchor skeleton e Perfil A (D2c); README corrigido (D2a.2) |
 | D2 | concluído (técnico) | GATE 48H atendido: receipts locais reais PASS/FAIL (`docs/d1c2b3i-local-receipts-results.md`); máquina de estados testada em Rust puro (D2b); custódia SPL em vault PDA testada em processo (D2c); vídeo fora do repositório |
 | D3 | parcial | journal com job_id, artifact, harness, versão e verdict; provas PASS/FAIL; create/fund/refund por timeout on-chain local testados (D2c); **falta** `release`/`refund_on_fail` com caminho de verificação (Router/CPI ou fallback atestado) |
-| D4–D12 | não iniciados | dependem de Anchor/devnet, Router, CLI, worker e UI |
+| D4 | não iniciado | escrow em devnet com Test USDC e Explorer |
+| D5/D6 | spike GO (D2d) | receipts Groth16 PASS/FAIL reais verificadas pelo Verifier Router em `solana-program-test`, com negativos antes do positivo; falta CPI a partir do `vericode_escrow` (D2e) e Router em devnet |
+| D7–D12 | não iniciados | CLI E2E, estados ruins on-chain, worker e UI |
 
 ### Caminho crítico e risco de prazo
 
@@ -74,10 +76,11 @@ projeto está tecnicamente entre **D2 e D3** (D2c concluído).
   primeiro interface e extras, nunca receipt real, vínculo Job–journal,
   escrow básico, cenário negativo ou explicação de limites.
 - Perfil A escolhido no D2c: Anchor `0.31.1` + Agave `2.3.9` + Rust
-  `1.89.0`, em homes isoladas. Próximo bloqueio: decidir e provar o caminho
-  de verificação do journal on-chain (Router/CPI, que exige receipt Groth16,
-  ou fallback atestado rotulado) para implementar `release` e
-  `refund_on_fail`.
+  `1.89.0`, em homes isoladas.
+- Caminho forte comprovado em processo no D2d (Groth16 + Router). Próximo
+  passo: `release`/`refund_on_fail` com CPI ao Router no `vericode_escrow`
+  (D2e). Depois, devnet, que exige confirmar o Program ID e o dono do Router
+  ou implantar um Router próprio, a decidir.
 - Wallets de devnet: o agente está autorizado a criar keypairs efêmeros de
   devnet/localnet (D2a.2), sob as restrições do princípio 9 de `AGENTS.md`.
 

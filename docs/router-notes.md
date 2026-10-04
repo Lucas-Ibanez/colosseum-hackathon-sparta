@@ -11,6 +11,15 @@
 **D1a.3 concluído em H1–H4: toolchains, receipt zkVM e ABI host validados;
 build SBF, CPI e deployment não executados.**
 
+**D2d (2026-10-04): receipts Groth16 reais do VeriCode (PASS e FAIL) foram
+verificadas pelo programa Verifier Router em `solana-program-test` local
+(Perfil A).** Adulterações de proof, selector, ImageID e journal digest
+foram rejeitadas antes de cada positivo
+([`docs/d2d-groth16-router-spike-results.md`](d2d-groth16-router-spike-results.md)).
+Isso não é verificação on-chain em cluster: devnet, Router real, Program ID
+de rede e CPI a partir do `vericode_escrow` continuam
+`STATUS: NÃO VALIDADO`.
+
 ## Objetivo
 
 Verificar uma receipt RISC Zero Groth16 por CPI em Solana e, somente após validar a prova e os campos críticos do journal contra o Job, permitir que o programa Anchor considere o release.
@@ -102,7 +111,7 @@ há evidência para chamá-la incompatível.
 
 | Rede | Status | Evidência encontrada |
 | --- | --- | --- |
-| localnet | REFERÊNCIA OFICIAL, NÃO EXECUTADA | O tag contém `examples/counter` e `solana-verifier`; somente gates host foram executados, sem validator, CPI ou transação localnet. |
+| localnet (em processo) | VERIFICADO EM `solana-program-test` (D2d) | Router `1b26b017…` e verificador `dab6746d…` compilados no Perfil A; `initialize`/`add_verifier` com dono de teste; FIB, PASS e FAIL aceitos (110.851 CU); quatro negativos por vetor rejeitados. Sem validator, deploy ou CPI a partir do `vericode_escrow`. |
 | Solana devnet | NÃO VALIDADO | Nenhum Program ID/deployment Solana devnet foi comprovado nas fontes oficiais consultadas. |
 | Solana mainnet-beta | NÃO VALIDADO | Nenhum Program ID/deployment Solana mainnet-beta foi comprovado nas fontes oficiais consultadas. |
 

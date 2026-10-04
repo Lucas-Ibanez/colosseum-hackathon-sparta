@@ -712,3 +712,39 @@ Registre decisões relevantes do projeto neste formato.
   revisões adversariais D2b/D2c pendentes; Router/CPI/devnet
   `STATUS: NÃO VALIDADO`.
 - **Próximo gate:** D2d, conforme `docs/handoffs/d2c-to-d2d.md`.
+
+## 2026-10-04 — D2d: GO do caminho forte (Groth16 + Router em processo)
+
+- **Data:** 2026-10-04
+- **Decisões humanas no Plan Mode:**
+  - autorizar a consulta e o pull da imagem
+    `risczero/risc0-groth16-prover:v2025-04-03.1` (tag fixa em
+    `risc0-groth16 3.0.2`) por digest amd64;
+  - código do spike fora do clone;
+  - orçamento de 3 h (usados cerca de 41 min).
+- **Decisão:** **GO** para integrar `release`/`refund_on_fail` com CPI ao
+  Verifier Router no D2e.
+- **Motivo:**
+  - receipts Groth16 reais de PASS e FAIL foram verificadas localmente;
+  - o Router e o verificador de `risc0-solana v3.0.0`, compilados no Perfil
+    A, rejeitaram proof adulterada, selector desconhecido, ImageID errado e
+    journal digest errado, e aceitaram FIB, PASS e FAIL em
+    `solana-program-test`.
+- **Evidência:**
+  - imagem `sha256:7f173963…e331`;
+  - seals PASS `43735170…` e FAIL `93a12d12…`;
+  - `.so` Router `1b26b017…` e verificador `dab6746d…`;
+  - 110.851 CU por `verify`;
+  - [`docs/d2d-groth16-router-spike-results.md`](d2d-groth16-router-spike-results.md).
+- **Claim permitido:** "verificada pelo programa Verifier Router em
+  `solana-program-test` local". Proibido: "ZK on-chain" em cluster.
+  Devnet/Router real/CPI do `vericode_escrow`: `STATUS: NÃO VALIDADO`.
+- **Registro de fronteira:** `~/.docker/buildx/current` (62 bytes, sem
+  segredo) foi criado no perfil padrão pela consulta `buildx imagetools`; o
+  container do prover roda sem isolamento de rede (código upstream).
+- **Risco aberto:**
+  - margem de RAM do prover (cerca de 6,25 de 7,6 GiB);
+  - Program ID e dono do Router em devnet não confirmados;
+  - vetores Groth16 só fora do clone;
+  - revisões adversariais D2b/D2c pendentes.
+- **Próximo gate:** D2e, conforme `docs/handoffs/d2d-to-d2e.md`.
