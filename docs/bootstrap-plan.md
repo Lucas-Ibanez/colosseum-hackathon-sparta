@@ -8,12 +8,17 @@ humana H3 e está registrado separadamente abaixo.
 
 ## Estado do gate
 
-**D1b BLOQUEADO — SEM PERFIL PRONTO PARA INSTALAÇÃO.**
+**D1b DESBLOQUEADO EM 2026-10-04 (D2c) — Perfil A = Anchor `0.31.1` +
+Agave `2.3.9` + Rust host `1.89.0`, em homes isoladas.**
 
-> Atualização 2026-10-04 (decisão D2a.2): a escolha do Perfil A foi delegada
-> ao agente, que deve fundamentá-la em evidência executada e documentação
-> oficial pinada no gate D2c. O bloqueio continua até essa escolha ser
-> registrada em `docs/decisions.md`.
+> A escolha foi feita pelo agente sob a decisão D2a.2, com build SBF real
+> (`docs/d2c-anchor-local-escrow-results.md`). As toolchains continuam
+> **isoladas** em `~/.local/share/vericode-spikes/d2c`. Nada foi instalado
+> no perfil padrão do usuário (`~/.rustup`, `~/.cache/solana` ausentes), e
+> isso segue proibido sem novo gate. O texto abaixo é o histórico do
+> bloqueio.
+
+Histórico: **D1b BLOQUEADO — SEM PERFIL PRONTO PARA INSTALAÇÃO.**
 
 A documentação oficial do Anchor 0.31.x recomenda Agave `2.1.0`, enquanto o
 workflow do tag `risc0-solana v3.0.0` instala Agave CLI `2.3.9` com Anchor CLI
@@ -162,10 +167,18 @@ Nenhum destes arquivos deve ser criado antes do Perfil A comprovado:
   seal/journal e serialização do exemplo têm evidência executável nas duas
   raias.
 - [ ] CPI runtime e os testes negativos de `Job/mint/executor` do VeriCode têm
-  evidência real.
+  evidência real. (D2c: negativos de buyer/mint/destino do programa local
+  testados em processo; CPI runtime continua sem evidência.)
 - [x] Docker foi escolhido, instalado e validado; dois builds efetivos e o
   receipt do ELF determinístico passaram.
-- [ ] Um único Perfil A substituiu o bloqueio na matriz.
-- [x] Nenhuma wallet, keypair, `.env`, Program ID novo ou scaffold foi criado.
+- [x] Um único Perfil A substituiu o bloqueio na matriz (D2c, raia B).
+- [x] Nenhuma wallet, keypair, `.env`, Program ID novo ou scaffold foi criado
+  até o D2b. (D2c, sob a autorização D2a.2: keypairs de localnet e o Program
+  ID `GZqbL2Tb…` foram criados fora do clone, com `0600`; o scaffold
+  `anchor/` foi versionado sem segredos.)
 
-Enquanto qualquer item acima permanecer aberto, D1b não pode começar.
+Regra histórica: enquanto qualquer item acima permanecesse aberto, D1b não
+podia começar. **Substituída em 2026-10-04:** pela decisão humana D2a.2, a
+escolha do perfil foi delegada ao agente, e o D2c a fez com o item de CPI
+runtime ainda aberto. A CPI runtime não está comprovada e é o objeto do gate
+D2d; Router/CPI continuam `STATUS: NÃO VALIDADO`.

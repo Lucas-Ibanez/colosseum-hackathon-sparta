@@ -668,3 +668,47 @@ Registre decisões relevantes do projeto neste formato.
 - **Próximo gate:** D2c — escolha do Perfil A pelo agente (D2a.2) e programa
   Anchor local com Job e custódia SPL, conforme
   `docs/handoffs/d2b-to-d2c.md`.
+
+## 2026-10-04 — D2c: escolher o Perfil A e criar o programa Anchor local
+
+- **Data:** 2026-10-04
+- **Decisão (agente, sob D2a.2):** Perfil A = Anchor `0.31.1` + Agave
+  `2.3.9` (platform-tools `v1.48`) + Rust host `1.89.0`, em homes isoladas
+  `~/.local/share/vericode-spikes/d2c`.
+- **Decisões humanas no Plan Mode:** workspace separado `anchor/`; Job PDA
+  `["job", job_id]` (job_id globalmente único) e vault PDA `["vault", job]`;
+  `refund_on_timeout` permissionless com destino fixo no buyer;
+  `solana-program-test =2.3.9`. Durante a execução: prosseguir apesar do erro
+  do prompt sobre `~/.cargo` e aceitar o Criterion v2.3.3 baixado
+  automaticamente pelo SDK Agave.
+- **Motivo:** a raia B compila SBF o `counter` oficial (dependência do Router)
+  com locks preservados e o programa VeriCode; a raia A falha no `counter`
+  porque o `rustc 1.79.0-dev` das platform-tools `v1.43` não aceita
+  `unsafe(no_mangle)` em `risc0-zkvm-platform 2.2.1`. Como o Router é o
+  caminho forte, a fidelidade à CI do `risc0-solana v3.0.0` prevalece sobre a
+  recomendação genérica do Anchor.
+- **Decisões técnicas registradas:**
+  - lock do programa semeado com o lock oficial do `counter`, porque a
+    resolução livre trouxe `anchor-* 0.31.2` e crates edition 2024 que o
+    Cargo 1.84 das platform-tools não lê;
+  - feature `token_2022` do `anchor-spl` exigida pelo código gerado de `init`
+    no Anchor 0.31.1; o programa aceita somente o SPL Token clássico;
+  - testes em workspace separado, com lock próprio.
+- **Evidência:** `.so` B `04cc2a84…`; 10/10 testes em processo; IDL com
+  exatamente 3 instruções; core 36/36 nas duas raias; locks antigos
+  inalterados;
+  [`docs/d2c-anchor-local-escrow-results.md`](d2c-anchor-local-escrow-results.md)
+  e [`docs/escrow-program.md`](escrow-program.md).
+- **Errata do handoff D2b→D2c:** o prompt afirmava `~/.cargo` ausente; ele
+  existe desde 2026-09-29 (cache preexistente) e permaneceu idêntico ao
+  snapshot. `~/.avm` também é preexistente (2026-09-29).
+- **Pendente:**
+  - freeze authority/allowlist do mint;
+  - upgrade authority no deploy;
+  - squatting de `job_id`; rent;
+  - caminho de verificação (Router/CPI ou fallback atestado) para `release` e
+    `refund_on_fail`.
+- **Risco aberto:** platform-tools e Criterion sem digest oficial publicado;
+  revisões adversariais D2b/D2c pendentes; Router/CPI/devnet
+  `STATUS: NÃO VALIDADO`.
+- **Próximo gate:** D2d, conforme `docs/handoffs/d2c-to-d2d.md`.

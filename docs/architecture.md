@@ -31,6 +31,20 @@ A política é um predicado puro: não custodia fundos, não transfere tokens,
 não verifica receipt/prova e recebe o slot como entrada. Detalhes em
 [`docs/escrow-state-machine.md`](escrow-state-machine.md).
 
+## Estado D2c
+
+O workspace `anchor/` contém o programa local `vericode_escrow`
+(Anchor `0.31.1`, Agave `2.3.9`):
+- `create_job` persiste os termos imutáveis do Job no PDA `["job", job_id]` e
+  cria o vault PDA `["vault", job]`, controlado pelo Job;
+- `fund` deposita exatamente o valor do Job;
+- `refund_on_timeout`, permissionless, devolve ao buyer após o prazo.
+
+Toda regra econômica é delegada ao `vericode-core`. O programa foi testado em
+processo (`solana-program-test 2.3.9`) e nunca implantado. Ainda não existem
+`release`, `refund_on_fail` nem verificação de prova. Especificação em
+[`docs/escrow-program.md`](escrow-program.md).
+
 ## Fluxo
 
 `Buyer cria Job e deposita Test USDC` -> `Executor fornece artefato restrito` -> `host executa o harness e gera receipt` -> `contrato valida prova e journal contra o Job` -> `release ao executor em PASS válido ou refund conforme as regras do Job`
@@ -44,7 +58,7 @@ O fluxo acima é alvo de arquitetura, não evidência de integração já funcio
 | Core Rust puro | Tipos de domínio, bytes candidatos, hashes, regra determinística, validação do artefato e `Verdict`; política pura de escrow (D2a) | Depender de Solana, Anchor ou RISC Zero; custodiar fundos, transferir tokens, verificar prova ou deter autoridade de release |
 | Guest RISC Zero | Ler entrada restrita, chamar o core e publicar `JournalV1` com `PASS` ou `FAIL` | Tratar `FAIL` como panic/assert ou expor dados privados desnecessários |
 | Host | Preparar entrada, executar/provar, obter receipt e conferir journal localmente | Ser fonte de verdade para liberar fundos |
-| Programa Anchor | Manter Job/escrow e autorizar release/refund somente após validações do Job | Reexecutar regra de negócio, aceitar admin bypass ou confiar apenas no host |
+| Programa Anchor (`anchor/programs/vericode-escrow`) | Manter Job/escrow, custodiar no vault PDA e liquidar somente pelo core após validações do Job | Reexecutar regra de negócio, aceitar admin bypass ou confiar apenas no host |
 | Router/verificador | Verificar receipt Groth16 por CPI, se a integração Solana for comprovada | Ser considerado disponível sem deployment e CPI validados |
 | Front-end | Criar e consultar Jobs e apresentar estados/transações | Decidir verdict ou custodiar segredos do usuário |
 

@@ -18,7 +18,25 @@ VeriCode ou validação de deployment/CPI.
 
 ## Resultado
 
-**SEM PERFIL PRONTO PARA INSTALAÇÃO.**
+**Atualização D2c (2026-10-04): PERFIL A ESCOLHIDO — raia B.** Anchor
+CLI/crates `0.31.1` + Agave CLI `2.3.9` (platform-tools `v1.48`,
+`rustc 1.84.1-dev`) + Rust host `1.89.0`, em homes isoladas sob
+`~/.local/share/vericode-spikes/d2c`. Evidência por build SBF real:
+
+- a raia B compilou o `counter` oficial com locks preservados e também o
+  programa VeriCode;
+- a raia A (Agave `2.1.0`, platform-tools `v1.43`, `rustc 1.79.0-dev`)
+  falhou no `counter` com 13 erros em `risc0-zkvm-platform 2.2.1`
+  (`unsafe(no_mangle)`), ou seja, no caminho de dependências do Router. O
+  programa VeriCode compilou nela apenas como informação.
+
+A escolha foi delegada ao agente pela decisão D2a.2. Ela contraria a
+recomendação genérica do Anchor (`2.1.0`) porque a verificação via Router é
+o caminho forte do produto. Detalhes, downloads e hashes estão em
+[`docs/d2c-anchor-local-escrow-results.md`](d2c-anchor-local-escrow-results.md).
+O histórico abaixo é preservado como registro D1a.2/D1a.3.
+
+Resultado histórico D1a.3: **SEM PERFIL PRONTO PARA INSTALAÇÃO.**
 
 A D1a.2 definiu o protocolo reproduzível em
 [`docs/d1a2-spike-plan.md`](d1a2-spike-plan.md), e a execução H1–H4 do D1a.3

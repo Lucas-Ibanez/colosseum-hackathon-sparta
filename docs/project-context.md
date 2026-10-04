@@ -42,7 +42,7 @@ evidência nem um escopo proibido.
 | `core-logic/` | `crates/vericode-core` | tipos, Borsh, SHA-256, harness restrito, `JournalV1`, política pura de escrow alinhada ao guia (D2b) |
 | `zk-guest/` | `zkvm/methods/guest` | guest real; dois builds determinísticos; ImageID `4da06f90…fb1a` (antes do D2a) |
 | `zk-host/` | `zkvm/host` | receipts locais reais PASS/FAIL `Composite` |
-| `anchor-program/` | ainda inexistente (`programs/` futuro) | bloqueado: D1b sem Perfil A aprovado |
+| `anchor-program/` | `anchor/programs/vericode-escrow` (workspace `anchor/`, testes em `anchor/tests-local`) | D2c: `create_job`, `fund`, `refund_on_timeout` com vault PDA; testado em processo; sem `release`/`refund_on_fail`, Router ou deploy |
 | `worker-api/` | inexistente | não iniciado |
 | `frontend/` | inexistente | não iniciado |
 
@@ -58,14 +58,14 @@ subtarefa do dia D2. O dia é marco de escopo, não data de calendário.
 ## Estado da sequência (evidência, 2026-10-04)
 
 Data de calendário: 2026-10-04, que corresponde ao dia D8 do cronograma. O
-projeto está tecnicamente no **D2**.
+projeto está tecnicamente entre **D2 e D3** (D2c concluído).
 
 | Dia | Situação | Evidência / lacuna |
 | --- | --- | --- |
 | D0 | técnico concluído; administrativo fora do repositório | `docs/toolchain-matrix.md`, `docs/router-notes.md`, `docs/d1a3-spike-results.md`; inscrição, outreach e pitch não são rastreados aqui |
-| D1 | parcial | crate e guest concluídos (D1c1–D1c2b); manifesto em `docs/manifest-schema.md`; **sem Anchor skeleton** (D1b bloqueado); README ainda diz "Preflight" |
-| D2 | parcial | GATE 48H atendido: receipts locais reais PASS/FAIL (`docs/d1c2b3i-local-receipts-results.md`); máquina de estados com release/refund/timeout testada em Rust puro (D2b); **sem custódia SPL** (→ D2c) |
-| D3 | parcial | journal com job_id, artifact, harness, versão e verdict implementado; provas PASS/FAIL; política create/fund/release/refund testada em Rust puro; mapa do Router em `docs/router-notes.md` (sem CPI); escrow on-chain local pendente |
+| D1 | concluído (técnico) | crate e guest (D1c1–D1c2b); manifesto em `docs/manifest-schema.md`; Anchor skeleton e Perfil A (D2c); README corrigido (D2a.2) |
+| D2 | concluído (técnico) | GATE 48H atendido: receipts locais reais PASS/FAIL (`docs/d1c2b3i-local-receipts-results.md`); máquina de estados testada em Rust puro (D2b); custódia SPL em vault PDA testada em processo (D2c); vídeo fora do repositório |
+| D3 | parcial | journal com job_id, artifact, harness, versão e verdict; provas PASS/FAIL; create/fund/refund por timeout on-chain local testados (D2c); **falta** `release`/`refund_on_fail` com caminho de verificação (Router/CPI ou fallback atestado) |
 | D4–D12 | não iniciados | dependem de Anchor/devnet, Router, CLI, worker e UI |
 
 ### Caminho crítico e risco de prazo
@@ -73,10 +73,11 @@ projeto está tecnicamente no **D2**.
 - O atraso é de cerca de seis dias de calendário. O guia (§3) manda cortar
   primeiro interface e extras, nunca receipt real, vínculo Job–journal,
   escrow básico, cenário negativo ou explicação de limites.
-- Bloqueio principal: **Perfil A Anchor/Agave ainda não escolhido** (D1b).
-  Desde a decisão D2a.2 a escolha está delegada ao agente, com base em
-  evidência executada e documentação oficial; será feita no gate D2c. Sem
-  ela não há programa Anchor, custódia SPL, devnet nem Router.
+- Perfil A escolhido no D2c: Anchor `0.31.1` + Agave `2.3.9` + Rust
+  `1.89.0`, em homes isoladas. Próximo bloqueio: decidir e provar o caminho
+  de verificação do journal on-chain (Router/CPI, que exige receipt Groth16,
+  ou fallback atestado rotulado) para implementar `release` e
+  `refund_on_fail`.
 - Wallets de devnet: o agente está autorizado a criar keypairs efêmeros de
   devnet/localnet (D2a.2), sob as restrições do princípio 9 de `AGENTS.md`.
 
@@ -90,5 +91,5 @@ projeto está tecnicamente no **D2**.
 | Estados | `Draft, Funded, Proving, Submitted, Released, Refunded, Failed` | D2b: `Created, Funded, Released, Refunded`; `Proving/Submitted/Failed` são worker/UI | **resolvido (decisão humana D2b)** |
 | Release após o prazo | não definido | D2b: `Pass` só até `deadline_slot`, inclusive | **resolvido (decisão humana D2b)** |
 | Wallets devnet | usar wallets efêmeras | `AGENTS.md` §9 proibia o agente de criar keypair | **resolvido (D2a.2):** agente pode criar keypairs efêmeros só de devnet/localnet, fora do clone, `0600`, sem exibir segredo; §9 atualizado |
-| Perfil Anchor/Agave | não fixa versões | D1b bloqueado; candidato A = Anchor `0.31.1` + Agave `2.1.0`; Router CI usa `2.3.9` | **delegado ao agente (D2a.2):** escolher no gate D2c com evidência de build SBF e fontes oficiais pinadas |
+| Perfil Anchor/Agave | não fixa versões | D2c: Anchor `0.31.1` + Agave `2.3.9` + Rust `1.89.0` (Agave `2.1.0` falha no `counter`) | **resolvido (D2c, autoridade D2a.2)** |
 | Precedência | evidência > docs oficiais > guia > decisões | guia operacional antigo colocava decisões acima dos contratos | unificada acima |

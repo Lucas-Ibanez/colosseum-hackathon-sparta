@@ -17,8 +17,9 @@ Em desenvolvimento, sem deploy. Comprovado por evidência registrada:
 
 - `crates/vericode-core`: crate Rust pura (`no_std`) com `JournalV1`, wire format Borsh candidato, compromissos SHA-256, harness restrito de desenvolvimento e política pura de escrow; testes locais passando com Rust `1.85.0` e `1.89.0`.
 - `zkvm/`: guest RISC Zero `3.0.3` com dois builds determinísticos idênticos e receipts locais reais de `PASS` e `FAIL` verificadas localmente (tipo `Composite`).
+- `anchor/`: programa Anchor `0.31.1` local (Agave `2.3.9`) com criação de Job, depósito em vault controlado por PDA e refund por timeout, testado em processo com `solana-program-test`; nunca implantado.
 
-Ainda não implementado: programa Anchor, custódia SPL, devnet, Router/CPI, CLI de ponta a ponta, worker e interface.
+Ainda não implementado: release ao executor e refund por `FAIL` on-chain, verificação de prova on-chain (Router/CPI), devnet, CLI de ponta a ponta, worker e interface.
 
 ## Limitações atuais
 
@@ -26,11 +27,12 @@ Ainda não implementado: programa Anchor, custódia SPL, devnet, Router/CPI, CLI
 - As receipts locais são `Composite`, não Groth16.
 - Não há deploy nem transação em nenhuma rede.
 - O artefato atual é um registro de desenvolvimento (`saída = entrada * 2`), não código arbitrário.
-- A política de escrow existe apenas como lógica Rust pura; ela não custodia nem transfere tokens.
+- O programa de escrow só existe localmente e ainda não libera pagamento ao executor.
 
 ## Estrutura
 
 - `crates/vericode-core/` — tipos canônicos, serialização, hashes, harness e política pura de escrow.
+- `anchor/` — programa Anchor local de escrow e seus testes em processo.
 - `zkvm/` — host, métodos e guest RISC Zero.
 - `docs/` — contexto do produto, decisões, evidências e relatórios de cada gate. Comece por [`docs/project-context.md`](docs/project-context.md).
 
