@@ -18,23 +18,24 @@ Borsh e SHA-2 são bibliotecas Rust puras fixadas pelo lock; não introduzem SDK
 de blockchain. O formato continua candidato local até validação por guest e
 por qualquer adaptador on-chain futuro.
 
-## Estado D2a
+## Estado D2a/D2b
 
-O módulo `crates/vericode-core/src/escrow.rs` acrescenta a política pura de
-escrow: identidades de 32 bytes para buyer, executor e mint, `Amount` não
-nulo, `JobV1` imutável, estados `Created`/`Funded`/`Delivered`/`Released`,
-erros explícitos e a elegibilidade de release. O release exige journal com
-todos os compromissos do Job e do artefato registrado pelo executor,
-`Verdict::Pass`, executor e mint do Job. A política é um predicado puro: não
-custodia fundos, não transfere tokens, não verifica receipt/prova e não lê
-relógio. Refund, prazo e timeout continuam pendentes. Detalhes em
+O módulo `crates/vericode-core/src/escrow.rs` contém a política pura de
+escrow (D2a, alinhada ao guia de produto no D2b): identidades de 32 bytes
+para buyer, executor e mint, `Amount` não nulo, `JobV1` imutável com
+`deadline_slot`, estados `Created`/`Funded`/`Released`/`Refunded`, erros
+explícitos e três liquidações. `Pass` vinculado ao Job libera ao executor até
+o prazo; `Fail` vinculado devolve ao buyer em qualquer slot; timeout devolve
+ao buyer somente após o prazo. O `artifact_hash` é registrado na liquidação.
+A política é um predicado puro: não custodia fundos, não transfere tokens,
+não verifica receipt/prova e recebe o slot como entrada. Detalhes em
 [`docs/escrow-state-machine.md`](escrow-state-machine.md).
 
 ## Fluxo
 
 `Buyer cria Job e deposita Test USDC` -> `Executor fornece artefato restrito` -> `host executa o harness e gera receipt` -> `contrato valida prova e journal contra o Job` -> `release ao executor em PASS válido ou refund conforme as regras do Job`
 
-O fluxo acima é alvo de arquitetura, não evidência de integração já funcional. As condições exatas de timeout e refund ainda precisam de especificação.
+O fluxo acima é alvo de arquitetura, não evidência de integração já funcional. As condições de release, refund e timeout estão especificadas e testadas como política pura (`docs/escrow-state-machine.md`); ainda não há programa on-chain que as aplique.
 
 ## Componentes e responsabilidades
 

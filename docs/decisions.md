@@ -639,3 +639,32 @@ Registre decisões relevantes do projeto neste formato.
   Router/CPI/devnet continuam `STATUS: NÃO VALIDADO`.
 - **Próximo gate:** D2b (política de escrow alinhada ao guia), seguido do D2c
   (Perfil A e skeleton Anchor local com custódia SPL).
+
+## 2026-10-04 — D2b: alinhar a política pura de escrow ao guia de produto
+
+- **Data:** 2026-10-04
+- **Decisões humanas confirmadas no Plan Mode:**
+  1. estados econômicos `Created` (≙ `Draft`), `Funded`,
+     `Released { artifact_hash }` e
+     `Refunded { Fail { artifact_hash } | Timeout }`; `Proving`, `Submitted` e
+     `Failed` são estados de worker/UI, sem transição econômica;
+  2. release por `Pass` somente com `current_slot <= deadline_slot`;
+  3. refund por `Fail` válido permitido antes ou depois do prazo.
+- **Leitura registrada do guia:** "refund por timeout só ocorre após
+  `deadline_slot`" = `current_slot > deadline_slot`; no próprio slot do prazo
+  o timeout falha e o release ainda é aceito. O slot é parâmetro de entrada.
+- **Consequência:** o prazo particiona o tempo — até ele, executor (`Pass`) ou
+  buyer (`Fail`); depois, somente buyer (`Fail` ou `Timeout`). Nunca há dois
+  destinos competindo no mesmo slot. O vínculo do journal compara schema,
+  Job, spec, harness e image por `JournalV1::validate_against`; o
+  `artifact_hash` é registrado no estado terminal.
+- **Evidência:** 36/36 testes com Rust `1.85.0` e `1.89.0`, locked/offline;
+  matriz de 810 chamadas com exatamente 8 aceitas; árvores de dependência
+  idênticas; locks, `lib.rs` e `JournalV1` inalterados;
+  [`docs/d2b-escrow-guide-alignment-results.md`](d2b-escrow-guide-alignment-results.md).
+- **Risco aberto:** ImageID não recertificado após mudanças no core; executor
+  que prova após o prazo perde o release; revisão adversarial separada
+  pendente; invariantes 1, 6 e 10 dependem do programa Anchor.
+- **Próximo gate:** D2c — escolha do Perfil A pelo agente (D2a.2) e programa
+  Anchor local com Job e custódia SPL, conforme
+  `docs/handoffs/d2b-to-d2c.md`.

@@ -39,7 +39,7 @@ evidência nem um escopo proibido.
 
 | Módulo do guia | Caminho no repositório | Estado |
 | --- | --- | --- |
-| `core-logic/` | `crates/vericode-core` | tipos, Borsh, SHA-256, harness restrito, `JournalV1`, política pura de escrow (D2a) |
+| `core-logic/` | `crates/vericode-core` | tipos, Borsh, SHA-256, harness restrito, `JournalV1`, política pura de escrow alinhada ao guia (D2b) |
 | `zk-guest/` | `zkvm/methods/guest` | guest real; dois builds determinísticos; ImageID `4da06f90…fb1a` (antes do D2a) |
 | `zk-host/` | `zkvm/host` | receipts locais reais PASS/FAIL `Composite` |
 | `anchor-program/` | ainda inexistente (`programs/` futuro) | bloqueado: D1b sem Perfil A aprovado |
@@ -64,8 +64,8 @@ projeto está tecnicamente no **D2**.
 | --- | --- | --- |
 | D0 | técnico concluído; administrativo fora do repositório | `docs/toolchain-matrix.md`, `docs/router-notes.md`, `docs/d1a3-spike-results.md`; inscrição, outreach e pitch não são rastreados aqui |
 | D1 | parcial | crate e guest concluídos (D1c1–D1c2b); manifesto em `docs/manifest-schema.md`; **sem Anchor skeleton** (D1b bloqueado); README ainda diz "Preflight" |
-| D2 | parcial | GATE 48H atendido: receipts locais reais PASS/FAIL (`docs/d1c2b3i-local-receipts-results.md`); estados testados em Rust puro (D2a); **sem custódia SPL** |
-| D3 | parcial | journal com job_id, artifact, harness, versão e verdict implementado; provas PASS/FAIL; mapa do Router em `docs/router-notes.md` (sem CPI); refund pendente → D2b |
+| D2 | parcial | GATE 48H atendido: receipts locais reais PASS/FAIL (`docs/d1c2b3i-local-receipts-results.md`); máquina de estados com release/refund/timeout testada em Rust puro (D2b); **sem custódia SPL** (→ D2c) |
+| D3 | parcial | journal com job_id, artifact, harness, versão e verdict implementado; provas PASS/FAIL; política create/fund/release/refund testada em Rust puro; mapa do Router em `docs/router-notes.md` (sem CPI); escrow on-chain local pendente |
 | D4–D12 | não iniciados | dependem de Anchor/devnet, Router, CLI, worker e UI |
 
 ### Caminho crítico e risco de prazo
@@ -84,11 +84,11 @@ projeto está tecnicamente no **D2**.
 
 | Tema | Guia de produto | Repositório | Resolução |
 | --- | --- | --- | --- |
-| `artifact_hash` | registrado pelo programa apenas na liquidação; comparar job, spec, harness, ImageID | D2a: executor pré-registra em `Delivered` e o release compara | **Guia prevalece** (decisão humana 2026-10-04, D2a.1); corrigir no D2b |
-| Refund em `Fail` | `Fail` válido devolve ao buyer | D2a: pendente | adotado do guia; implementar no D2b |
-| Timeout | refund somente após `deadline_slot`; antes falha | D2a: sem prazo | adotado do guia; implementar no D2b com slot como entrada, sem relógio |
-| Estados | `Draft, Funded, Proving, Submitted, Released, Refunded, Failed` | D2a: `Created, Funded, Delivered, Released` | o D2b deve propor o mapeamento on-chain × worker/UI e pedir confirmação no Plan Mode |
-| Release após o prazo | não definido | não definido | decisão humana exigida no D2b |
+| `artifact_hash` | registrado pelo programa apenas na liquidação; comparar job, spec, harness, ImageID | D2b: registrado na liquidação | **resolvido (D2a.1/D2b)** |
+| Refund em `Fail` | `Fail` válido devolve ao buyer | D2b: `refund_on_fail`, em qualquer slot | **resolvido (D2b)** |
+| Timeout | refund somente após `deadline_slot`; antes falha | D2b: `current_slot > deadline_slot`, slot como entrada | **resolvido (D2b)** |
+| Estados | `Draft, Funded, Proving, Submitted, Released, Refunded, Failed` | D2b: `Created, Funded, Released, Refunded`; `Proving/Submitted/Failed` são worker/UI | **resolvido (decisão humana D2b)** |
+| Release após o prazo | não definido | D2b: `Pass` só até `deadline_slot`, inclusive | **resolvido (decisão humana D2b)** |
 | Wallets devnet | usar wallets efêmeras | `AGENTS.md` §9 proibia o agente de criar keypair | **resolvido (D2a.2):** agente pode criar keypairs efêmeros só de devnet/localnet, fora do clone, `0600`, sem exibir segredo; §9 atualizado |
 | Perfil Anchor/Agave | não fixa versões | D1b bloqueado; candidato A = Anchor `0.31.1` + Agave `2.1.0`; Router CI usa `2.3.9` | **delegado ao agente (D2a.2):** escolher no gate D2c com evidência de build SBF e fontes oficiais pinadas |
 | Precedência | evidência > docs oficiais > guia > decisões | guia operacional antigo colocava decisões acima dos contratos | unificada acima |
