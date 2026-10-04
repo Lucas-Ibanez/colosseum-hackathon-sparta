@@ -18,6 +18,18 @@ Borsh e SHA-2 são bibliotecas Rust puras fixadas pelo lock; não introduzem SDK
 de blockchain. O formato continua candidato local até validação por guest e
 por qualquer adaptador on-chain futuro.
 
+## Estado D2a
+
+O módulo `crates/vericode-core/src/escrow.rs` acrescenta a política pura de
+escrow: identidades de 32 bytes para buyer, executor e mint, `Amount` não
+nulo, `JobV1` imutável, estados `Created`/`Funded`/`Delivered`/`Released`,
+erros explícitos e a elegibilidade de release. O release exige journal com
+todos os compromissos do Job e do artefato registrado pelo executor,
+`Verdict::Pass`, executor e mint do Job. A política é um predicado puro: não
+custodia fundos, não transfere tokens, não verifica receipt/prova e não lê
+relógio. Refund, prazo e timeout continuam pendentes. Detalhes em
+[`docs/escrow-state-machine.md`](escrow-state-machine.md).
+
 ## Fluxo
 
 `Buyer cria Job e deposita Test USDC` -> `Executor fornece artefato restrito` -> `host executa o harness e gera receipt` -> `contrato valida prova e journal contra o Job` -> `release ao executor em PASS válido ou refund conforme as regras do Job`
@@ -28,7 +40,7 @@ O fluxo acima é alvo de arquitetura, não evidência de integração já funcio
 
 | Componente | Responsabilidade | Não deve fazer |
 | --- | --- | --- |
-| Core Rust puro | Tipos de domínio, bytes candidatos, hashes, regra determinística, validação do artefato e `Verdict` | Depender de Solana, Anchor ou RISC Zero; conferir autoridade de release |
+| Core Rust puro | Tipos de domínio, bytes candidatos, hashes, regra determinística, validação do artefato e `Verdict`; política pura de escrow (D2a) | Depender de Solana, Anchor ou RISC Zero; custodiar fundos, transferir tokens, verificar prova ou deter autoridade de release |
 | Guest RISC Zero | Ler entrada restrita, chamar o core e publicar `JournalV1` com `PASS` ou `FAIL` | Tratar `FAIL` como panic/assert ou expor dados privados desnecessários |
 | Host | Preparar entrada, executar/provar, obter receipt e conferir journal localmente | Ser fonte de verdade para liberar fundos |
 | Programa Anchor | Manter Job/escrow e autorizar release/refund somente após validações do Job | Reexecutar regra de negócio, aceitar admin bypass ou confiar apenas no host |

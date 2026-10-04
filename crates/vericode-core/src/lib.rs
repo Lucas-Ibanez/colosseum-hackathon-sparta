@@ -634,6 +634,8 @@ pub fn evaluate_restricted_artifact(
     ))
 }
 
+pub mod escrow;
+
 #[cfg(test)]
 mod tests {
     use super::*;

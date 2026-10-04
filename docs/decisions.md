@@ -531,3 +531,48 @@ Registre decisões relevantes do projeto neste formato.
   `STATUS: NÃO VALIDADO`.
 - **Próxima transição:** nenhuma dentro de D1c2b. Qualquer escopo posterior
   exige nova autoridade e objetivo separado.
+
+## 2026-10-04 — D2a: política pura de escrow no core
+
+- **Data:** 2026-10-04
+- **Decisão:** implementar em `crates/vericode-core/src/escrow.rs` somente a
+  política pura de escrow, sem Solana, Anchor ou RISC Zero. Decisões humanas
+  explícitas desta sessão: (1) o `artifact_hash` esperado é registrado uma
+  única vez, somente pelo executor do Job, no estado `Funded`, levando a
+  `Delivered { artifact_hash }`; o release compara o journal contra esse
+  valor; (2) `JobV1` rejeita `buyer == executor`. Regras derivadas dos
+  documentos existentes: funding somente pelo buyer, com mint e amount exatos
+  do Job; identidades toda-zero e amount zero rejeitados; release somente com
+  todos os compromissos, `Verdict::Pass`, executor e mint do Job; `Payout`
+  copiado do Job; `Released` terminal; nenhum parâmetro administrativo.
+- **Fronteira:** o guia operacional e a arquitetura dizem que o core não toma
+  "decisão de pagamento"/"autoridade de release". Esta decisão delimita a
+  exceção: o core passa a conter o predicado puro de elegibilidade, reutilizável
+  pelo futuro programa; ele não custodia, não transfere, não verifica prova e
+  não detém autoridade. O guia operacional não foi editado neste gate.
+- **Motivo:** o passo 4 da sequência de construção exige especificar a
+  política e a máquina de estados antes do Anchor; a crate pura permite testar
+  a política sem SDKs incompatíveis.
+- **Evidência:** 37/37 testes (20 anteriores + 17 de escrow) e `cargo tree`
+  idêntico com Rust `1.85.0` e `1.89.0`, locked/offline; locks inalterados;
+  [`docs/d2a-core-escrow-policy-results.md`](d2a-core-escrow-policy-results.md)
+  e [`docs/escrow-state-machine.md`](escrow-state-machine.md).
+- **Pendente — `AGUARDANDO_AUTORIZAÇÃO`:** refund e seu estado terminal;
+  prazo/timeout e quem os aciona; efeito econômico de `Verdict::Fail`; quem
+  aciona `release` on-chain; layout/serialização do Job. Nenhuma dessas regras
+  foi inventada.
+- **Errata D1c2b.3i:** `docs/d1c2b3i-local-receipts-results.md` (linhas 49 e
+  55) transcreve o harness hash com 68 hex e o artifact hash PASS com 60 hex.
+  Os valores canônicos, testados em `crates/vericode-core/src/lib.rs`, são
+  harness `01124025c6ad84bb8490f216e95ff241d862dc2faf316d0e28bcdb55b0996b50`
+  e artifact PASS
+  `d5aa9223d6d2a1ba23bd73ca325b411c75027a739c285a95ff63b963442a224c`. O
+  relatório histórico foi preservado; a errata não altera as receipts, que
+  foram verificadas por bytes exatos.
+- **Risco aberto:** ImageID `4da06f90…fb1a` não foi recertificado após a
+  adição do módulo; um Job `Delivered` com artefato FAIL não tem saída até a
+  decisão de refund; o executor pode registrar qualquer artefato que satisfaça
+  a regra trivial de desenvolvimento. Router/CPI/devnet continuam
+  `STATUS: NÃO VALIDADO`.
+- **Próximo gate:** decisão humana sobre refund/prazo/`FAIL`; somente depois
+  especificar o gate Anchor local, sem Router inicialmente.
