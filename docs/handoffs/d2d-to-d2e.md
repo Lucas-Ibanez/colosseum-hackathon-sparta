@@ -30,7 +30,10 @@
   `…/d2d/receipts/src/main.rs`
 
 ## Preflight
-- `pwd`; raiz Git; branch; HEAD (esperado: commit docs D2d sobre `ec980e9`);
+- `pwd`; raiz Git; branch; HEAD (esperado: commit D2c.1
+  `anchor: reject freezable mints and add Groth16 fixtures (D2c.1)` sobre
+  `9a18f71`, ou posterior se a revisão adversarial tiver gerado commits de
+  correção autorizados);
   `git status --short` (vazio); `git diff --check`.
 - `~/.rustup`, `~/.cache/solana` e `~/.config/solana` ausentes.
 - Snapshots de `~/.cargo`, `~/.avm` e `~/.docker` no início e no fim.
@@ -39,12 +42,18 @@
   stash.
 
 ## Checagem da tarefa anterior
-- `git log --oneline -10` contém o commit docs D2d, `ec980e9` e `a10f026`.
+- `git log --oneline -10` contém o commit D2c.1, `9a18f71` (D2d), `ec980e9` e
+  `a10f026`.
+- Achados da revisão adversarial do D2b/D2c/D2c.1
+  (`docs/handoffs/d2c1-to-review-d2b-d2c.md`): ler o relatório e tratar os
+  bloqueantes antes de começar; se a revisão não tiver ocorrido, parar e
+  perguntar.
 - Core 36/36 nas duas raias.
 - Programa:
   - `cargo-build-sbf -- --locked` deve repetir `vericode_escrow.so`
-    `04cc2a845eea1b2e10e313601d1b51887f3f069f3e80c802651d499ddfd0ae56`;
-  - `anchor/tests-local` 10/10.
+    `d66ac76bc8ef66488facc6473b7679eac2fa5e605fba409a6cd61acce20baaae`
+    (D2c.1);
+  - `anchor/tests-local`: escrow 12/12 e fixtures 2/2.
 - Spike D2d:
   - `sha256sum` de `d2d/vectors/*` igual a `d2d/logs/vectors.sha256`;
   - `.so` Router `1b26b017…` e verificador `dab6746d…`;
@@ -105,9 +114,9 @@ as receipts Groth16 reais do D2d e o Router/verificador reais.
    que o teste usa), registrando que o Router de devnet continua
    `NÃO VALIDADO`; ou uma constante por feature de cluster.
 3. **Fixtures de teste no repositório:**
-   - Recomendação: versionar em `anchor/tests-local/fixtures/` os dados
-     públicos dos vetores PASS e FAIL (seal, journal, selector, image_id,
-     digest) com seus SHA-256.
+   - Já versionadas no D2c.1 em `anchor/tests-local/fixtures/groth16/`
+     (`pass.txt`/`fail.txt` em hex, seal cru com `pi_a` não negado), com teste
+     de consistência. Reutilizar; não regenerar.
    - Montar no genesis do teste as contas `VerifierRouter` e `VerifierEntry`
      (dono em memória), para não depender do keypair de teste do D2d.
    - Os `.so` do Router/verificador são reconstruídos do commit pinado por

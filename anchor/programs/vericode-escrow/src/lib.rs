@@ -153,6 +153,11 @@ pub mod vericode_escrow {
 pub struct CreateJob<'info> {
     #[account(mut)]
     pub buyer: Signer<'info>,
+    /// A mint without freeze authority can never gain one (SPL Token
+    /// `MintCannotFreeze`), so the vault can never be frozen.
+    #[account(
+        constraint = mint.freeze_authority.is_none() @ VericodeEscrowError::MintHasFreezeAuthority
+    )]
     pub mint: Account<'info, Mint>,
     #[account(
         init,
@@ -343,6 +348,8 @@ pub enum VericodeEscrowError {
     DeadlinePassed,
     #[msg("Unsupported Job account version")]
     UnsupportedAccountVersion,
+    #[msg("Mint has a freeze authority and could freeze the vault")]
+    MintHasFreezeAuthority,
 }
 
 fn amount_error(error: AmountError) -> Error {

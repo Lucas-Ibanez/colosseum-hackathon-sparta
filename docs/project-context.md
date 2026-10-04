@@ -77,9 +77,12 @@ projeto está tecnicamente entre **D2 e D3** (D2c concluído).
   escrow básico, cenário negativo ou explicação de limites.
 - Perfil A escolhido no D2c: Anchor `0.31.1` + Agave `2.3.9` + Rust
   `1.89.0`, em homes isoladas.
-- Caminho forte comprovado em processo no D2d (Groth16 + Router). Próximo
-  passo: `release`/`refund_on_fail` com CPI ao Router no `vericode_escrow`
-  (D2e). Depois, devnet, que exige confirmar o Program ID e o dono do Router
+- Caminho forte comprovado em processo no D2d (Groth16 + Router). O D2c.1
+  fechou o risco de freeze authority do mint e versionou as fixtures Groth16.
+  Próximos passos:
+  1. revisão adversarial separada do D2b/D2c/D2c.1
+     (`docs/handoffs/d2c1-to-review-d2b-d2c.md`);
+  2. `release`/`refund_on_fail` com CPI ao Router no `vericode_escrow` (D2e). Depois, devnet, que exige confirmar o Program ID e o dono do Router
   ou implantar um Router próprio, a decidir.
 - Wallets de devnet: o agente está autorizado a criar keypairs efêmeros de
   devnet/localnet (D2a.2), sob as restrições do princípio 9 de `AGENTS.md`.

@@ -52,7 +52,7 @@ Assim, um journal vinculado a um `job_id` só pode corresponder a um Job.
 
 | Instrução | Signers | Contas | Regra (core) | Efeito |
 | --- | --- | --- | --- | --- |
-| `create_job(job_id, executor, amount, deadline_slot, spec_hash, harness_hash, image_id)` | buyer (payer) | buyer, mint, job (`init`), vault (`init`), token program, system program | `Amount::new`, `JobV1::new` | cria Job `Created` e vault vazio |
+| `create_job(job_id, executor, amount, deadline_slot, spec_hash, harness_hash, image_id)` | buyer (payer) | buyer, mint (**sem freeze authority**, D2c.1), job (`init`), vault (`init`), token program, system program | `Amount::new`, `JobV1::new` | cria Job `Created` e vault vazio |
 | `fund(amount)` | buyer | buyer, job, mint, `buyer_token`, vault, token program | `JobV1::fund(estado, signer, mint, amount)` | `transfer_checked` de `job.amount` para o vault; `Funded` |
 | `refund_on_timeout()` | nenhum (permissionless) | job, mint, vault, `buyer_token`, token program | `JobV1::refund_on_timeout(estado, Clock.slot, buyer_token.owner, buyer_token.mint)` | `transfer_checked` de `job.amount` do vault ao buyer, assinado pela PDA; `RefundedOnTimeout` |
 
@@ -74,6 +74,7 @@ instruções acima. A IDL não é versionada; só seu hash está registrado.
 | 6013–6018 | `Journal*Mismatch` | `EscrowError::Journal` (sem uso neste gate) |
 | 6019–6022 | `VerdictNotPass`, `VerdictNotFail`, `DeadlineNotReached`, `DeadlinePassed` | `EscrowError` |
 | 6023 | `UnsupportedAccountVersion` | conta com `version ≠ 1` |
+| 6024 | `MintHasFreezeAuthority` | constraint de `create_job` (D2c.1): mint com freeze authority |
 
 Erros estruturais (seeds, owner, conta já existente) são do Anchor, do System
 Program ou do Token Program.
@@ -95,13 +96,14 @@ Program ou do Token Program.
 
 ## Pendências e riscos conhecidos
 
-- **Freeze authority do mint:** se o mint tiver freeze authority, quem a
-  controla pode congelar o vault e bloquear qualquer liquidação. Decidir se
-  `create_job` deve rejeitar mints com freeze authority ou exigir o mint Test
-  USDC fixo do gate devnet.
-- **Mint aceito:** qualquer mint do SPL Token clássico é aceito; Token-2022 é
-  rejeitado pelo tipo `Account<Mint>`. A allowlist do Test USDC fica para o
-  gate devnet.
+- **Freeze authority do mint — resolvido no D2c.1:** `create_job` rejeita
+  mints com freeze authority (erro 6024). O SPL Token `7.0.0` não permite
+  adicionar freeze authority a um mint criado sem ela (`MintCannotFreeze`),
+  então a checagem na criação basta e o vault nunca pode ser congelado.
+  Ambos os comportamentos estão testados.
+- **Mint aceito:** qualquer mint do SPL Token clássico sem freeze authority é
+  aceito; Token-2022 é rejeitado pelo tipo `Account<Mint>`. A allowlist do
+  Test USDC fica para o gate devnet.
 - **Upgrade authority:** um programa atualizável é um bypass administrativo
   em potencial; decidir no gate de deploy (programa imutável ou autoridade
   documentada).

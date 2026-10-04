@@ -1,52 +1,48 @@
-# Controle autônomo — D2d
+# Controle autônomo — D2c.1
 
 ## Objetivo atual
 
-`D2d` — spike do caminho forte de verificação: receipts Groth16 reais do
-guest VeriCode e Verifier Router de `risc0-solana v3.0.0` em
-`solana-program-test`, com testes negativos antes dos positivos. Resultado:
-GO ou NO-GO para o D2e.
+`D2c.1`:
+1. rejeitar no `create_job` mints com freeze authority;
+2. versionar no repositório os vetores Groth16 PASS/FAIL do D2d como fixtures
+   em hex;
+3. preparar o prompt da revisão adversarial separada do D2b/D2c/D2c.1.
 
 ## Marcos anteriores
 
-- D1c2b `CONCLUÍDO`: receipts locais `Composite`.
 - D2a `4d7e18f`, D2a.1 `0622709`, D2a.2 `402426f`, D2b `58838ae`.
-- D2c: `a10f026` (programa) e `ec980e9` (docs; Perfil A = Anchor `0.31.1` +
-  Agave `2.3.9` + Rust `1.89.0`).
+- D2c: `a10f026` (programa) e `ec980e9` (docs; Perfil A).
+- D2d: `9a18f71` (GO: Groth16 + Router em `solana-program-test`).
 
 ## Baseline
 
-- Raiz: `/home/lucas/src/vericode`; branch `main`; HEAD de baseline
-  `ec980e9`.
-- Locks do repositório inalterados:
-  - raiz `191802b2…`;
-  - host `f5236689…`;
-  - guest `1116acef…`;
-  - `anchor/` `19a1db26…`;
-  - `anchor/tests-local` `be94760a…`.
-- Spike fora do clone: `~/.local/share/vericode-spikes/d2d`.
+- Raiz `/home/lucas/src/vericode`; branch `main`; HEAD de baseline `9a18f71`.
+- Locks inalterados no gate:
+  - raiz `191802b2…`; host `f5236689…`; guest `1116acef…`;
+  - `anchor/` `19a1db26…`; `anchor/tests-local` `be94760a…`.
+- Ambientes isolados: `vericode-spikes/d2c` (Perfil A) e `vericode-spikes/d2d`
+  (spike e artefatos persistentes).
 
 ## Gate atual
 
-`D2d` — Groth16 + Router em processo.
+`D2c.1` — mint sem freeze authority e fixtures Groth16.
 
 ## Estado
 
-`CONCLUÍDO — GO`.
-- Groth16 PASS/FAIL reais verificados localmente.
-- Router e verificador aceitaram FIB, PASS e FAIL (110.851 CU) e rejeitaram
-  proof adulterada, selector desconhecido, ImageID errado, journal digest
-  errado e `add_verifier` por não-dono.
-- Commit documental autorizado; push não autorizado.
+`CONCLUÍDO`.
+- `.so` `d66ac76b…`.
+- Escrow 12/12 e fixtures 2/2.
+- IDL com 3 instruções e 25 erros.
+- Core 36/36.
+
+**Commit pendente de autorização humana.** Mensagem sugerida:
+`anchor: reject freezable mints and add Groth16 fixtures (D2c.1)`.
 
 ## Decisões humanas registradas
 
-- D2a.1, D2a.2, D2b e D2c (`docs/decisions.md`).
-- D2d:
-  - pull da imagem `risczero/risc0-groth16-prover:v2025-04-03.1` por digest
-    amd64 `7f173963…`;
-  - spike fora do clone;
-  - orçamento de 3 h (usados cerca de 41 min).
+- D2a.1, D2a.2, D2b, D2c e D2d (`docs/decisions.md`).
+- D2c.1: resolver freeze authority e fixtures antes do D2e; revisão
+  adversarial em outra sessão.
 
 ## Ações proibidas (permanentes salvo novo objetivo)
 
@@ -56,24 +52,24 @@ GO ou NO-GO para o D2e.
   `docs/manifest-schema.md` sem decisão registrada.
 - Keypair fora de gate autorizado, de mainnet, dentro do clone ou com segredo
   exibido.
-- Devnet, airdrop, deploy sem gate autorizado.
-- Alegar "ZK on-chain" em cluster.
+- Devnet, airdrop, deploy sem gate autorizado; "ZK on-chain" em cluster.
 - Mock, dev mode ou receipt `Fake` como sucesso.
 - Push, reescrita de histórico, stash, reset ou operação destrutiva.
 
 ## Riscos abertos
 
-- Prover Groth16 com margem de RAM estreita (cerca de 6,25 de 7,6 GiB);
-  container sem isolamento de rede.
-- Router em devnet: Program ID, dono e deployment não confirmados.
-- CPI a partir do `vericode_escrow` ainda inexistente.
-- Freeze authority/allowlist do mint, upgrade authority, squatting de
-  `job_id` e rent (D2c).
-- Vetores Groth16 só fora do clone; ImageID não recertificado.
-- Revisões adversariais D2b/D2c pendentes.
+- Revisão adversarial separada do D2b/D2c/D2c.1: pendente.
+- Upgrade authority, squatting de `job_id`, rent.
+- Router em devnet não confirmado; CPI do escrow inexistente (D2e).
+- Margem de RAM do prover; ImageID não recertificado. As fixtures dependem do
+  ELF D1c2b preservado em `vericode-spikes/d2d/artifacts`.
+- O WSL reinicia e limpa `/tmp`: manter artefatos sempre em
+  `~/.local/share/vericode-spikes`.
 - Calendário: dia D8; prazo por volta de 8 out.
 
 ## Próxima transição permitida
 
-`D2e` — `release`/`refund_on_fail` no `vericode_escrow` com CPI ao Verifier
-Router, testados em processo, conforme `docs/handoffs/d2d-to-d2e.md`.
+1. Revisão adversarial separada, somente leitura, conforme
+   `docs/handoffs/d2c1-to-review-d2b-d2c.md`.
+2. Depois, `D2e` conforme `docs/handoffs/d2d-to-d2e.md`, tratando antes os
+   achados bloqueantes da revisão.

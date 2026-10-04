@@ -105,6 +105,14 @@ async fn transfer_lamports(ctx: &mut ProgramTestContext, to: &Pubkey, lamports: 
 }
 
 async fn create_mint(ctx: &mut ProgramTestContext, authority: &Pubkey) -> Pubkey {
+    create_mint_with_freeze(ctx, authority, None).await
+}
+
+async fn create_mint_with_freeze(
+    ctx: &mut ProgramTestContext,
+    authority: &Pubkey,
+    freeze_authority: Option<&Pubkey>,
+) -> Pubkey {
     let mint = Keypair::new();
     let rent = ctx.banks_client.get_rent().await.unwrap();
     let create = system_instruction::create_account(
@@ -115,8 +123,14 @@ async fn create_mint(ctx: &mut ProgramTestContext, authority: &Pubkey) -> Pubkey
         &spl_token::ID,
     );
     let init =
-        spl_token::instruction::initialize_mint2(&spl_token::ID, &mint.pubkey(), authority, None, DECIMALS)
-            .unwrap();
+        spl_token::instruction::initialize_mint2(
+            &spl_token::ID,
+            &mint.pubkey(),
+            authority,
+            freeze_authority,
+            DECIMALS,
+        )
+        .unwrap();
     send(ctx, &[create, init], &[&mint]).await.unwrap();
     mint.pubkey()
 }
@@ -318,6 +332,51 @@ async fn create_job_rejects_invalid_terms_without_creating_accounts() {
         assert!(env.ctx.banks_client.get_account(job).await.unwrap().is_none());
         assert!(env.ctx.banks_client.get_account(vault_pda(&job)).await.unwrap().is_none());
     }
+}
+
+#[tokio::test]
+async fn create_job_rejects_a_mint_with_freeze_authority() {
+    let mut env = setup().await;
+    let buyer = env.buyer.insecure_clone();
+    let freezer = Keypair::new();
+    let freezable = create_mint_with_freeze(
+        &mut env.ctx,
+        &freezer.pubkey(),
+        Some(&freezer.pubkey()),
+    )
+    .await;
+    let job = job_pda(&JOB_ID);
+
+    let ix = create_job_ix(&buyer.pubkey(), &freezable, JOB_ID, env.executor.pubkey(), AMOUNT, DEADLINE);
+    assert_custom(
+        send(&mut env.ctx, &[ix], &[&buyer]).await,
+        custom(VericodeEscrowError::MintHasFreezeAuthority),
+    );
+    assert!(env.ctx.banks_client.get_account(job).await.unwrap().is_none());
+    assert!(env.ctx.banks_client.get_account(vault_pda(&job)).await.unwrap().is_none());
+}
+
+#[tokio::test]
+async fn freeze_authority_cannot_be_added_to_the_job_mint() {
+    let mut env = setup().await;
+    create_default_job(&mut env).await;
+    let authority = env.mint_authority.insecure_clone();
+
+    // The accepted mint was created without freeze authority; SPL Token
+    // refuses to add one later, so the vault can never be frozen.
+    let ix = spl_token::instruction::set_authority(
+        &spl_token::ID,
+        &env.mint,
+        Some(&authority.pubkey()),
+        spl_token::instruction::AuthorityType::FreezeAccount,
+        &authority.pubkey(),
+        &[],
+    )
+    .unwrap();
+    assert_custom(
+        send(&mut env.ctx, &[ix], &[&authority]).await,
+        spl_token::error::TokenError::MintCannotFreeze as u32,
+    );
 }
 
 #[tokio::test]

@@ -748,3 +748,31 @@ Registre decisões relevantes do projeto neste formato.
   - vetores Groth16 só fora do clone;
   - revisões adversariais D2b/D2c pendentes.
 - **Próximo gate:** D2e, conforme `docs/handoffs/d2d-to-d2e.md`.
+
+## 2026-10-04 — D2c.1: rejeitar mints com freeze authority e versionar fixtures Groth16
+
+- **Data:** 2026-10-04
+- **Decisão humana:** resolver antes do D2e os riscos "freeze authority do
+  mint" e "vetores Groth16 só fora do clone", conforme as recomendações do
+  agente.
+- **Decisões aplicadas:**
+  - `create_job` rejeita mints com freeze authority, por constraint Anchor; o
+    erro `MintHasFreezeAuthority` (6024) foi acrescentado ao fim do enum. A
+    regra é uma pré-condição de custódia no programa, não regra econômica no
+    core.
+  - Os vetores públicos PASS/FAIL do D2d foram versionados em hex (não
+    binário, por causa de `* text=auto eol=lf`) em
+    `anchor/tests-local/fixtures/groth16/`, com teste de consistência.
+- **Motivo:** sem a regra, o buyer poderia congelar o vault e impedir o
+  pagamento ao executor. O SPL Token `7.0.0` impede adicionar freeze
+  authority depois (`MintCannotFreeze`), então a checagem na criação basta.
+  As fixtures tornam o D2e reproduzível sem Docker nem prova.
+- **Evidência:** `.so` `d66ac76b…`; escrow 12/12; fixtures 2/2; IDL com 3
+  instruções e 25 erros; core 36/36; locks inalterados;
+  [`docs/d2c1-mint-freeze-and-fixtures-results.md`](d2c1-mint-freeze-and-fixtures-results.md).
+- **Registro:** o WSL foi reiniciado às 19:01. O `/tmp` foi limpo (helper e
+  artefatos D1c2b originais); as cópias persistentes em
+  `vericode-spikes/d2d/artifacts` conferem.
+- **Risco aberto:** revisão adversarial separada pendente
+  (`docs/handoffs/d2c1-to-review-d2b-d2c.md`); demais riscos do D2c/D2d
+  inalterados.
