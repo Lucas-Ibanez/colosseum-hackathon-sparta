@@ -532,7 +532,7 @@ Registre decisões relevantes do projeto neste formato.
 - **Próxima transição:** nenhuma dentro de D1c2b. Qualquer escopo posterior
   exige nova autoridade e objetivo separado.
 
-## 2026-10-04 — D2a: política pura de escrow no core
+## 2026-10-04 — D2a: política pura de escrow no core (item 1 substituído por D2a.1)
 
 - **Data:** 2026-10-04
 - **Decisão:** implementar em `crates/vericode-core/src/escrow.rs` somente a
@@ -576,3 +576,34 @@ Registre decisões relevantes do projeto neste formato.
   `STATUS: NÃO VALIDADO`.
 - **Próximo gate:** decisão humana sobre refund/prazo/`FAIL`; somente depois
   especificar o gate Anchor local, sem Router inicialmente.
+
+## 2026-10-04 — D2a.1: adotar o guia de produto e a sequência como contexto
+
+- **Data:** 2026-10-04
+- **Decisão:** registrar `docs/context/guia-mvp-agentes-de-codigo.md` como
+  norma de produto e `docs/context/sequencia-mvp.md` como cronograma, ambos
+  sem alteração de conteúdo, e unificar a ordem de precedência em
+  `docs/project-context.md`. Decisão humana explícita desta sessão: no
+  conflito sobre `artifact_hash`, **o guia prevalece** — o comprador não fixa
+  o hash, o executor não o pré-registra e o programa registra o hash do
+  journal apenas na liquidação, comparando `job_id`, `spec_hash`,
+  `harness_hash` e ImageID. Isso substitui o item 1 da decisão D2a. Adotados
+  do guia para o D2b: `Fail` válido devolve somente ao buyer; refund por
+  timeout somente após `deadline_slot`, com o slot informado como entrada
+  (o core não lê relógio). Instituído o protocolo
+  `docs/handoff-protocol.md` em `AGENTS.md` e `CLAUDE.md`.
+- **Motivo:** os documentos fornecidos pelo humano devem nortear a construção;
+  sem precedência explícita, guia de produto, guia operacional e decisões
+  anteriores divergiam em `artifact_hash`, refund, prazo e wallets.
+- **Evidência:** documentos registrados e conferidos por `git diff --check`;
+  conflitos tabelados em `docs/project-context.md`.
+- **Ainda pendente:** mapeamento dos estados do guia (`Draft`, `Proving`,
+  `Submitted`, `Failed`) para estados on-chain × worker/UI; se release é
+  permitido após o prazo; quem aciona refund/release on-chain; Perfil A
+  Anchor/Agave (D1b); criação de wallets devnet frente ao princípio 9 de
+  `AGENTS.md`.
+- **Risco aberto:** o projeto está tecnicamente no D2 em 2026-10-04 (dia D8
+  do calendário). O código D2a ainda implementa o pré-registro substituído
+  até o D2b.
+- **Próximo gate:** D2b — alinhar a política pura de escrow ao guia, conforme
+  `docs/handoffs/d2a1-to-d2b.md`.

@@ -3,6 +3,12 @@
 **Política pura em `crates/vericode-core/src/escrow.rs`. Não é programa
 Anchor, não custodia fundos, não move tokens e não verifica prova.**
 
+> **Revisão pendente (D2a.1, 2026-10-04):** este documento descreve a
+> implementação D2a. O guia de produto prevalece em três pontos que o D2b
+> deve implementar: `artifact_hash` registrado apenas na liquidação (sem
+> pré-registro `Delivered`), refund ao buyer em `Fail` válido e refund por
+> timeout somente após `deadline_slot`. Ver `docs/project-context.md`.
+
 Este documento descreve a política implementada no D2a. Ela é a referência
 que um futuro programa on-chain deverá aplicar; até esse programa existir e
 ser testado, as invariantes on-chain do guia operacional continuam requisitos,

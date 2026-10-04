@@ -12,6 +12,10 @@ Ele complementa, mas não substitui:
 - `docs/zkvm-notes.md` e `docs/router-notes.md`, para evidência das integrações;
 - `docs/decisions.md` e `docs/evidence.md`, para decisões e resultados reais.
 
+Desde 2026-10-04, a norma de produto é
+`docs/context/guia-mvp-agentes-de-codigo.md`, e a ordem de precedência
+unificada está em `docs/project-context.md`. Em conflito, este guia cede.
+
 Este arquivo não registra o status dos gates. Consulte `docs/evidence.md` e os
 relatórios do gate correspondente antes de afirmar que uma capacidade existe.
 
@@ -150,6 +154,11 @@ Não assuma sem uma decisão registrada:
 
 `Verdict::Fail` já é uma saída normal do domínio. Isso não define, por si só,
 a política econômica de refund.
+
+Atualização 2026-10-04 (D2a.1): o guia de produto resolve os dois primeiros
+itens — `artifact_hash` é registrado apenas na liquidação, e `Fail` válido ou
+timeout após `deadline_slot` devolvem ao buyer. Os demais itens continuam
+abertos; ver `docs/project-context.md`.
 
 ## Invariantes do futuro escrow
 
