@@ -1,0 +1,19 @@
+# Local Anchor workspace for the VeriCode escrow program (gate D2c).
+# Profile: Anchor 0.31.1 + Agave 2.3.9 (platform-tools v1.48), Rust host 1.89.0.
+# The localnet program ID below is a public key only; its keypair lives
+# outside the repository. Nothing here has been deployed to any cluster.
+
+[toolchain]
+anchor_version = "0.31.1"
+solana_version = "2.3.9"
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.localnet]
+vericode_escrow = "GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH"
+
+[provider]
+cluster = "localnet"
+wallet = "~/.config/solana/id.json"

@@ -1,0 +1,23 @@
+[package]
+name = "vericode-escrow-tests"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "In-process tests of the local VeriCode escrow program"
+publish = false
+
+# Separate workspace: host-only test dependencies must not enter the SBF
+# build graph resolved by the platform-tools Cargo.
+[workspace]
+
+[dev-dependencies]
+anchor-lang = "=0.31.1"
+anchor-spl = { version = "=0.31.1", default-features = false, features = ["token", "token_2022"] }
+solana-keypair = "=2.2.3"
+solana-program-test = "=2.3.9"
+solana-signer = "=2.2.1"
+solana-system-interface = { version = "=1.0.0", features = ["bincode"] }
+solana-transaction = "=2.2.3"
+solana-transaction-error = "=2.2.1"
+vericode-core = { path = "../../crates/vericode-core" }
+vericode-escrow = { path = "../programs/vericode-escrow", features = ["no-entrypoint"] }

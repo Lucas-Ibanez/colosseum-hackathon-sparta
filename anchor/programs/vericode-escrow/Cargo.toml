@@ -1,0 +1,23 @@
+[package]
+name = "vericode-escrow"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "Local VeriCode escrow program: Job, SPL custody and timeout refund"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "vericode_escrow"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+
+[dependencies]
+anchor-lang = "=0.31.1"
+anchor-spl = { version = "=0.31.1", default-features = false, features = ["token", "token_2022"] }
+vericode-core = { path = "../../../crates/vericode-core" }
