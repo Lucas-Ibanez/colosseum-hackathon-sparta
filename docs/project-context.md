@@ -42,7 +42,7 @@ evidência nem um escopo proibido.
 | `core-logic/` | `crates/vericode-core` | tipos, Borsh, SHA-256, harness restrito, `JournalV1`, política pura de escrow alinhada ao guia (D2b) e vinculada à entrega do executor, com termos admitidos e janela de prazo (D2b.1) |
 | `zk-guest/` | `zkvm/methods/guest` | guest real; dois builds determinísticos; ImageID `4da06f90…fb1a` (antes do D2a) |
 | `zk-host/` | `zkvm/host` | receipts locais reais PASS/FAIL `Composite`; compressão Groth16 demonstrada por harness fora do clone (D2d) |
-| `anchor-program/` | `anchor/programs/vericode-escrow` (workspace `anchor/`, testes em `anchor/tests-local`) | D2c/D2b.1/D2e/D4a: `create_job` (termos da v1, mint Test USDC admitido, janela de prazo), `fund`, `deliver`, `release`/`refund_on_fail` com CPI direta ao verificador Groth16 de `risc0-solana v3.0.0` (sem Router desde o D4a), `refund_on_timeout`; destino = ATA canônica; testado em processo com o verificador real (rebuild e bytes de devnet); sem deploy |
+| `anchor-program/` | `anchor/programs/vericode-escrow` (workspace `anchor/`, testes em `anchor/tests-local`) | D2c/D2b.1/D2e/D4a: `create_job` (termos da v1, mint Test USDC admitido, janela de prazo), `fund`, `deliver`, `release`/`refund_on_fail` com CPI direta ao verificador Groth16 de `risc0-solana v3.0.0` (sem Router desde o D4a), `refund_on_timeout`; destino = ATA canônica; testado em processo com o verificador real (rebuild e bytes de devnet); **implantado e finalizado em devnet** (D4b: `GZqbL2Tb…`, authority `none`) |
 | `worker-api/` | inexistente | não iniciado |
 | `frontend/` | inexistente | não iniciado |
 
@@ -91,9 +91,12 @@ pitch, telas, vídeo) não são rastreados neste repositório.
 
 Data de calendário: 2026-10-05, que corresponde ao dia D9 do cronograma. O
 projeto concluiu tecnicamente o **D3** e o caminho forte local dos **D5/D6**
-(D2e concluído). A revisão R-D2e aprovou com ressalvas o D4. Sua parte
-local, o D4a, está concluída, e a revisão R-D4a a aprovou com ressalvas
-(condições CD1 a CD9). A parte em devnet (D4b) é o próximo gate.
+(D2e concluído). O **D4** também está concluído:
+- a parte local (D4a) foi aprovada com ressalvas pelo R-D4a;
+- a parte em devnet (D4b) implantou e finalizou o escrow e liquidou Jobs
+  PASS, FAIL e timeout com negativos.
+
+Isso entrega em devnet parte do D7/D8. O próximo gate é o D7.
 
 | Dia | Situação | Evidência / lacuna |
 | --- | --- | --- |
@@ -101,9 +104,9 @@ local, o D4a, está concluída, e a revisão R-D4a a aprovou com ressalvas
 | D1 | concluído (técnico) | crate e guest (D1c1–D1c2b); manifesto em `docs/manifest-schema.md`; Anchor skeleton e Perfil A (D2c); README corrigido (D2a.2) |
 | D2 | concluído (técnico) | GATE 48H atendido: receipts locais reais PASS/FAIL (`docs/d1c2b3i-local-receipts-results.md`); máquina de estados testada em Rust puro (D2b); custódia SPL em vault PDA testada em processo (D2c); vídeo fora do repositório |
 | D3 | concluído (local) | journal com job_id, artifact, harness, versão e verdict; provas PASS/FAIL; create/fund/refund por timeout (D2c); compromisso de entrega e termos admitidos da v1 (D2b.1); `release`/`refund_on_fail` vinculados ao Job e à entrega, com prova verificada por CPI ao Router (D2e); tudo em `solana-program-test` |
-| D4 | em andamento: D4a concluído (local) e aprovado com ressalvas pelo R-D4a; próximo D4b (devnet) | Router upstream de devnet inutilizável (não inicializado); por decisão humana, o escrow chama direto o verificador Groth16 imutável; mint admitido; `JournalV1` v1 congelado; receipts novas de S, A, A′ e B (`docs/d4a-direct-verifier-results.md`) |
-| D5/D6 | concluído localmente (D2d, D2e, D4a) | receipts Groth16 PASS/FAIL reais verificadas pelo Verifier Router em `solana-program-test` (D2d) e por CPI a partir do `vericode_escrow` (D2e via Router; D4a direto ao verificador, também com os bytes de devnet), com prova errada rejeitada antes do happy path; **falta** transação em devnet (D4b) |
-| D7–D12 | não iniciados | CLI E2E, estados ruins on-chain, worker e UI |
+| D4 | **concluído**: D4a (local, aprovado com ressalvas pelo R-D4a) e D4b (devnet) | Router upstream de devnet inutilizável; o escrow chama direto o verificador Groth16 imutável; mint admitido; `JournalV1` v1 congelado (`docs/d4a-direct-verifier-results.md`). D4b: escrow `GZqbL2Tb…` implantado com `cdf6967f…` e authority `none`; mint Test USDC criado; Jobs S (smoke), A `Released`, B `RefundedOnFail`, C `RefundedOnTimeout`; negativos e C7 no Explorer (`docs/d4b-devnet-results.md`) |
+| D5/D6 | concluído localmente (D2d, D2e, D4a) | receipts Groth16 PASS/FAIL reais verificadas pelo Verifier Router em `solana-program-test` (D2d) e por CPI a partir do `vericode_escrow` (D2e via Router; D4a direto ao verificador, também com os bytes de devnet), com prova errada rejeitada antes do happy path; **em devnet desde o D4b**: liquidações PASS/FAIL verificadas por CPI ao verificador imutável e seals errados rejeitados (6000/6003) |
+| D7–D12 | D7 a iniciar; D8 em parte feito em devnet (D4b) | falta CLI E2E reproduzível no repositório, README com versões, hashes e links, roteiro da demo, worker e UI. Os estados ruins on-chain já foram exercitados em devnet no D4b: prova errada, journal de outro Job, timeout antecipado |
 
 ### Caminho crítico e risco de prazo
 
@@ -130,9 +133,11 @@ local, o D4a, está concluída, e a revisão R-D4a a aprovou com ressalvas
      `JournalV1` v1 congelado e PoCs do R-D2e na suíte
      (`docs/d4a-direct-verifier-results.md`). R-D4a concluído: **APROVADO
      COM RESSALVAS** para o D4b, com condições CD1 a CD9
-     (`docs/r-d4a-review-results.md`). Próximo: D4b (deploy, smoke,
-     finalização, Jobs PASS, FAIL e timeout, negativos no Explorer;
-     `docs/handoffs/r-d4a-to-d4b.md`);
+     (`docs/r-d4a-review-results.md`). D4b concluído:
+     - escrow implantado e finalizado em devnet;
+     - Jobs PASS, FAIL e timeout e negativos no Explorer
+       (`docs/d4b-devnet-results.md`);
+     - próximo: D7 (`docs/handoffs/d4b-to-d7.md`);
   6. D7 (com o D9): CLI reproduzível, README com versões, hashes, links e
      limitações (M6/M7) e roteiro da demo;
   7. D10–D12: worker e telas, se houver tempo.

@@ -1,17 +1,22 @@
-# Programa `vericode_escrow` — especificação local (D2c, D2c.1, D2b.1, D2e, D4a)
+# Programa `vericode_escrow` — especificação (D2c, D2c.1, D2b.1, D2e, D4a, D4b)
 
-**Programa Anchor testado apenas em processo (`solana-program-test`); ainda
-não implantado em nenhum cluster.** `release` e `refund_on_fail` só liquidam
+**Programa Anchor implantado em Solana devnet e imutável desde o D4b**
+(upgrade authority `none`; `docs/d4b-devnet-results.md`). Também é testado em
+processo com `solana-program-test`. `release` e `refund_on_fail` só liquidam
 depois que o verificador Groth16 de `risc0-solana v3.0.0` aceita, por CPI na
 mesma instrução, a receipt do journal entregue. Desde o D4a a CPI vai
 direto ao verificador, sem Verifier Router: o Router upstream em devnet não
 está inicializado e nunca poderá registrar o verificador imutável
 (`docs/d4a-direct-verifier-results.md`).
 
-Claim máximo: **verificado por CPI ao verificador Groth16 de `risc0-solana
-v3.0.0` em `solana-program-test` local**, inclusive com os bytes do
-verificador implantado em devnet. Deploy do escrow e transações em devnet:
-`STATUS: NÃO VALIDADO` até o D4b. Não é "ZK on-chain" em cluster.
+Claim máximo (D4b, CD7): a receipt é **verificada em devnet por CPI ao
+verificador Groth16 imutável de risc0-solana v3.0.0**. Evidência:
+- liquidação PASS do Job A
+  ([`4yWq28Gw…`](https://explorer.solana.com/tx/4yWq28GwkT9uLbG8haXbQYQyMqNWd6Qc29hWrez9cT4tGu36mS1fY8w6ocu75d5JxfQSLzTKKbMPc131fbL7chhR?cluster=devnet));
+- liquidação FAIL do Job B
+  ([`2osG9m8J…`](https://explorer.solana.com/tx/2osG9m8JcE1CpAKt8JribtJCw8ffrdhBh6hYm5xKeLPptM9YLsugouMRH2KnmRXAymwAMvBABUmuZY6tkwHoVbP4?cluster=devnet)).
+
+Nunca "Verifier Router".
 
 Fonte: `anchor/programs/vericode-escrow/src/lib.rs`. Política econômica:
 `crates/vericode-core/src/escrow.rs` (ver `docs/escrow-state-machine.md`).
@@ -28,11 +33,11 @@ Fonte: `anchor/programs/vericode-escrow/src/lib.rs`. Política econômica:
 | Associated Token Account, programa executado nos testes | `spl_associated_token_account-1.1.1.so`, embutido |
 | Verificador Groth16 | `risc0-solana v3.0.0`, commit `ee415935`. Testes com o rebuild offline no Perfil A (`dab6746d…`, igual ao D2d) e com o dump do programa implantado em devnet (`34ae6e5c…`, 199.256 bytes), equivalentes estrutural e funcionalmente (R-D4a RD4A-05) |
 | Verifier Router | não é usado desde o D4a |
-| Program ID (localnet e devnet futuro) | `GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH` |
-| Mint admitido | Test USDC de devnet `9TE2VPFmgrNxT22yS3sEZyRcMxLgJkwzgAoquWRXwV2F` (D4a; a criar em devnet no D4b) |
+| Program ID (localnet e devnet) | `GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH`. Em devnet (D4b): ProgramData `B7s9JJVyD2j8PNgKgjhhB36iSdX9cUpSfZHbbd8nLmbc`, 395.064 bytes `cdf6967f…`, upgrade authority **`none`** |
+| Mint admitido | Test USDC de devnet `9TE2VPFmgrNxT22yS3sEZyRcMxLgJkwzgAoquWRXwV2F` (D4a), criado em devnet no D4b: Tokenkeg, 6 decimais, sem freeze authority, mint authority = deployer `617ogw9T…` |
 
 Somente as chaves públicas estão versionadas; os keypairs ficam fora do
-repositório. Isso não é deploy.
+repositório.
 
 ## Princípio
 
@@ -134,8 +139,10 @@ verificador não foi chamado.
   USDC (decisão humana D4a).
 - **Sem dono de Router:** o R-D2e R-06 (e-stop como alavanca de liveness) e
   a confiança no `add_verifier` deixam de existir.
-- **Upgrade authority do escrow:** o escrow é upgradeable até a finalização
-  prevista no D4b, depois do smoke run (F-04).
+- **Upgrade authority do escrow:** finalizada em devnet no D4b, depois do
+  smoke run (F-04 fechado). Tx `4AsofYxr…` no slot 507.798.793; `program
+  show` → `Authority: none`. Nem o projeto pode mudar o programa; uma correção
+  exige um novo program ID.
 - **Mint admitido:** a autoridade de mint do Test USDC (deployer de devnet)
   pode emitir mais Test USDC; isso não afeta a custódia de um Job.
 
@@ -191,6 +198,18 @@ Medições em processo (D4a):
 - Tamanhos (R-D2e PoC-5, agora `tests/regressions.rs`): release 838 bytes;
   com `SetComputeUnitLimit`, 878; deliver+release, 979; os três juntos,
   1.019, com 213 bytes de margem para o limite de 1.232.
+
+Medições em devnet (D4b, dos logs das transações enviadas; sem compute
+budget):
+
+| Transação | CU | Tamanho |
+| --- | ---: | ---: |
+| `release` | 117.209 (verificador 99.541) | 838 B |
+| `refund_on_fail` | 117.038 | 838 B |
+| `deliver`+`release` (executor pagador) | 122.156 | 883 B |
+| `create_job`+`fund` | 43.650–48.150 | 577 B |
+| `deliver` | 4.947 | 243 B |
+| `refund_on_timeout` | 14.605 | 342 B |
 
 Não existem instruções administrativas, close ou realloc. A IDL gerada
 (`anchor idl build`) contém exatamente as seis instruções acima e não é
@@ -250,15 +269,15 @@ o programa que falhou pelos logs de uma simulação da mesma transação.
 
 ## Invariantes do guia §7
 
-| Invariante | Estado no D4a |
+| Invariante | Estado no D4a e em devnet (D4b) |
 | --- | --- |
 | 1. vault controlado por PDA, sem chave privada | **testado**: Job e vault fora da curva; autoridade do vault = PDA do Job |
 | 2. mint, buyer, executor, amount e prazo do Job | **testado** em todas as instruções; só o Test USDC admitido; conta mint amarrada a `job.mint`; prazo dentro da janela |
 | 3. `Pass` paga só o executor | **testado**: `release` paga exatamente `amount` à ATA do executor; outros destinos → 6010/6011/6035 |
 | 4. `Fail` devolve só ao buyer | **testado**: `refund_on_fail` antes e depois do prazo, à ATA do buyer |
 | 5. timeout só após o prazo | **testado**: antes e no slot do prazo falha; `prazo + 1` devolve, de `Funded` e de `Delivered` |
-| 6. estado e transferência atômicos | **testado localmente**: toda rejeição, inclusive no verificador, deixa Job, vault e saldos byte a byte iguais |
-| 7. sem admin nem destino livre | nenhuma instrução administrativa; destino = ATA canônica; selector e verificador fixos; verificador imutável em devnet; **upgrade authority do escrow a finalizar no D4b** (F-04) |
+| 6. estado e transferência atômicos | **testado localmente**: toda rejeição, inclusive no verificador, deixa Job, vault e saldos byte a byte iguais. Em devnet (D4b): 8 negativos e o C7 aterrissaram com erro e estado igual |
+| 7. sem admin nem destino livre | nenhuma instrução administrativa; destino = ATA canônica; selector e verificador fixos; verificador imutável em devnet; **upgrade authority do escrow `none` em devnet** (D4b, F-04 fechado) |
 | 8. journal de outro Job/spec/harness/ImageID | termos fora da v1 rejeitados na criação; journal de outro artefato → 6017 antes da CPI; prova verificada contra `job.image_id` |
 | 9. terminal impede dupla liquidação | **testado**: release→release/refund/timeout/deliver, refund→release, timeout→release |
 | 10. falha de CPI/verificação reverte | **testado**: seal adulterado e seal de outro journal revertem sem movimento, com o rebuild local e com os bytes de devnet do verificador |
@@ -270,13 +289,14 @@ o programa que falhou pelos logs de uma simulação da mesma transação.
   - O programa SPL Token executado nos testes (`spl_token-3.5.0.so`) não
     permite adicionar freeze authority depois (`MintCannotFreeze`).
   - O `spl-token 7.0.0` é o crate cliente.
-  - Repetir a verificação em devnet contra o Tokenkeg implantado (C7, D4b).
+  - Repetido em devnet contra o Tokenkeg implantado (C7, D4b): `SetAuthority(FreezeAccount)` no mint admitido → `Custom(16)` `MintCannotFreeze`.
 - **Mint aceito (F-05) — resolvido no D4a:** só `ADMITTED_MINT` (6036,
-  testado); Token-2022 é rejeitado (3007/3008, testado). O mint ainda será
-  criado em devnet no D4b, com 6 decimais e sem freeze authority.
-- **Upgrade authority (F-04):** um programa atualizável é bypass
-  administrativo. O D4b finaliza a do escrow depois do smoke run. O
-  verificador de devnet já é imutável.
+  testado); Token-2022 é rejeitado (3007/3008, testado). O mint foi criado em
+  devnet no D4b, com 6 decimais e sem freeze authority, conferido por
+  `getAccountInfo`.
+- **Upgrade authority (F-04) — fechado no D4b:** a do escrow foi finalizada
+  em devnet depois do smoke run (`Authority: none`). O verificador de devnet
+  já era imutável.
 - **Router em devnet — descartado no D4a:** o Router upstream está implantado
   e imutável, mas não inicializado (sem PDA `["router"]` nem entrada
   `73c457ba`), e o verificador imutável nunca poderá ser registrado nele. O

@@ -1,9 +1,25 @@
 # Notas do Router Solana
 
-**STATUS em devnet (D4a, 2026-10-05): Router upstream implantado e imutável,
-mas NÃO INICIALIZADO e inutilizável; verificador Groth16 upstream implantado,
-imutável e funcional em simulação. O escrow passou a chamar o verificador
-direto, sem Router. Nenhuma transação de verificação em devnet ainda.**
+**STATUS em devnet (D4b, 2026-10-05): Router upstream implantado e imutável,
+mas NÃO INICIALIZADO e inutilizável (não é usado). O escrow `GZqbL2Tb…`,
+implantado e finalizado em devnet, chama por CPI, direto, o verificador
+Groth16 imutável `THq1q…`. A receipt é verificada em devnet por CPI ao
+verificador Groth16 imutável de risc0-solana v3.0.0: liquidação PASS
+[`4yWq28Gw…`](https://explorer.solana.com/tx/4yWq28GwkT9uLbG8haXbQYQyMqNWd6Qc29hWrez9cT4tGu36mS1fY8w6ocu75d5JxfQSLzTKKbMPc131fbL7chhR?cluster=devnet)
+e FAIL
+[`2osG9m8J…`](https://explorer.solana.com/tx/2osG9m8JcE1CpAKt8JribtJCw8ffrdhBh6hYm5xKeLPptM9YLsugouMRH2KnmRXAymwAMvBABUmuZY6tkwHoVbP4?cluster=devnet)
+(`docs/d4b-devnet-results.md`).**
+
+**D4b (2026-10-05): primeira verificação real em devnet.**
+- `release` (Job A) e `refund_on_fail` (Job B) invocaram `THq1q…` em
+  profundidade 2, com 99.541 CU cada, e liquidaram o Test USDC.
+- Rejeições dentro do verificador, em transações aterrissadas e com estado
+  igual: journal A com seal S → 6000 (`VerificationError`); seal adulterado →
+  6003 (`PairingError`).
+- Rejeições antes da CPI: selector `00000000` → 6033; journal de outro Job
+  ou artefato → 6014/6017.
+- Claim permitido: "verificada em devnet por CPI ao verificador Groth16
+  imutável de risc0-solana v3.0.0". Nunca "Verifier Router".
 
 **D4a (2026-10-05): reconhecimento somente leitura do Router upstream em
 devnet (decisão D4-1, caminho (a)) — reprovado.**
@@ -169,7 +185,7 @@ há evidência para chamá-la incompatível.
 | Rede | Status | Evidência encontrada |
 | --- | --- | --- |
 | localnet (em processo) | VERIFICADO EM `solana-program-test` (D2d, D2e) | D2d: Router `1b26b017…` e verificador `dab6746d…` compilados no Perfil A; `initialize`/`add_verifier` com dono de teste; FIB, PASS e FAIL aceitos (110.851 CU); quatro negativos por vetor rejeitados. D2e: CPI a partir do `vericode_escrow` em `release`/`refund_on_fail` com as receipts reais; negativos antes dos positivos. Sem validator nem deploy. |
-| Solana devnet | Router: implantado, imutável, **não inicializado** (inutilizável). Verificador Groth16: implantado, imutável, funcional em simulação. Verificação pelo escrow: **NÃO VALIDADA** (D4b) | D4a: leitura RPC das contas e dos ProgramData, histórico de transações do loader e `simulateTransaction` (`docs/d4a-direct-verifier-results.md`). Achado por leitura on-chain, não em documentação oficial. |
+| Solana devnet | Router: implantado, imutável, **não inicializado** (inutilizável, não usado). Verificador Groth16: implantado e imutável. Verificação pelo escrow: **VERIFICADA EM DEVNET** (D4b), por CPI direta do escrow finalizado `GZqbL2Tb…` | D4a: leitura RPC das contas e dos ProgramData, histórico do loader e `simulateTransaction` (`docs/d4a-direct-verifier-results.md`). D4b: liquidações PASS e FAIL e negativos 6000/6003 aterrissados, com links do Explorer (`docs/d4b-devnet-results.md`). |
 | Solana mainnet-beta | NÃO VALIDADO | Nenhum Program ID/deployment Solana mainnet-beta foi comprovado nas fontes oficiais consultadas. |
 
 O link de deployments no README oficial conduziu a uma página de contratos verificadores EVM, não a uma lista de deployments Solana. Endereço EVM não é evidência de deployment Solana.
@@ -178,8 +194,9 @@ Consequências:
 
 - `RISC0_VERIFIER_ROUTER_PROGRAM_ID` permanece vazio: o escrow não usa
   Router desde o D4a;
-- não alegar verificação ZK on-chain antes de uma transação de liquidação em
-  devnet com CPI bem-sucedida e link do Explorer (D4b);
+- a transação de liquidação em devnet com CPI bem-sucedida existe desde o
+  D4b. O claim é exatamente o de CD7, com os links; não se estende a
+  mainnet nem ao Router;
 - até o D2e, a CPI ao Router só foi exercitada em `solana-program-test`
   local (R-D2e R-01). Desde o D4a, a CPI vai direto ao verificador
   `THq1q…`, testada localmente com o rebuild e com o dump de devnet;
@@ -202,8 +219,9 @@ Consequências:
 6. [x] Validar receipt local, ImageID e rejeição de ImageID/journal
    divergentes; [x] testar Job, mint e executor (D2b.1 e D2e, somente em
    `solana-program-test` local).
-7. Comprovar devnet com uma transação de liquidação do escrow (D4b). Até lá,
-   a verificação pelo escrow em devnet fica `STATUS: NÃO VALIDADO`.
+7. [x] Comprovar devnet com uma transação de liquidação do escrow (D4b):
+   PASS `4yWq28Gw…` e FAIL `2osG9m8J…`, com negativos 6000/6003 no
+   verificador.
 
 O workflow oficial executa `solana-keygen new` antes de `anchor test`.
 Consequentemente, `anchor test`, validator, deploy, airdrop e transações estão

@@ -1,11 +1,15 @@
-# Controle autônomo — R-D4a registrado (APROVADO COM RESSALVAS); próximo D4b
+# Controle autônomo — D4b concluído (escrow implantado e finalizado em devnet); próximo D7
 
 ## Objetivo atual
 
-D4b, conforme `docs/handoffs/r-d4a-to-d4b.md`: deploy do escrow em devnet,
-smoke, finalização da upgrade authority, Jobs PASS, FAIL e timeout,
-negativos no Explorer e C7, sob as condições CD1 a CD9 do R-D4a
-(`docs/r-d4a-review-results.md`).
+D7, conforme `docs/handoffs/d4b-to-d7.md`:
+- CLI de ponta a ponta no repositório para o fluxo devnet, a partir da IDL
+  do D4a;
+- README com versões, hashes, links e limitações (M6/M7);
+- roteiro da demo (conteúdo do D9);
+- RD4A-07 (a), (e) e (f).
+
+Worker e telas (D10–D12) só se houver tempo.
 
 ## Marcos anteriores
 
@@ -17,52 +21,66 @@ negativos no Explorer e C7, sob as condições CD1 a CD9 do R-D4a
 - R-D2e `2d76441`: **APROVADO COM RESSALVAS** para o D4.
 - Prazo, congelamento do `JournalV1` e nomes de gate: `cfdd9d7`.
 - D4a: `fb4bfba` (anchor) e `24364ae` (docs).
-- R-D4a: **APROVADO COM RESSALVAS** para o D4b; registrado no commit
-  `docs: record R-D4a delta review`.
+- R-D4a `561b1b6`: **APROVADO COM RESSALVAS** para o D4b.
+- D4b: registrado no commit `docs: record devnet deploy, finalization and
+  settlements (D4b)`.
 
-## Baseline (D4a)
+## Baseline (D4b)
 
 - Raiz `/home/lucas/src/vericode`; branch `main`; HEAD de baseline = commit
-  `docs: record R-D4a delta review`.
-- `.so` `cdf6967f3abc63d0385e36909fe61b36f639203e2679209be60c4875114d8133`
-  (395.064 bytes).
-- Verificador: rebuild `dab6746d…` e dump de devnet `34ae6e5c…`.
-- Testes: escrow 26, settlement 15, regressions 7, layout 7, fixtures 2
-  (57/57), nas duas variantes do verificador; core 42/42 nas duas raias.
-- IDL `e8ce2c20…`: 6 instruções, 37 erros.
-- Locks inalterados: raiz `191802b2…`; host `f5236689…`; guest `1116acef…`;
-  `anchor/` `19a1db26…`; `anchor/tests-local` `be94760a…`.
-- Fora do clone: `~/.local/share/vericode-spikes/d4/` com
-  - `keys/`: deployer `617ogw9T…`, buyer `EZgGUg4J…`, executor `EdB25bVh…`
-    e mint `9TE2VPFm…`;
-  - `receipts-out/` (S, A, A′, B), `jobs/`, `logs/`, `out/` e `bin/`.
+  do D4b.
+- **Devnet:**
+  - escrow `GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH`: ProgramData
+    `B7s9JJVy…`, 395.064 bytes `cdf6967f…`, upgrade authority **`none`**;
+  - verificador `THq1q…` imutável;
+  - mint Test USDC `9TE2VPFm…`: Tokenkeg, 6 decimais, sem freeze, mint
+    authority = deployer, supply 10¹²;
+  - ATAs: buyer `61tkoEv4…` com 999.998 Test USDC; executor `HpZkHZ59…` com
+    2 Test USDC.
+- **Jobs consumidos:** S (`Released`, smoke), A (`Released`), B
+  (`RefundedOnFail`) e C (`RefundedOnTimeout`). Nunca reutilizar esses
+  `job_id`s.
+- **SOL** no fim do D4b: deployer 2,925; buyer 0,0356; executor 0,00998.
+- **Testes locais** (inalterados desde o D4a):
+  - escrow 26, settlement 15, regressions 7, layout 7, fixtures 2 (57/57);
+  - core 42/42 nas duas raias;
+  - IDL `e8ce2c20…`.
+- **Locks inalterados:** raiz `191802b2…`; host `f5236689…`; guest
+  `1116acef…`; `anchor/` `19a1db26…`; `anchor/tests-local` `be94760a…`.
+- **Fora do clone:**
+  - `d4/keys`: deployer, buyer, executor, mint e o buffer já consumido
+    `3CVLy…`;
+  - `d4/receipts-out` (S, A, A′, B, todos consumidos em devnet);
+  - `d4b/`, com o cliente offline (`client/tests-local`, exemplo `d4b`), o
+    driver RPC (`bin/devnet.py`), o filler cadenciado
+    (`bin/buffer_fill.py`), os logs (`tx.jsonl`, `timeline.log`) e o dump.
 
 ## Gate atual
 
-`R-D4a` (registrado) → próximo `D4b`.
+`D4b` (concluído) → próximo `D7`.
 
 ## Estado
 
-- O Router upstream de devnet está implantado e imutável, mas não
-  inicializado. O verificador upstream `THq1q…` é imutável e nunca poderá
-  ser registrado nesse Router.
-- Por decisão humana (caminho (b′)), o escrow chama o verificador por CPI,
-  direto, sem Router. Além disso:
-  - só aceita o mint Test USDC `9TE2VPFm…` (6036);
-  - o `JournalV1` v1 está congelado;
-  - os PoCs 1 a 7 do R-D2e estão na suíte;
-  - as receipts S, A, A′ e B estão prontas.
-- Nada foi escrito em devnet. O deployer tem 5 SOL (faucet web, pelo
-  humano); o D4b gasta cerca de 2,03 SOL.
-- R-D4a: verificador de devnet estrutural e funcionalmente equivalente ao
-  rebuild; condições CD1 a CD9 para o D4b.
+- A receipt é **verificada em devnet por CPI ao verificador Groth16 imutável
+  de risc0-solana v3.0.0**:
+  - liquidação PASS `4yWq28Gw…` e FAIL `2osG9m8J…`;
+  - negativos 6000/6003 dentro do verificador;
+  - 6014/6017/6033/6019/6021 antes da CPI ou do prazo;
+  - C7 `MintCannotFreeze`.
+
+  Links em `docs/d4b-devnet-results.md`.
+- O escrow é imutável. Não há Router, e-stop nem admin.
+- O RPC público de devnet limita a taxa de envio. A CLI do Agave com
+  `--use-rpc` perdeu a maioria das escritas do deploy, e o buffer foi
+  completado com envio cadenciado. Clientes do D7 devem cadenciar e
+  reenviar.
 
 ## Decisões humanas registradas
 
 - D2a.1, D2a.2, D2b, D2c, D2d, D2c.1, "Decisões humanas para o D2b.1",
-  D2b.1, D2e, R-D2e, "Decisões humanas para o D4", "Prazo de 11/10,
-  congelamento do JournalV1 v1 e nomes de gate", D4a e R-D4a
-  (`docs/decisions.md`).
+  D2b.1, D2e, R-D2e, "Decisões humanas para o D4".
+- "Prazo de 11/10, congelamento do JournalV1 v1 e nomes de gate".
+- D4a, R-D4a e D4b (`docs/decisions.md`).
 
 ## Ações proibidas (permanentes salvo novo objetivo)
 
@@ -72,39 +90,42 @@ negativos no Explorer e C7, sob as condições CD1 a CD9 do R-D4a
   core sem novo `schema_version` e decisão registrada.
 - Keypair fora de gate autorizado, de mainnet, dentro do clone ou com segredo
   exibido.
-- Devnet, airdrop, deploy sem gate autorizado; "ZK on-chain" ou "verificado
-  on-chain" sem transação de liquidação em devnet com CPI bem-sucedida e link
-  do Explorer.
-- Chamar a verificação de "Verifier Router" depois do D4a.
+- Deploy, airdrop ou escrita em devnet sem gate autorizado.
+- O escrow `GZqb…` é imutável: um "redeploy" exige novo program ID, mudança
+  de código, decisão e revisão.
+- Claims:
+  - qualquer alegação de verificação on-chain além de "verificada em devnet
+    por CPI ao verificador Groth16 imutável de risc0-solana v3.0.0", com os
+    links;
+  - chamar a verificação de "Verifier Router";
+  - claim de mainnet.
 - Mock, dev mode ou receipt `Fake` como sucesso.
 - Builds, testes ou provas pesadas em paralelo (7,6 GiB de RAM).
 - Push, reescrita de histórico, stash, reset ou operação destrutiva.
 
 ## Riscos abertos
 
-- Sem e-stop contra bug de soundness do verificador (decisão humana D4a).
-- Bytes do verificador de devnet ≠ rebuild local só por artefatos do build
-  em macOS; a equivalência é estrutural e funcional (RD4A-05).
-- F-04: upgrade authority do escrow a finalizar no D4b, depois do smoke.
-- R-02: `fund` fora da janela, mitigado por `create_job`+`fund` atômicos.
-- R-03: replay entre implantações, mitigado por `job_id` aleatório.
-- RD4A-01: seed phrase impressa pela CLI se o deploy falhar sem
-  `--buffer` (CD4).
-- RD4A-02/03: criação do mint irreversível; endereços públicos (CD2, CD3).
-- RD4A-08: vários `.so` fora do clone; implantar só `cdf6967f…` (CD1).
-- RD4A-07 (a), (e), (f): comentários de teste, `.env.example` e testes
-  novos ficam para o D7.
-- Endereço do mint pré-financiado por terceiros pode fazer
-  `create_account` falhar; o D4b deve criar o mint com
-  transfer+allocate+assign ou checar antes.
-- ATA precisa existir antes da liquidação.
-- F-09, F-13, F-14; ImageID não recertificado; spec v1 trivial.
-- Margem de RAM do prover (cerca de 160 MiB no pico).
+- **Sem e-stop:** escrow e verificador imutáveis. Um bug de soundness
+  exigiria um novo program ID (RD4A-06).
+- **Rent preso (F-13):** cerca de 0,0036 SOL por Job; não há `close`.
+- **Mint authority** = deployer de devnet (pode emitir mais; não afeta a
+  custódia).
+- **`job_id`s públicos (F-09/RD4A-03):** squatting de um `job_id` antes da
+  criação inutiliza a receipt. O D7 deve gerar `job_id` novo por Job.
+- **R-02:** `fund` fora da janela, mitigado por `create_job`+`fund`
+  atômicos. **R-03:** replay entre implantações, mitigado por `job_id`
+  aleatório.
+- **RPC público de devnet com limite de taxa.**
+- RD4A-07 (a), (e), (f): comentário em `settlement.rs`, `.env.example` e
+  testes novos (receipts do D4b, variantes do mint, verificador ausente),
+  para o D7.
+- F-14; ImageID não recertificado; spec v1 trivial.
+- **Margem de RAM do prover:** cerca de 160 MiB no pico.
 - O WSL reinicia e limpa `/tmp`.
-- Calendário: 2026-10-05; prazo de entrega 11/10.
+- **Calendário:** 2026-10-05; prazo de entrega 11/10.
 
 ## Próxima transição permitida
 
-`D4b`, conforme `docs/handoffs/r-d4a-to-d4b.md`, em sessão nova (Opus 5.5,
-xhigh, Plan Mode antes da primeira escrita em devnet). Finalização da
-upgrade authority só depois do smoke; depois, `D7`.
+`D7`, conforme `docs/handoffs/d4b-to-d7.md`, em sessão nova (Opus 5.5,
+xhigh). Plan Mode antes de qualquer escrita em devnet ou mudança fora de
+documentação e CLI.

@@ -1298,3 +1298,68 @@ Registre decisões relevantes do projeto neste formato.
 - **Registro:** feito por sessão com permissão de escrita a partir da resposta
   da revisão, que não podia editar arquivos.
 - **Próximo gate:** D4b, conforme `docs/handoffs/r-d4a-to-d4b.md`.
+
+## 2026-10-05 — D4b: escrow implantado e finalizado em devnet; liquidações PASS, FAIL e timeout
+
+- **Data:** 2026-10-05
+- **Autorização:** o prompt do D4b (`docs/handoffs/r-d4a-to-d4b.md`), enviado
+  pelo humano, autoriza as escritas em devnet e os commits locais. O plano com
+  os comandos de E1 a E8, o hash do `.so`, o `--buffer` e a ordem CD5 foi
+  aprovado pelo humano em Plan Mode antes da primeira escrita.
+- **Resultado (evidência em devnet):**
+  - escrow `GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH` implantado com o
+    `.so` do D4a; dump de 395.064 bytes = `cdf6967f…`;
+  - upgrade authority **`none`**, finalizada depois do smoke (tx
+    `4AsofYxr…`, slot 507.798.793);
+  - mint Test USDC `9TE2VPFm…` criado: Tokenkeg, 6 decimais, sem freeze;
+    1.000.000 Test USDC cunhados para o buyer.
+  - **Jobs:**
+    - S (smoke, não evidência) e A: `Released`;
+    - B: `RefundedOnFail`;
+    - C: `RefundedOnTimeout`.
+  - Os negativos aterrissaram com o código esperado e estado igual: 6017,
+    6014, 6000 e 6003 (no verificador), 6033, 6019, 6014 e 6021.
+  - C7: `MintCannotFreeze` (`Custom(16)`) no Tokenkeg de devnet.
+  - Relatório: [`docs/d4b-devnet-results.md`](d4b-devnet-results.md).
+- **Claim liberado (CD7):** "verificada em devnet por CPI ao verificador
+  Groth16 imutável de risc0-solana v3.0.0", sempre com os links das
+  liquidações A e B. Nunca "Verifier Router".
+- **Escolhas do agente dentro do plano aprovado:**
+  - **Pagadores:**
+    - buyer: `create+fund` e os refunds;
+    - executor: `deliver` e `release`;
+    - deployer: os negativos e o C7, como terceiro, porque a liquidação é
+      permissionless.
+  - **Prazo do Job C:** slot + 1.560, isto é, o mínimo de 1.500 com 60 slots
+    de margem para a aterrissagem.
+  - **Job C** com `job_id` aleatório novo (`96598a41…`).
+  - **Deploy com `--use-rpc`**, para manter o tráfego só em
+    `api.devnet.solana.com`, sem o cliente TPU.
+  - **Cliente devnet** fora do clone:
+    - transações montadas e assinadas offline pelos builders de
+      `anchor/tests-local/tests/common/mod.rs` (lock `be94760a…`, sem
+      crates.io);
+    - RPC por Python stdlib.
+- **Desvio registrado:**
+  - A tentativa 1 da CLI falhou com "Data writes to account failed: Max
+    retries exceeded", com só 32 escritas aterrissadas; o RPC público limita
+    o envio em rajada.
+  - O buffer `3CVLy…` foi completado com 361 escritas `Write` do loader v3,
+    cadenciadas a cerca de 3 tx/s e assinadas pelo deployer (authority do
+    buffer), com bytes só do `.so` conferido.
+  - A tentativa 2 foi o comando exato do plano: a CLI comparou o buffer
+    chunk a chunk e implantou.
+  - O dump confirmou os bytes antes da finalização (CD1).
+- **Motivo:** repetir a CLI exigiria cerca de 10 tentativas sob limite de
+  taxa. A retomada cadenciada não muda o que é implantado: CLI e dump
+  conferem cada byte.
+- **Risco aberto:**
+  - sem e-stop (escrow e verificador imutáveis);
+  - rent preso (F-13);
+  - mint authority = deployer;
+  - `job_id`s S/A/B/C consumidos;
+  - RPC público com limite de taxa, que exige cadência na CLI do D7;
+  - R-02 e R-03;
+  - ImageID não recertificado; spec v1 trivial;
+  - RD4A-07 (a), (e) e (f) para o D7.
+- **Próximo gate:** D7, conforme `docs/handoffs/d4b-to-d7.md`.
