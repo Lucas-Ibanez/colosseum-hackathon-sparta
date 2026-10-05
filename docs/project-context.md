@@ -9,7 +9,7 @@ tarefa, depois de `AGENTS.md`.
 | Documento | Papel | Natureza |
 | --- | --- | --- |
 | [`docs/context/guia-mvp-agentes-de-codigo.md`](context/guia-mvp-agentes-de-codigo.md) | Missão, escopo imutável, arquitetura, contrato de dados, máquina de estados, invariantes, gates M0–M7, protocolo de agentes | Norma de produto (fornecida em 2026-10-04, preservada sem alteração) |
-| [`docs/context/sequencia-mvp.md`](context/sequencia-mvp.md) | Cronograma D0–D12 com evidência de saída por dia; entrega por volta de 8 out | Plano, não evidência |
+| [`docs/context/sequencia-mvp.md`](context/sequencia-mvp.md) | Cronograma D0–D12 com evidência de saída por dia; datas indicativas (prazo real de entrega: 11 out, decisão humana de 2026-10-05) | Plano, não evidência |
 | [`docs/mvp-agent-operating-guide.md`](mvp-agent-operating-guide.md) | Tradução operacional anterior do mesmo objetivo; limites de claims e matriz adversarial | Guia operacional interno |
 | [`docs/handoff-protocol.md`](handoff-protocol.md) | Padrão obrigatório de encerramento de tarefa e prompt da próxima fase | Protocolo de trabalho |
 | `docs/agent-control.md` | Objetivo, gate e estado atuais | Controle vivo |
@@ -55,6 +55,36 @@ Os IDs de gate usam o dia da sequência como prefixo e letras/números para
 subdivisões: `D1c2b.3i` é uma subtarefa do dia D1; `D2a` é a primeira
 subtarefa do dia D2. O dia é marco de escopo, não data de calendário.
 
+Na prática, a série D2a…D2e manteve o prefixo D2 mesmo quando o conteúdo já
+era do D3, D5 e D6. Por isso, **a partir do D4, o ID do gate é o dia do plano
+cujo conteúdo ele entrega** (subtarefas com letra, como `D4a`; revisões
+adversariais com prefixo `R-`). O gate seguinte ao D4 é o `D7`, não "D5".
+
+### Gate → dia do plano
+
+| Gate | Conteúdo | Dia do plano |
+| --- | --- | --- |
+| D1a.2, D1a.3 | protocolo e spikes de toolchain; nota de compatibilidade; mapa de contas e ABI do Router | D0 |
+| D1b0.1 | ambiente WSL, pacotes-base e clone | D0 |
+| D1c1, D1c2a | crate compartilhada: tipos, `JournalV1` (job, spec, harness, artefato, ImageID, veredito), Borsh, SHA-256, harness restrito | D1, D3 (campos do journal) |
+| D1c2b, D1c2b.1–.3h | guest RISC Zero, caches, vendor e builds determinísticos (ImageID `4da06f90…`) | D1 (guest mínimo) |
+| D1c2b.3i, .3j | receipts locais reais PASS/FAIL e auditoria | D2 (GATE 48H), D3 (provas PASS e FAIL) |
+| D2a, D2b | política pura de escrow e estados, testada em Rust puro | D1 (estados), D2 (testes de estados) |
+| D2a.1, D2a.2 | contexto de produto, handoff, autorizações, README honesto | processo; D1 (README) |
+| D2c | Perfil A; programa Anchor local: create, fund, refund por timeout, vault PDA | D1 (skeleton), D2 (custódia SPL), D3 (create/fund/refund local) |
+| D2d | Groth16 e Verifier Router em processo | D3 (API do Router), D5 (adaptador do Router) |
+| D2c.1 | mint sem freeze authority; fixtures Groth16 | D3 (endurecimento) |
+| R-D2 | revisão adversarial (REPROVADO para o D2e original) | guia §11 |
+| D2b.1 | compromisso de entrega e termos admitidos da v1 | D3 (vínculo Job–artefato), D8 (parte, local) |
+| D2e | `release`/`refund_on_fail` com CPI ao Router; prova errada rejeitada | D6, D8 (parte, local) |
+| R-D2e | revisão adversarial (APROVADO COM RESSALVAS para o D4) | guia §11 |
+| D4 | devnet com Test USDC, Router verificado, negativos no Explorer, `JournalV1` congelado | D4 e parte de D7/D8 (em devnet) |
+| D7 (próximo depois do D4) | CLI de ponta a ponta, README com versões, hashes, links e limitações, roteiro da demo | D7, D9 |
+| D10–D12 | worker de prova e telas Buyer, Submit e Result | D10–D12, se houver tempo |
+
+Itens de produto e mercado do plano (inscrição, outreach, design partners,
+pitch, telas, vídeo) não são rastreados neste repositório.
+
 ## Estado da sequência (evidência, 2026-10-05)
 
 Data de calendário: 2026-10-05, que corresponde ao dia D9 do cronograma. O
@@ -74,10 +104,10 @@ ainda não começou.
 
 ### Caminho crítico e risco de prazo
 
-- O D4 (devnet) estava previsto para 30/09: o atraso no caminho crítico é
-  de cinco dias de calendário. O guia (§3) manda cortar primeiro interface e
-  extras, nunca receipt real, vínculo Job–journal, escrow básico, cenário
-  negativo ou explicação de limites.
+- Prazo de entrega: **11/10** (decisão humana de 2026-10-05). As datas da
+  sequência são indicativas; vale a ordem dos gates. O guia (§3) manda cortar
+  primeiro interface e extras, nunca receipt real, vínculo Job–journal,
+  escrow básico, cenário negativo ou explicação de limites.
 - Perfil A escolhido no D2c: Anchor `0.31.1` + Agave `2.3.9` + Rust
   `1.89.0`, em homes isoladas.
 - Caminho forte comprovado em processo no D2d (Groth16 + Router). O D2c.1
@@ -94,10 +124,11 @@ ainda não começou.
      (`docs/r-d2e-adversarial-review-results.md`);
   5. D4 (devnet): Router upstream verificado por RPC ou Router próprio com
      revisão delta R-D4a; escrow com upgrade authority finalizada; Jobs PASS,
-     FAIL e timeout, com negativos no Explorer
-     (`docs/handoffs/r-d2e-to-d4.md`);
-  6. D5: CLI reproduzível, README com versões, hashes, links e limitações
-     (M6/M7) e roteiro da demo. Worker e UI só se sobrar tempo.
+     FAIL e timeout, com negativos no Explorer; `JournalV1` v1 congelado;
+     PoCs do R-D2e na suíte (`docs/handoffs/r-d2e-to-d4.md`);
+  6. D7 (com o D9): CLI reproduzível, README com versões, hashes, links e
+     limitações (M6/M7) e roteiro da demo;
+  7. D10–D12: worker e telas, se houver tempo.
 - Wallets de devnet: o agente está autorizado a criar keypairs efêmeros de
   devnet/localnet (D2a.2), sob as restrições do princípio 9 de `AGENTS.md`.
 

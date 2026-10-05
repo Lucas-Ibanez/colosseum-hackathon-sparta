@@ -6,17 +6,22 @@
   com CPI ao Router em devnet bem-sucedida
 - Repositório: `/home/lucas/src/vericode` (WSL), branch `main`
 - Gate anterior: `R-D2e` (revisão adversarial somente leitura, **APROVADO COM
-  RESSALVAS**), registrado no commit `docs: record R-D2e adversarial review`
-  sobre `c0aba7d`; relatório `docs/r-d2e-adversarial-review-results.md`
+  RESSALVAS**), registrado no commit `2d76441 docs: record R-D2e adversarial
+  review`; relatório `docs/r-d2e-adversarial-review-results.md`. Ajustes de
+  prazo, nomes de gate e deste prompt no commit `docs: set deadline, map
+  gates and refine D4 handoff`.
 
 ## Modelo e modo
 - Modelo/esforço recomendados: **Opus 5.5, esforço xhigh**. O gate envolve
   devnet, deploy, autoridade, contas, CPI e claims públicos.
-- **Plan Mode obrigatório** (`CLAUDE.md`: programa e integração do Router).
+- **Plan Mode obrigatório** (`CLAUDE.md`: programa, integração do Router e
+  `docs/manifest-schema.md`).
   As decisões de produto já foram tomadas (abaixo). O Plan Mode aprova o
   desenho técnico, o roteiro de transações e o caminho (a) ou (b).
-- **Orçamento: 1 dia.** Registrar timestamps por fase. Se estourar, parar com
-  evidência parcial e recomendação. O prazo é por volta de 8/10.
+- **Prazo do MVP: 11/10** (decisão humana de 2026-10-05). O D4 não tem limite
+  rígido de tempo, mas os timestamps de cada fase devem ser registrados.
+  Um bloqueio externo (faucet, RPC) que dure horas leva a parar com evidência
+  parcial e recomendação.
 
 ## Leitura obrigatória (integral, antes de qualquer ação)
 - `AGENTS.md`, `CLAUDE.md`, `docs/project-context.md`,
@@ -24,14 +29,17 @@
 - `docs/context/guia-mvp-agentes-de-codigo.md` (§2, §3, §7, §8, §9, §10, §12)
 - `docs/r-d2e-adversarial-review-results.md` (R-01 a R-07, C1 a C7) e
   `docs/r-d2-adversarial-review-results.md` (F-04, F-05, F-09, F-15)
-- `docs/decisions.md`: D2a.2, D2c, D2d, D2b.1, D2e, R-D2e e **"Decisões
-  humanas para o D4"** (fonte de todas as decisões abaixo)
+- `docs/decisions.md`: D2a.2, D2c, D2d, D2b.1, D2e, R-D2e, **"Decisões
+  humanas para o D4"** e **"Prazo de 11/10, congelamento do JournalV1 v1 e
+  nomes de gate"** (fonte de todas as decisões abaixo)
+- `docs/project-context.md`, seção "Gate → dia do plano"
 - `docs/escrow-program.md`, `docs/escrow-state-machine.md`,
   `docs/router-notes.md`, `docs/architecture.md`, `docs/manifest-schema.md`,
   `docs/mvp-agent-operating-guide.md`
 - `docs/d2e-router-settlement-results.md` e
   `docs/d2d-groth16-router-spike-results.md` (prover Docker, ambiente zkVM,
   dono de teste do Router)
+- `crates/vericode-core/src/lib.rs` (`JournalV1`, encode/decode, hashing)
 - `anchor/programs/vericode-escrow/src/lib.rs`, `anchor/tests-local/tests/*.rs`,
   `anchor/tests-local/fixtures/groth16/README.md`
 - `zkvm/host/src/main.rs`: frame de entrada do guest, `guest_input` =
@@ -45,9 +53,9 @@
     `ee415935`).
 
 ## Preflight
-- `pwd`; raiz Git; branch; HEAD (esperado: commit `docs: record R-D2e
-  adversarial review` sobre `c0aba7d`); `git status --short` (vazio);
-  `git diff --check`.
+- `pwd`; raiz Git; branch; HEAD (esperado: commit `docs: set deadline, map
+  gates and refine D4 handoff`, sobre `2d76441`); `git status --short`
+  (vazio); `git diff --check`.
 - `~/.rustup`, `~/.cache/solana` e `~/.config/solana` ausentes. Snapshots no
   início e no fim: `~/.cargo` `d9e12578…`, `~/.avm` `7d29f7f8…`, `~/.docker`
   `6046f67f…`. Docker local pode alterar `~/.docker`; registrar a diferença.
@@ -85,7 +93,7 @@ Implantar e exercitar o escrow em Solana devnet com Test USDC:
 
 Tudo sem admin bypass não declarado e sem claim além do executado.
 
-## Decisões já tomadas (fonte: `docs/decisions.md`, "Decisões humanas para o D4")
+## Decisões já tomadas (fonte: `docs/decisions.md`, "Decisões humanas para o D4" e "Prazo de 11/10, congelamento do JournalV1 v1 e nomes de gate")
 1. **D4-0 Rede.**
    - Somente `https://api.devnet.solana.com` (JSON-RPC e `requestAirdrop`),
      começando por uma fase somente leitura.
@@ -186,6 +194,28 @@ Tudo sem admin bypass não declarado e sem claim além do executado.
      2,8 SOL de rent, com pico próximo de 2× pelo buffer. Se for
      insuficiente: **BLOQUEADO**, informando ao humano a pubkey do deployer
      e o valor, para obter SOL pelo faucet web. Nunca pedir chave.
+8. **`JournalV1` v1 congelado** (aprovação humana de 2026-10-05: "como está
+   hoje, 165 bytes").
+   - Nenhum byte, campo, offset ou regra de hash muda.
+   - Em Plan Mode (`CLAUDE.md`), `docs/manifest-schema.md` deixa de ser
+     "Draft v1 candidato" e passa a "v1 congelado", com:
+     - campos públicos e offsets;
+     - hashing canônico;
+     - vínculo com `ADMITTED_IMAGE_ID_V1` e com o program ID de devnet;
+     - regra de mudança futura: novo `schema_version`, novo guest e ImageID,
+       nova admissão no programa e novo program ID.
+   - Atualizar "candidato" e "não congelado" nos docs vivos
+     (`architecture.md` e `README.md`), sem tocar nos relatórios históricos.
+     O nome da função `JournalV1::decode_candidate` fica como está, porque
+     renomeá-la seria mudança de código.
+9. **R-05 nos dois caminhos.** Os PoCs 1 a 7 do R-D2e entram em
+   `anchor/tests-local/tests/` como testes de regressão (arquivo novo, por
+   exemplo `regressions.rs`, reutilizando `common/mod.rs`).
+   - Só testes: o programa, os `Cargo.toml` e os locks não mudam.
+   - No caminho (a), o `.so` continua `6457aecf…`, então não há R-D4a.
+   - O PoC-8 (variante com outro program ID) não entra.
+10. **Nomes de gate:** o gate seguinte ao D4 é o `D7` (CLI de ponta a ponta,
+    com README e demo do D9).
 
 ## Escopo autorizado
 - Fora do clone, em `~/.local/share/vericode-spikes/d4/`:
@@ -194,14 +224,19 @@ Tudo sem admin bypass não declarado e sem claim além do executado.
   - cliente devnet em Rust;
   - em (b), o fork do Router;
   - logs e saídas.
-- No repositório, caminho (a), **somente documentação**:
+- No repositório, caminho (a), **documentação e testes**, sem mudar o
+  programa:
+  - `anchor/tests-local/tests/`: testes de regressão dos PoCs 1 a 7 (D4-9);
+  - `docs/manifest-schema.md`: congelamento do `JournalV1` v1 (D4-8, Plan
+    Mode);
   - criar `docs/d4-devnet-results.md`;
   - atualizar `decisions.md`, `evidence.md`, `agent-control.md`,
-    `project-context.md`;
+    `project-context.md` (estado da sequência e tabela gate → dia);
   - `router-notes.md`: status de devnet;
   - `escrow-program.md`: Program ID de devnet e autoridade finalizada;
+  - `architecture.md`: journal congelado;
   - `README.md`: status de devnet com links, somente o comprovado;
-  - criar `docs/handoffs/d4-to-d5.md`.
+  - criar `docs/handoffs/d4-to-d7.md`.
 - No repositório, caminho (b), além da documentação:
   - `anchor/programs/vericode-escrow/src/lib.rs`: quatro constantes, mint
     admitido e erro 6036;
@@ -214,8 +249,8 @@ Tudo sem admin bypass não declarado e sem claim além do executado.
 ## Fora de escopo / proibido
 - Mainnet, dinheiro real, seed phrase; keypair dentro do clone, impresso ou
   versionado.
-- Alterar `JournalV1`, wire format, guest, core ou locks. Em (a), também o
-  programa.
+- Alterar bytes ou semântica do `JournalV1`, wire format, guest, core,
+  `Cargo.toml` ou locks. Em (a), também o programa.
 - Deploy de `.so` com `INITIAL_OWNER` de teste. Qualquer escrita em devnet no
   caminho (b) antes da R-D4a.
 - Rede além do D4-0; Docker além do D4-4.
@@ -238,8 +273,9 @@ Tudo sem admin bypass não declarado e sem claim além do executado.
      - A `(7,14)` PASS;
      - A' `(7,15)` FAIL, para o negativo de artefato não entregue;
      - B `(7,15)` FAIL;
+   - testes de regressão dos PoCs 1 a 7 (D4-9);
    - cliente devnet compilado;
-   - suíte local verde.
+   - suíte local verde, com o `.so` ainda `6457aecf…` em (a).
 4. **F3, devnet.** Os negativos vêm antes dos positivos e usam
    `skipPreflight` para ficar no Explorer.
    1. SOL; mint Test USDC (6 decimais, sem freeze authority); ATAs
@@ -268,11 +304,18 @@ Tudo sem admin bypass não declarado e sem claim além do executado.
    8. C7: `SetAuthority(FreezeAccount)` no mint → `MintCannotFreeze` no
       Tokenkeg de devnet.
    9. CU e tamanho de cada transação.
-5. **F4:** documentos, claims e handoff.
+5. **F4:** congelamento do `JournalV1` em `manifest-schema.md` (Plan Mode),
+   documentos, claims e handoff.
 
 ## Testes obrigatórios
-- Suíte local completa (core A/B, escrow, settlement, layout, fixtures) antes
-  de qualquer escrita em devnet. Em (b), mais os testes novos.
+- Suíte local completa antes de qualquer escrita em devnet: core A/B,
+  escrow, settlement, layout, fixtures e as regressões novas.
+  - Cada regressão reproduz o resultado observado no PoC correspondente do
+    R-D2e (códigos 6010, 3012, 6021, 6022, 1.118 bytes, 6007/6008, 3007,
+    2006, 3008, 2000).
+  - O PoC-4 (fund aceito depois do prazo) documenta o comportamento atual
+    como limitação conhecida R-02, não como propriedade desejada.
+  - Em (b), mais os testes do Router próprio e do mint admitido.
 - Em devnet, todos os casos da F3, com:
   - saldos de buyer, executor e vault antes e depois;
   - status do Job decodificado;
@@ -291,13 +334,15 @@ Tudo sem admin bypass não declarado e sem claim além do executado.
   - saldos, CU e tamanhos;
   - smoke separado e rotulado.
 - Entradas D4 em `decisions.md` e `evidence.md`; `router-notes.md` com o
-  status de devnet.
+  status de devnet; `manifest-schema.md` como "v1 congelado".
 
 ## Critério de pronto
 - Caminho (a):
   - escrow finalizado;
   - depósito, release PASS, refund FAIL e refund por timeout no Explorer;
-  - negativos registrados.
+  - negativos registrados;
+  - regressões dos PoCs 1 a 7 verdes;
+  - `JournalV1` documentado como v1 congelado.
 - Claims coerentes com o executado: "verificado por CPI ao Verifier Router
   implantado em Solana devnet (endereços e autoridades …)", somente com as
   transações listadas.
@@ -314,11 +359,12 @@ Tudo sem admin bypass não declarado e sem claim além do executado.
 - SOL insuficiente, faucet ou RPC bloqueando → `BLOQUEADO`, com diagnóstico
   e a pubkey do deployer.
 - Imagem Docker ausente, divergência de baseline, hash ou ImageID → parar.
-- Orçamento de 1 dia estourado → parar com evidência parcial.
+- Bloqueio externo prolongado → parar com evidência parcial.
 
 ## Commit
 - Commits locais autorizados, com identidade via `git -c`. Push proibido.
-  - Caminho (a), ao atingir o critério: `docs: record devnet escrow (D4)`.
+  - Caminho (a), ao atingir o critério: `anchor: add R-D2e regression tests
+    (D4)` e `docs: record devnet escrow and freeze JournalV1 (D4)`.
   - Caminho (b), na parada: `anchor: pin own devnet Router and admitted mint
     (D4a)` e `docs: record own Router and admitted mint (D4a)`.
   - Parada por bloqueio: `docs: record partial devnet attempt (D4)`, só com
@@ -332,8 +378,8 @@ Tudo sem admin bypass não declarado e sem claim além do executado.
 5. riscos;
 6. confirmação de fronteiras;
 7. prompt da próxima fase, segundo `docs/handoff-protocol.md`:
-   - em (a): D5, com CLI reproduzível no repositório para o fluxo devnet,
-     README com versões, hashes, links e limitações (M6/M7), roteiro da demo
-     e R-05; worker e UI só se sobrar tempo;
+   - em (a): `D7`, com CLI reproduzível no repositório para o fluxo devnet,
+     README com versões, hashes, links e limitações (M6/M7) e roteiro da demo
+     (conteúdo do D9); depois, worker e telas (D10–D12), se houver tempo;
    - em (b): R-D4a, revisão delta separada e somente leitura (Opus 5.5,
      max).

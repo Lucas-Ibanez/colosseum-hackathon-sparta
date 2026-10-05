@@ -46,13 +46,18 @@ decisões D4-0 a D4-6 foram delegadas pelo humano e tomadas pelo agente:
 - `job_id` aleatório e receipts novas;
 - `create_job`+`fund` atômicos.
 
+O humano aprovou congelar o `JournalV1` como está (165 bytes); o D4 atualiza
+`docs/manifest-schema.md` em Plan Mode. A partir do D4, gates recebem o ID do
+dia do plano que entregam; o próximo depois do D4 é o D7.
+
 Errata R-04 aplicada em `router-notes.md` e `escrow-program.md`. Router em
 devnet: `STATUS: NÃO VALIDADO`.
 
 ## Decisões humanas registradas
 
 - D2a.1, D2a.2, D2b, D2c, D2d, D2c.1, "Decisões humanas para o D2b.1",
-  D2b.1, D2e, R-D2e e "Decisões humanas para o D4" (`docs/decisions.md`).
+  D2b.1, D2e, R-D2e, "Decisões humanas para o D4" e "Prazo de 11/10,
+  congelamento do JournalV1 v1 e nomes de gate" (`docs/decisions.md`).
 
 ## Ações proibidas (permanentes salvo novo objetivo)
 
@@ -75,14 +80,15 @@ devnet: `STATUS: NÃO VALIDADO`.
 - R-01: Router em devnet não confirmado.
 - R-02: `fund` fora da janela; mitigado por `create_job`+`fund` atômicos.
 - R-03: replay entre implantações; mitigado por `job_id` aleatório.
-- R-05: PoCs do R-D2e ainda fora da suíte.
+- R-05: PoCs do R-D2e ainda fora da suíte; entram no D4 como testes.
 - R-06: e-stop irreversível do dono do Router como alavanca de liveness.
 - R-07: margens de tamanho (114 bytes) e CU.
 - ATA precisa existir antes da liquidação.
 - F-09, F-13, F-14: baixos ou informativos.
 - Spec v1 trivial; ImageID admitido não recertificado.
 - O WSL reinicia e limpa `/tmp`.
-- Calendário: dia D9 (2026-10-05); prazo por volta de 8 out.
+- Calendário: 2026-10-05; prazo de entrega 11 out (decisão humana). As
+  datas da sequência são indicativas.
 
 ## Próxima transição permitida
 

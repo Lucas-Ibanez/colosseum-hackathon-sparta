@@ -1118,3 +1118,45 @@ Registre decisões relevantes do projeto neste formato.
   - Disponibilidade do faucet.
   - ImageID não recertificado; spec v1 trivial.
 - **Próximo gate:** D4, conforme `docs/handoffs/r-d2e-to-d4.md`.
+
+## 2026-10-05 — Prazo de 11/10, congelamento do JournalV1 v1 e nomes de gate
+
+- **Data:** 2026-10-05
+- **Decisões humanas:**
+  1. **Prazo de entrega: 11/10**, não por volta de 8/10. Nas palavras do
+     humano: "Não se apegue muito às datas, o tempo não é até dia 8, mas sim
+     11". As datas de `docs/context/sequencia-mvp.md` passam a ser
+     indicativas, e vale a ordem dos gates. Substitui o limite de 1 dia do
+     D4 (item 8 de "Decisões humanas para o D4").
+  2. **`JournalV1` congelado como está hoje**: "eu aprovo congelar o
+     JournalV1 como está hoje (165 bytes)".
+     - Ficam congelados o layout, os offsets e o hashing atuais de
+       `docs/manifest-schema.md` e do core, sem mudar nenhum byte.
+     - Isso cumpre o D4 do plano ("congela o formato do journal… especificação
+       assinada pelo time").
+     - A atualização de `docs/manifest-schema.md` (de "candidato" para "v1
+       congelado") fica para o D4, em Plan Mode (`CLAUDE.md`).
+     - Uma mudança futura exige novo `schema_version`, novo guest e ImageID e
+       nova admissão no programa; como o escrow será finalizado, também um
+       novo program ID.
+  3. **Ajustes de documentação autorizados** (proposta do agente aceita):
+     - correção do prazo nos documentos vivos;
+     - tabela "gate → dia do plano" em `docs/project-context.md`;
+     - prompt do D4 ajustado.
+- **Escolhas do agente dentro dessa autorização:**
+  - **Nomes de gate.** A partir do D4, o ID do gate é o dia do plano cujo
+    conteúdo ele entrega. O gate seguinte ao D4 é o `D7` (CLI de ponta a
+    ponta, com README e demo do D9), e não "D5" como dizia o item 8 de
+    "Decisões humanas para o D4". O handoff do D4 passa a ser
+    `docs/handoffs/d4-to-d7.md`.
+  - **R-05 no D4.** Os PoCs 1 a 7 do R-D2e entram em `anchor/tests-local`
+    como testes de regressão nos dois caminhos.
+    - Só testes: o programa, os `Cargo.toml` e os locks não mudam. No
+      caminho (a), o `.so` continua `6457aecf…`, então não há R-D4a.
+    - O PoC-8 depende de uma variante com outro program ID e fica registrado
+      apenas no R-D2e.
+- **Motivo:**
+  - Com três dias a mais, o D4 pode cumprir o que o plano pede para o dia
+    (journal congelado) e fechar R-05 sem pressa.
+  - Os nomes D2a…D2e esconderam que D3, D5 e D6 já estavam feitos.
+- **Próximo gate:** D4, conforme `docs/handoffs/r-d2e-to-d4.md` (ajustado).
