@@ -953,3 +953,168 @@ Registre decisões relevantes do projeto neste formato.
   - spec v1 trivial;
   - revisão adversarial de D2b.1 + D2e pendente.
 - **Próximo gate:** R-D2e, conforme `docs/handoffs/d2e-to-r-d2e.md`.
+
+## 2026-10-05 — R-D2e: revisão adversarial de D2b.1 + D2e (APROVADO COM RESSALVAS para o D4)
+
+- **Data:** 2026-10-05
+- **Decisão:** a revisão adversarial separada (Opus 5.5, max, somente leitura)
+  aprova com ressalvas o início do gate devnet (D4). Não há achado crítico ou
+  alto no código de D2b.1/D2e. F-01, F-02, F-03, F-06, F-08, F-10, F-11 e
+  F-12 estão resolvidos; F-07 está parcial (R-02).
+- **Motivo:**
+  - R-01 (médio): as constantes do Router são os endereços upstream; os `.so`
+    testados só executam neles (`DeclaredProgramIdMismatch`), e o Router
+    testado embute o `INITIAL_OWNER` de teste. O Router em devnet exige
+    decisão antes do deploy.
+  - R-02 (baixo): `fund` não respeita a janela do prazo (Job `Funded` depois
+    do prazo; PoC-4).
+  - R-03 (baixo, reclassifica F-15): a mesma prova liquida o Job `0x11` numa
+    segunda implantação (PoC-8).
+  - R-04 a R-07: claims, lacunas de teste, liveness do e-stop e margens.
+- **Condições do D4:**
+  - C1: Router (upstream verificado, Router próprio com revisão delta ou
+    nenhum);
+  - C2: F-04;
+  - C3: F-05;
+  - C4: `job_id` aleatório e receipts novas;
+  - C5: `create_job`+`fund` atômicos ou checagem da janela;
+  - C6: claim on-chain só com transação devnet de CPI;
+  - C7: `MintCannotFreeze`, tamanhos e CU repetidos em devnet.
+- **Evidência:**
+  - HEAD `c0aba7d`; core 42/42 A/B;
+  - `.so` `6457aecf…` reproduzido; Router `1b26b017…` e verificador
+    `dab6746d…` reconstruídos offline;
+  - escrow 25, settlement 16, layout 6, fixtures 2; IDL `37a3028a…`;
+  - 8 PoCs fora do clone, 8/8 (`rd2e_poc.rs` `a8aced16…`);
+  - [`docs/r-d2e-adversarial-review-results.md`](r-d2e-adversarial-review-results.md).
+- **Aplicado no registro:** errata R-04 (a)–(d) em `docs/router-notes.md` e
+  `docs/escrow-program.md`. Os relatórios D2e e R-D2e ficam como registro
+  histórico; a errata deles está no relatório do R-D2e.
+- **Risco aberto:** F-04 e F-05 (bloqueiam D4); R-01, R-02, R-03, R-05,
+  R-06 e R-07; F-09, F-13, F-14; ImageID não recertificado; spec v1 trivial.
+- **Registro:** feito por sessão com permissão de escrita a partir da resposta
+  da revisão, que não podia editar arquivos.
+- **Próximo gate:** D4, conforme `docs/handoffs/r-d2e-to-d4.md`.
+
+## 2026-10-05 — Decisões humanas para o D4 (escolhas delegadas ao agente)
+
+- **Data:** 2026-10-05
+- **Decisão humana:** "Eu autorizo que esta sessão registre o R-D2e agora" e
+  "Considerando o nosso projeto, seus objetivos e tudo o que já foi feito até
+  aqui, tome as melhores escolhas para o nosso MVP." O humano delegou ao
+  agente as decisões D4-0 a D4-6 propostas pelo R-D2e, incluindo as
+  irreversíveis: finalizar a upgrade authority do escrow e reutilizar o
+  program ID `GZqbL2Tb…`.
+- **Escolhas do agente:**
+  1. **D4-0 Rede.**
+     - Somente `https://api.devnet.solana.com` (JSON-RPC e
+       `requestAirdrop`), começando por uma fase somente leitura.
+     - crates.io só para o cliente devnet fora do clone, com lock semeado de
+       `anchor/tests-local/Cargo.lock`.
+     - Links do Explorer são gerados, não acessados. Nenhum outro destino;
+       nenhum pull Docker.
+  2. **D4-1 Router (R-01/C1): (a) upstream, se verificável.**
+     - Critérios obrigatórios:
+       1. `6JvFfBrv…` e `THq1qFYQ…` executáveis, com ProgramData e upgrade
+          authorities lidos;
+       2. PDA `["router"]` (`4Sh5ofCz…`) com o dono registrado; entrada
+          `["verifier", 73c457ba]` (`4Z7ok78x…`) com `verifier = THq1q…` e
+          `estopped = false`;
+       3. `simulateTransaction` de `Router.verify`: FIB oficial e fixtures
+          PASS/FAIL aceitos; seal adulterado e ImageID errado rejeitados.
+     - O dump do verificador comparado a `dab6746d…` é registrado, mas uma
+       divergência de bytes não reprova sozinha (toolchain).
+     - **Se (a) falhar, segue automaticamente para (b), só local:**
+       - fork do commit `ee415935` fora do clone, com novos `declare_id` do
+         Router e do verificador e `INITIAL_OWNER` = pubkey do deployer;
+       - verificador com upgrade authority = PDA do Router; Router com
+         upgrade authority final;
+       - troca das quatro constantes do escrow e de `tests/layout.rs`;
+       - teste de ciclo completo em `solana-program-test`;
+       - depois, **PARAR** para a revisão delta separada R-D4a antes de
+         qualquer escrita em devnet.
+     - (c), sem Router, não é escolhida: tira do MVP a verificação da prova
+       pelo contrato. Só entra por decisão humana nova, se (b) também
+       bloquear.
+  3. **D4-2 Upgrade authority (F-04/C2).**
+     - O escrow é implantado com o keypair existente
+       `~/.local/share/vericode-spikes/d2c/keys/vericode_escrow-keypair.json`
+       (`GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH`), sem mudar código.
+     - Ordem:
+       1. deploy e `solana program show`;
+       2. um smoke run real (Job S: create+fund, deliver+release com receipt
+          própria), rotulado "smoke pré-finalização, não evidência";
+       3. `solana program set-upgrade-authority --final` e `program show` de
+          novo;
+       4. só então as transações de evidência.
+     - Se o smoke falhar, não finalizar: diagnosticar. Mudança de código exige
+       R-D4a.
+     - Um bug depois da finalização exige novo program ID, mudança de código e
+       R-D4a.
+     - Em (a), as autoridades do Router e do verificador upstream são
+       registradas como confiança explícita, não controlada pelo projeto
+       (inclui o e-stop, R-06).
+     - Em (b), o deployer, como dono do Router, mantém e-stop e
+       `add_verifier`, documentados como confiança explícita.
+  4. **D4-3 Mint (F-05/C3).**
+     - Em (a): opção (ii). O cliente confere e exibe, antes de cada operação,
+       mint, `decimals = 6`, `freeze_authority = None` e os termos do Job.
+       A limitação fica declarada; o programa não muda.
+     - Em (b): opção (i). Constante do mint admitido = pubkey do Test USDC
+       (keypair em `d4/keys`), erro novo no fim (6036), coberta pela R-D4a.
+  5. **D4-4 Jobs e receipts (C4/R-03).**
+     - `job_id` aleatório de 32 bytes por Job (CSPRNG do SO), nunca `0x11`.
+     - Receipts novas por Job, provadas a partir do ELF D1c2b preservado
+       (`d2d/artifacts/vericode-guest.bin`, ImageID `4da06f90…fb1a`), sem
+       reconstruir o guest.
+     - Harness `d4/receipts` (cópia de `d2d/receipts`) com o subcomando
+       `prove`, que reproduz o frame do host (`job_id ‖ artefato 12 B ‖
+       image_id`), mais `compress`.
+     - Prover local sem dev mode; Groth16 pela imagem Docker local
+       `sha256:7f173963…`, com `--pull=never` e um cenário por vez.
+     - As fixtures `0x11` são só fallback rotulado.
+  6. **D4-5 Janela (C5/R-02).**
+     - `create_job` e `fund` na mesma transação; a prova é gerada antes.
+     - `deliver` e `release` na mesma transação, quando couberem em 1.232
+       bytes.
+     - O executor confere os slots restantes antes de entregar.
+     - Mudar `fund` no core fica para gate próprio, depois do MVP.
+  7. **D4-6 Chaves e SOL.**
+     - Keypairs efêmeros de devnet novos em `~/.local/share/vericode-spikes/d4/keys`
+       (`0600`), só com pubkeys publicadas, dentro dos papéis do princípio 9
+       (`AGENTS.md`):
+       - deployer/payer, buyer, executor e mint do Test USDC;
+       - em (b), também os keypairs de programa do Router e do verificador,
+         como parte do papel de deployer (precedente: D2c e D2d).
+     - Nenhum keypair "terceiro": os negativos são assinados pelo buyer ou
+       pelo deployer, e as liquidações são permissionless.
+     - SOL por `solana airdrop`, dentro dos limites. Se for insuficiente,
+       **BLOQUEADO**: a sessão informa ao humano a pubkey do deployer e o
+       valor, para obter SOL pelo faucet web. Nunca pede chave.
+  8. **Orçamento e sequência.**
+     - D4: 1 dia, com timestamps por fase.
+     - Depois do D4, D5: CLI reproduzível no repositório, README com
+       versões, hashes, links e limitações (M6/M7) e roteiro da demo.
+     - Worker e UI só se sobrar tempo (guia §3).
+     - R-05 (PoCs na suíte) entra no próximo gate que alterar
+       `anchor/tests-local`; em (b), já no D4.
+- **Motivo:**
+  - (a) primeiro: sem código novo nem revisão delta, é o caminho mais curto
+    para o claim C6.
+  - (b) automático em vez de (c): preserva a verificação da prova pelo
+    contrato, que é o núcleo do MVP, e a R-D4a mantém o gate de segurança.
+  - Finalizar a autoridade: um escrow upgradeable é um bypass administrativo
+    (princípio 7). O smoke antes da finalização reduz o risco de um programa
+    inutilizável sem volta.
+  - Mint (ii) em (a): evita mudança de código e revisão. Mint (i) em (b): a
+    mudança e a revisão já acontecem.
+  - `job_id` aleatório e receipts novas fecham o replay de R-03 nas
+    transações exibidas.
+  - Atomicidade de `create_job`+`fund`: mitiga R-02 sem mexer no core.
+- **Risco aberto:**
+  - Em (a): confiança nas autoridades upstream do Router e do verificador.
+  - Finalização irreversível do escrow.
+  - Mint não restrito no programa em (a).
+  - Disponibilidade do faucet.
+  - ImageID não recertificado; spec v1 trivial.
+- **Próximo gate:** D4, conforme `docs/handoffs/r-d2e-to-d4.md`.

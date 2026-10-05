@@ -55,11 +55,12 @@ Os IDs de gate usam o dia da sequência como prefixo e letras/números para
 subdivisões: `D1c2b.3i` é uma subtarefa do dia D1; `D2a` é a primeira
 subtarefa do dia D2. O dia é marco de escopo, não data de calendário.
 
-## Estado da sequência (evidência, 2026-10-04)
+## Estado da sequência (evidência, 2026-10-05)
 
-Data de calendário: 2026-10-04, que corresponde ao dia D8 do cronograma. O
+Data de calendário: 2026-10-05, que corresponde ao dia D9 do cronograma. O
 projeto concluiu tecnicamente o **D3** e o caminho forte local dos **D5/D6**
-(D2e concluído); D4 (devnet) não começou.
+(D2e concluído). A revisão R-D2e aprovou com ressalvas o D4 (devnet), que
+ainda não começou.
 
 | Dia | Situação | Evidência / lacuna |
 | --- | --- | --- |
@@ -67,15 +68,16 @@ projeto concluiu tecnicamente o **D3** e o caminho forte local dos **D5/D6**
 | D1 | concluído (técnico) | crate e guest (D1c1–D1c2b); manifesto em `docs/manifest-schema.md`; Anchor skeleton e Perfil A (D2c); README corrigido (D2a.2) |
 | D2 | concluído (técnico) | GATE 48H atendido: receipts locais reais PASS/FAIL (`docs/d1c2b3i-local-receipts-results.md`); máquina de estados testada em Rust puro (D2b); custódia SPL em vault PDA testada em processo (D2c); vídeo fora do repositório |
 | D3 | concluído (local) | journal com job_id, artifact, harness, versão e verdict; provas PASS/FAIL; create/fund/refund por timeout (D2c); compromisso de entrega e termos admitidos da v1 (D2b.1); `release`/`refund_on_fail` vinculados ao Job e à entrega, com prova verificada por CPI ao Router (D2e); tudo em `solana-program-test` |
-| D4 | não iniciado | escrow em devnet com Test USDC e Explorer |
+| D4 | não iniciado; liberado com ressalvas pelo R-D2e | escrow em devnet com Test USDC e Explorer; decisões D4-0 a D4-6 registradas ("Decisões humanas para o D4") |
 | D5/D6 | concluído localmente (D2d, D2e) | receipts Groth16 PASS/FAIL reais verificadas pelo Verifier Router em `solana-program-test` (D2d) e por CPI a partir do `vericode_escrow`, com prova errada rejeitada antes do happy path (D2e); **falta** Router em devnet |
 | D7–D12 | não iniciados | CLI E2E, estados ruins on-chain, worker e UI |
 
 ### Caminho crítico e risco de prazo
 
-- O atraso é de cerca de seis dias de calendário. O guia (§3) manda cortar
-  primeiro interface e extras, nunca receipt real, vínculo Job–journal,
-  escrow básico, cenário negativo ou explicação de limites.
+- O D4 (devnet) estava previsto para 30/09: o atraso no caminho crítico é
+  de cinco dias de calendário. O guia (§3) manda cortar primeiro interface e
+  extras, nunca receipt real, vínculo Job–journal, escrow básico, cenário
+  negativo ou explicação de limites.
 - Perfil A escolhido no D2c: Anchor `0.31.1` + Agave `2.3.9` + Rust
   `1.89.0`, em homes isoladas.
 - Caminho forte comprovado em processo no D2d (Groth16 + Router). O D2c.1
@@ -87,10 +89,15 @@ projeto concluiu tecnicamente o **D3** e o caminho forte local dos **D5/D6**
      admitidos da v1 (`docs/d2b1-delivery-binding-results.md`);
   3. D2e concluído: `release`/`refund_on_fail` a partir de `Delivered`, com
      CPI ao Router e selector fixado (`docs/d2e-router-settlement-results.md`);
-  4. revisão adversarial separada de D2b.1 + D2e
-     (`docs/handoffs/d2e-to-r-d2e.md`);
-  5. devnet, que exige confirmar o Program ID e o dono do Router ou implantar
-     um Router próprio (a decidir), além de F-04 e F-05.
+  4. revisão adversarial R-D2e concluída: **APROVADO COM RESSALVAS** para o
+     D4, com condições C1 a C7
+     (`docs/r-d2e-adversarial-review-results.md`);
+  5. D4 (devnet): Router upstream verificado por RPC ou Router próprio com
+     revisão delta R-D4a; escrow com upgrade authority finalizada; Jobs PASS,
+     FAIL e timeout, com negativos no Explorer
+     (`docs/handoffs/r-d2e-to-d4.md`);
+  6. D5: CLI reproduzível, README com versões, hashes, links e limitações
+     (M6/M7) e roteiro da demo. Worker e UI só se sobrar tempo.
 - Wallets de devnet: o agente está autorizado a criar keypairs efêmeros de
   devnet/localnet (D2a.2), sob as restrições do princípio 9 de `AGENTS.md`.
 

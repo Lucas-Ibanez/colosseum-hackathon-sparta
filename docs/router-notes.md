@@ -141,7 +141,10 @@ Consequências:
 
 - `RISC0_VERIFIER_ROUTER_PROGRAM_ID` permanece vazio;
 - não alegar verificação ZK on-chain;
-- não implementar CPI antes de confirmar Program ID, cluster, interface/IDL, perfil de versões e transação reproduzível;
+- a CPI existe desde o D2e, mas só foi exercitada em `solana-program-test`
+  local, contra os endereços upstream fixados no escrow. Os `.so` testados só
+  executam nesses endereços (R-D2e R-01). Nenhum deploy ou transação em
+  cluster antes do reconhecimento do Router em devnet (D4-1);
 - qualquer atestado da plataforma deve ser rotulado como fallback, separado de prova ZK.
 
 ## O que precisa ser provado
@@ -152,11 +155,12 @@ Consequências:
 3. [x] Comparar Anchor `0.31.1` + Agave `2.1.0` com Anchor `0.31.1` +
    Agave `2.3.9` no escopo H4.
 4. [x] Comparar bytes, discriminadores, metas, flags, owners, seal e journal
-   gerados pelas crates; [ ] provar CPI runtime.
+   gerados pelas crates; [x] provar CPI runtime (D2e, somente em
+   `solana-program-test` local).
 5. Confirmar em fonte oficial o Program ID e o cluster antes de preencher qualquer variável.
 6. [x] Validar receipt local, ImageID e rejeição de ImageID/journal
-   divergentes; [ ] testar Job, mint e executor quando existir código
-   VeriCode autorizado.
+   divergentes; [x] testar Job, mint e executor (D2b.1 e D2e, somente em
+   `solana-program-test` local).
 7. Comprovar devnet separadamente, se houver deployment oficial. Até lá, manter `STATUS: NÃO VALIDADO`.
 
 O workflow oficial executa `solana-keygen new` antes de `anchor test`.

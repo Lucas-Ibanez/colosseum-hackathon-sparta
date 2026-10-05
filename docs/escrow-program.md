@@ -117,8 +117,14 @@ Router não foi chamado.
 - **Selector já registrado:** o dono não consegue apontá-lo para outro
   verificador (`add_verifier` faz `init` da entrada). Um verificador sob
   outro selector nunca é aceito pelo escrow (F-03).
-- **Upgrade authorities:** a do Router e a do verificador (esta é a PDA do
-  Router) podem trocar o código. O mesmo vale para o próprio escrow (F-04).
+- **Upgrade authorities:** a do Router pode trocar o código do Router. A do
+  verificador é a PDA do Router, e o Router pinado não tem `invoke_signed`,
+  então o verificador só muda depois de um upgrade do Router (errata R-D2e
+  R-04b). O escrow também é upgradeable enquanto sua autoridade não for
+  finalizada (F-04).
+- **E-stop como alavanca de liveness (R-D2e R-06):** o e-stop é
+  irreversível. Com o selector fixado, um e-stop de `73c457ba` encerra para
+  sempre a liquidação por veredito daquela implantação; sobra o timeout.
 - **Router em devnet:** não confirmado; o Program ID fixado é o upstream.
 
 ## Contas
@@ -164,8 +170,10 @@ mesma do `artifact_hash` do journal. Os testes entregam os artefatos das
 fixtures Groth16 versionadas (Job `0x11`: `(7,14)` PASS e `(7,15)` FAIL).
 
 Medições em processo:
-- `release` e `refund_on_fail` consomem de 135 k a 140 k CU, dos quais
-  110.701 são do Router e 99.541 do verificador (dentro dos do Router).
+- `release` e `refund_on_fail` consomem de 135 k a 145 k CU, dos quais
+  110.701 são do Router e 99.541 do verificador (dentro dos do Router). O
+  D2e mediu até 142 k; o R-D2e observou 144.345 em `refund_on_fail`
+  (errata R-04c).
 - A variação vem da busca do bump da ATA, que depende das chaves.
 - Cabem no limite padrão de 200 k CU por instrução, testado sem instrução de
   compute budget.
@@ -173,6 +181,12 @@ Medições em processo:
 Não existem instruções administrativas, close ou realloc. A IDL gerada
 (`anchor idl build`) contém exatamente as seis instruções acima e não é
 versionada; só seu hash está registrado.
+
+A IDL mostra os endereços fixos de `router_program` e `router`, mas não os
+de `verifier_entry` e `verifier_program`. O motivo é o nome das constantes:
+o anchor-syn 0.31.1 só resolve constantes cujo nome usa `[A-Z_]`
+(`idl/accounts.rs:163-171`), e `GROTH16_*` contém dígitos (errata R-D2e
+R-04d). Clientes devem usar a tabela de constantes acima.
 
 ## Erros
 
