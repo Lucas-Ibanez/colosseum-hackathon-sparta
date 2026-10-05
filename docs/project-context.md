@@ -79,7 +79,7 @@ adversariais com prefixo `R-`). O gate seguinte ao D4 é o `D7`, não "D5".
 | D2e | `release`/`refund_on_fail` com CPI ao Router; prova errada rejeitada | D6, D8 (parte, local) |
 | R-D2e | revisão adversarial (APROVADO COM RESSALVAS para o D4) | guia §11 |
 | D4a | reconhecimento do Router em devnet (reprovado); CPI direta ao verificador imutável; mint admitido; `JournalV1` v1 congelado; PoCs do R-D2e na suíte; receipts novas | D4 (parte local) |
-| R-D4a | revisão delta somente leitura do D4a | guia §11 |
+| R-D4a | revisão delta somente leitura do D4a (APROVADO COM RESSALVAS, CD1 a CD9) | guia §11 |
 | D4b | deploy em devnet, smoke, finalização, Jobs PASS/FAIL/timeout e negativos no Explorer | D4 e parte de D7/D8 (em devnet) |
 | D7 (próximo depois do D4) | CLI de ponta a ponta, README com versões, hashes, links e limitações, roteiro da demo | D7, D9 |
 | D10–D12 | worker de prova e telas Buyer, Submit e Result | D10–D12, se houver tempo |
@@ -92,8 +92,8 @@ pitch, telas, vídeo) não são rastreados neste repositório.
 Data de calendário: 2026-10-05, que corresponde ao dia D9 do cronograma. O
 projeto concluiu tecnicamente o **D3** e o caminho forte local dos **D5/D6**
 (D2e concluído). A revisão R-D2e aprovou com ressalvas o D4. Sua parte
-local, o D4a, está concluída; a parte em devnet (D4b) aguarda a revisão
-R-D4a.
+local, o D4a, está concluída, e a revisão R-D4a a aprovou com ressalvas
+(condições CD1 a CD9). A parte em devnet (D4b) é o próximo gate.
 
 | Dia | Situação | Evidência / lacuna |
 | --- | --- | --- |
@@ -101,7 +101,7 @@ R-D4a.
 | D1 | concluído (técnico) | crate e guest (D1c1–D1c2b); manifesto em `docs/manifest-schema.md`; Anchor skeleton e Perfil A (D2c); README corrigido (D2a.2) |
 | D2 | concluído (técnico) | GATE 48H atendido: receipts locais reais PASS/FAIL (`docs/d1c2b3i-local-receipts-results.md`); máquina de estados testada em Rust puro (D2b); custódia SPL em vault PDA testada em processo (D2c); vídeo fora do repositório |
 | D3 | concluído (local) | journal com job_id, artifact, harness, versão e verdict; provas PASS/FAIL; create/fund/refund por timeout (D2c); compromisso de entrega e termos admitidos da v1 (D2b.1); `release`/`refund_on_fail` vinculados ao Job e à entrega, com prova verificada por CPI ao Router (D2e); tudo em `solana-program-test` |
-| D4 | em andamento: D4a concluído (local); aguarda R-D4a e depois D4b (devnet) | Router upstream de devnet inutilizável (não inicializado); por decisão humana, o escrow chama direto o verificador Groth16 imutável; mint admitido; `JournalV1` v1 congelado; receipts novas de S, A, A′ e B (`docs/d4a-direct-verifier-results.md`) |
+| D4 | em andamento: D4a concluído (local) e aprovado com ressalvas pelo R-D4a; próximo D4b (devnet) | Router upstream de devnet inutilizável (não inicializado); por decisão humana, o escrow chama direto o verificador Groth16 imutável; mint admitido; `JournalV1` v1 congelado; receipts novas de S, A, A′ e B (`docs/d4a-direct-verifier-results.md`) |
 | D5/D6 | concluído localmente (D2d, D2e, D4a) | receipts Groth16 PASS/FAIL reais verificadas pelo Verifier Router em `solana-program-test` (D2d) e por CPI a partir do `vericode_escrow` (D2e via Router; D4a direto ao verificador, também com os bytes de devnet), com prova errada rejeitada antes do happy path; **falta** transação em devnet (D4b) |
 | D7–D12 | não iniciados | CLI E2E, estados ruins on-chain, worker e UI |
 
@@ -128,9 +128,11 @@ R-D4a.
   5. D4a concluído: Router upstream reprovado em devnet; CPI direta ao
      verificador Groth16 imutável e mint admitido (decisão humana), com
      `JournalV1` v1 congelado e PoCs do R-D2e na suíte
-     (`docs/d4a-direct-verifier-results.md`). Próximos: R-D4a (revisão
-     delta, `docs/handoffs/d4a-to-r-d4a.md`) e D4b (deploy, smoke,
-     finalização, Jobs PASS, FAIL e timeout, negativos no Explorer);
+     (`docs/d4a-direct-verifier-results.md`). R-D4a concluído: **APROVADO
+     COM RESSALVAS** para o D4b, com condições CD1 a CD9
+     (`docs/r-d4a-review-results.md`). Próximo: D4b (deploy, smoke,
+     finalização, Jobs PASS, FAIL e timeout, negativos no Explorer;
+     `docs/handoffs/r-d4a-to-d4b.md`);
   6. D7 (com o D9): CLI reproduzível, README com versões, hashes, links e
      limitações (M6/M7) e roteiro da demo;
   7. D10–D12: worker e telas, se houver tempo.

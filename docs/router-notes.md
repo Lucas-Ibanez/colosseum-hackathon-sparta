@@ -196,8 +196,9 @@ Consequências:
    gerados pelas crates; [x] provar CPI runtime (D2e, somente em
    `solana-program-test` local).
 5. [x] Program ID e cluster: confirmados por leitura on-chain em devnet no
-   D4a. O Router está inutilizável; o verificador `THq1q…` é imutável e
-   funcional em simulação.
+   D4a. O Router está inutilizável; o verificador `THq1q…` é imutável,
+   funcional em simulação e estruturalmente equivalente ao rebuild do commit
+   pinado (R-D4a RD4A-05).
 6. [x] Validar receipt local, ImageID e rejeição de ImageID/journal
    divergentes; [x] testar Job, mint e executor (D2b.1 e D2e, somente em
    `solana-program-test` local).

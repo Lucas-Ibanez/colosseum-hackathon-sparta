@@ -1,11 +1,11 @@
-# Controle autônomo — D4a concluído (local); próximo R-D4a
+# Controle autônomo — R-D4a registrado (APROVADO COM RESSALVAS); próximo D4b
 
 ## Objetivo atual
 
-Revisão delta somente leitura (R-D4a) do D4a, antes de qualquer escrita em
-devnet, conforme `docs/handoffs/d4a-to-r-d4a.md`. Se aprovada, segue o D4b:
-deploy do escrow em devnet, smoke, finalização da upgrade authority, Jobs
-PASS, FAIL e timeout, negativos no Explorer e C7.
+D4b, conforme `docs/handoffs/r-d4a-to-d4b.md`: deploy do escrow em devnet,
+smoke, finalização da upgrade authority, Jobs PASS, FAIL e timeout,
+negativos no Explorer e C7, sob as condições CD1 a CD9 do R-D4a
+(`docs/r-d4a-review-results.md`).
 
 ## Marcos anteriores
 
@@ -16,13 +16,14 @@ PASS, FAIL e timeout, negativos no Explorer e C7.
 - D2e `2f10a8f` (anchor), `c0aba7d` (docs).
 - R-D2e `2d76441`: **APROVADO COM RESSALVAS** para o D4.
 - Prazo, congelamento do `JournalV1` e nomes de gate: `cfdd9d7`.
-- D4a: `fb4bfba` (anchor) e o commit `docs: record direct verifier,
-  admitted mint and frozen JournalV1 (D4a)`.
+- D4a: `fb4bfba` (anchor) e `24364ae` (docs).
+- R-D4a: **APROVADO COM RESSALVAS** para o D4b; registrado no commit
+  `docs: record R-D4a delta review`.
 
 ## Baseline (D4a)
 
 - Raiz `/home/lucas/src/vericode`; branch `main`; HEAD de baseline = commit
-  `docs: record direct verifier, admitted mint and frozen JournalV1 (D4a)`.
+  `docs: record R-D4a delta review`.
 - `.so` `cdf6967f3abc63d0385e36909fe61b36f639203e2679209be60c4875114d8133`
   (395.064 bytes).
 - Verificador: rebuild `dab6746d…` e dump de devnet `34ae6e5c…`.
@@ -38,7 +39,7 @@ PASS, FAIL e timeout, negativos no Explorer e C7.
 
 ## Gate atual
 
-`D4a` (registrado) → próximo `R-D4a`.
+`R-D4a` (registrado) → próximo `D4b`.
 
 ## Estado
 
@@ -51,13 +52,17 @@ PASS, FAIL e timeout, negativos no Explorer e C7.
   - o `JournalV1` v1 está congelado;
   - os PoCs 1 a 7 do R-D2e estão na suíte;
   - as receipts S, A, A′ e B estão prontas.
-- Nada foi escrito em devnet.
+- Nada foi escrito em devnet. O deployer tem 5 SOL (faucet web, pelo
+  humano); o D4b gasta cerca de 2,03 SOL.
+- R-D4a: verificador de devnet estrutural e funcionalmente equivalente ao
+  rebuild; condições CD1 a CD9 para o D4b.
 
 ## Decisões humanas registradas
 
 - D2a.1, D2a.2, D2b, D2c, D2d, D2c.1, "Decisões humanas para o D2b.1",
   D2b.1, D2e, R-D2e, "Decisões humanas para o D4", "Prazo de 11/10,
-  congelamento do JournalV1 v1 e nomes de gate" e D4a (`docs/decisions.md`).
+  congelamento do JournalV1 v1 e nomes de gate", D4a e R-D4a
+  (`docs/decisions.md`).
 
 ## Ações proibidas (permanentes salvo novo objetivo)
 
@@ -78,13 +83,17 @@ PASS, FAIL e timeout, negativos no Explorer e C7.
 ## Riscos abertos
 
 - Sem e-stop contra bug de soundness do verificador (decisão humana D4a).
-- Bytes do verificador de devnet ≠ rebuild local; a equivalência é
-  funcional.
+- Bytes do verificador de devnet ≠ rebuild local só por artefatos do build
+  em macOS; a equivalência é estrutural e funcional (RD4A-05).
 - F-04: upgrade authority do escrow a finalizar no D4b, depois do smoke.
 - R-02: `fund` fora da janela, mitigado por `create_job`+`fund` atômicos.
 - R-03: replay entre implantações, mitigado por `job_id` aleatório.
-- SOL de devnet: cerca de 2,75 SOL de rent do escrow, e o faucet é
-  limitado.
+- RD4A-01: seed phrase impressa pela CLI se o deploy falhar sem
+  `--buffer` (CD4).
+- RD4A-02/03: criação do mint irreversível; endereços públicos (CD2, CD3).
+- RD4A-08: vários `.so` fora do clone; implantar só `cdf6967f…` (CD1).
+- RD4A-07 (a), (e), (f): comentários de teste, `.env.example` e testes
+  novos ficam para o D7.
 - Endereço do mint pré-financiado por terceiros pode fazer
   `create_account` falhar; o D4b deve criar o mint com
   transfer+allocate+assign ou checar antes.
@@ -96,6 +105,6 @@ PASS, FAIL e timeout, negativos no Explorer e C7.
 
 ## Próxima transição permitida
 
-`R-D4a`, conforme `docs/handoffs/d4a-to-r-d4a.md`, em sessão nova e
-separada (Opus 5.5, max, somente leitura). Nenhuma escrita em devnet antes
-do veredito.
+`D4b`, conforme `docs/handoffs/r-d4a-to-d4b.md`, em sessão nova (Opus 5.5,
+xhigh, Plan Mode antes da primeira escrita em devnet). Finalização da
+upgrade authority só depois do smoke; depois, `D7`.

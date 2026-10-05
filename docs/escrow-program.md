@@ -26,7 +26,7 @@ Fonte: `anchor/programs/vericode-escrow/src/lib.rs`. Política econômica:
 | SPL Token, crate cliente | `spl-token 7.0.0` |
 | SPL Token, programa executado nos testes | `spl_token-3.5.0.so`, embutido no `solana-program-test 2.3.9` |
 | Associated Token Account, programa executado nos testes | `spl_associated_token_account-1.1.1.so`, embutido |
-| Verificador Groth16 | `risc0-solana v3.0.0`, commit `ee415935`. Testes com o rebuild offline no Perfil A (`dab6746d…`, igual ao D2d) e com o dump do programa implantado em devnet (`34ae6e5c…`, 199.256 bytes), funcionalmente equivalentes |
+| Verificador Groth16 | `risc0-solana v3.0.0`, commit `ee415935`. Testes com o rebuild offline no Perfil A (`dab6746d…`, igual ao D2d) e com o dump do programa implantado em devnet (`34ae6e5c…`, 199.256 bytes), equivalentes estrutural e funcionalmente (R-D4a RD4A-05) |
 | Verifier Router | não é usado desde o D4a |
 | Program ID (localnet e devnet futuro) | `GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH` |
 | Mint admitido | Test USDC de devnet `9TE2VPFmgrNxT22yS3sEZyRcMxLgJkwzgAoquWRXwV2F` (D4a; a criar em devnet no D4b) |
@@ -106,7 +106,9 @@ Ordem em `release` e `refund_on_fail` (helper `settle_with_proof`):
 2. core `release`/`refund_on_fail`: estado, prazo, vínculo ao Job **e ao
    artefato entregue**, veredito, destinatário e mint;
 3. destino = ATA canônica da parte paga (`DestinationNotCanonical`);
-4. `seal.selector == GROTH16_SELECTOR` (`UnexpectedSelector`);
+4. `seal.selector == GROTH16_SELECTOR` (`UnexpectedSelector`): checagem
+   de formato do seal, não vínculo criptográfico; o verificador nunca vê o
+   selector (R-D4a RD4A-04);
 5. `SHA-256` dos **mesmos** 165 bytes;
 6. CPI `verify(proof, job.image_id, digest)` ao verificador fixo; o
    `image_id` vem do Job, nunca do chamador nem do journal (F-12);
@@ -120,8 +122,11 @@ verificador não foi chamado.
 - **Verificador imutável de terceiros:** o `THq1q…` de devnet foi implantado
   pela chave upstream `7uAQqk…` e finalizado (upgrade authority `None`).
   Ninguém pode trocar, pausar ou fechar esse código. Os bytes implantados
-  diferem do rebuild local `dab6746d…`; a equivalência funcional vem das
-  simulações em devnet e da suíte local rodada também com o dump.
+  diferem do rebuild local `dab6746d…` só por artefatos do build em macOS
+  (caminhos, 3 `TypeId` e ordem de funções). A equivalência é estrutural e
+  funcional: VK, control root, identity control ID e tags são idênticos nos
+  dois binários (R-D4a RD4A-05), e as simulações em devnet e a suíte local
+  rodada com o dump dão os mesmos resultados.
 - **Sem e-stop:** sem Router, não existe freio contra um bug de soundness do
   verificador Groth16 de `risc0-zkvm 3.0`. O fonte upstream recomenda o
   Router por isso. Como o escrow também será finalizado, um bug desse tipo

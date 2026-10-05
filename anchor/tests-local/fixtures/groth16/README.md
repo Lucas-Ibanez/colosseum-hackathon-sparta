@@ -19,7 +19,7 @@ comentários `#`:
 | `selector` | 4 | `73c457ba`, os 4 primeiros bytes do digest de `Groth16ReceiptVerifierParameters::default()` (`risc0-zkvm 3.0.3`) |
 | `image_id` | 32 | ImageID do guest determinístico D1c2b: `4da06f90…fb1a` |
 | `journal` | 165 | `JournalV1` (Job `[0x11; 32]`, artefato `(7,14)` ou `(7,15)`) |
-| `journal_digest` | 32 | SHA-256 do journal (o valor que o Router recebe) |
+| `journal_digest` | 32 | SHA-256 do journal (o valor que o verificador recebe) |
 | `seal` | 256 | seal Groth16 cru (`pi_a`, `pi_b`, `pi_c`), **sem** negar `pi_a`; o cliente nega ao montar o `Seal` |
 
 ## Proveniência
@@ -32,8 +32,10 @@ comentários `#`:
    - prover Docker `risczero/risc0-groth16-prover` amd64
      `sha256:7f173963196570b7a71816ed70565a4579264c5d2e3e0ecb028102538ad0e331`.
 3. As receipts Groth16 foram verificadas localmente contra o ImageID e
-   aceitas pelo Verifier Router em `solana-program-test`. Ver
-   `docs/d2d-groth16-router-spike-results.md`.
+   aceitas pelo Verifier Router em `solana-program-test` (D2d). Desde o D4a,
+   o escrow chama o verificador Groth16 direto, sem Router. Ver
+   `docs/d2d-groth16-router-spike-results.md` e
+   `docs/d4a-direct-verifier-results.md`.
 
 | Cenário | SHA-256 do seal | SHA-256 do journal |
 | --- | --- | --- |

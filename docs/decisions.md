@@ -1243,3 +1243,58 @@ Registre decisões relevantes do projeto neste formato.
   - disponibilidade do faucet.
 - **Próximo gate:** R-D4a (revisão delta somente leitura), conforme
   `docs/handoffs/d4a-to-r-d4a.md`; depois, D4b (devnet).
+
+## 2026-10-05 — R-D4a: revisão delta do D4a (APROVADO COM RESSALVAS para o D4b)
+
+- **Data:** 2026-10-05
+- **Revisor:** Claude Code (Opus 5.5, esforço max), sessão separada e somente
+  leitura; HEAD revisado `24364ae` sobre `fb4bfba`.
+- **Resultado:** **APROVADO COM RESSALVAS** para o D4b; nenhum achado crítico
+  ou alto.
+  - RD4A-01 (médio, operação): a CLI `solana` 2.3.9 imprime a seed phrase do
+    buffer efêmero se o deploy falhar no meio; usar `--buffer`.
+  - RD4A-02 (baixo): a criação do mint admitido é irreversível; o programa não
+    confere decimals; Token-2022 no endereço → 3007 permanente.
+  - RD4A-03 (baixo): program ID, mint e `job_id`s S/A/B são públicos;
+    pré-financiamento ou squatting pode bloquear o D4b (hoje: nenhum).
+  - RD4A-04 (info): o selector `73c457ba` é checagem de formato, não vínculo
+    criptográfico (mutante M2).
+  - RD4A-05 (info): o verificador de devnet é estruturalmente equivalente ao
+    rebuild (VK, control root, identity control ID, tags); as diferenças vêm
+    do build em macOS.
+  - RD4A-06 (info): sem e-stop; o impacto se limita à decisão entre as duas
+    partes fixas do Job.
+  - RD4A-07 (baixo): erratas e lacunas menores de docs e testes.
+  - RD4A-08 (baixo): implantar e finalizar só o `.so` `cdf6967f…`, conferido
+    antes e pelo dump.
+- **Condições para o D4b:** CD1 a CD9 (`docs/r-d4a-review-results.md`, seção 5).
+- **Evidência:** checagem do D4a reproduzida sem divergência; 10 PoCs (8 nas
+  duas variantes do verificador, 2 contra mutante); análise de bytes;
+  [`docs/r-d4a-review-results.md`](r-d4a-review-results.md).
+- **Errata aplicada no registro (CD8, parte de docs):**
+  - RD4A-04: a entrada "D4a…" acima chama o selector de "vínculo explícito
+    aos parâmetros do verificador"; o correto é "checagem de formato do
+    seal". Corrigido em `docs/escrow-program.md`.
+  - RD4A-05: "equivalência funcional" passa a "equivalência estrutural e
+    funcional" em `docs/escrow-program.md`, `docs/router-notes.md` e
+    `docs/agent-control.md`. O relatório D4a fica como registro histórico.
+  - RD4A-07 (b), (c) e (d): fixtures README sem o Router como verificador
+    atual; custo medido do deploy ≈2,03 SOL (não 2,75); deployer com 5 SOL.
+  - Ficam para o D7: RD4A-07 (a) comentário em `settlement.rs`, (b)
+    comentário em `groth16_fixtures.rs`, (e) `.env.example` e (f) testes
+    novos.
+- **Escolhas do agente para o D4b** (autorização humana do registro, com
+  "autorizo"):
+  - `amount` de cada Job = 1 Test USDC (1.000.000 unidades);
+  - estoque cunhado de uma vez para o buyer = 1.000.000 Test USDC (D4b e
+    D7);
+  - prazos: Job S ≈ slot + 3.000; Jobs A e B ≈ slot + 9.000 (cerca de 1 h,
+    para os negativos); Job C = slot + 1.500 (mínimo da janela);
+  - SOL ao buyer ≈ 0,05 e, se necessário, ≈ 0,01 ao executor;
+  - saída bruta da CLI nunca no terminal, só em log `0600`, filtrada;
+  - commits locais do D4b autorizados ao enviar o prompt; push proibido.
+- **Risco aberto:** F-04 até a finalização; R-02; R-03/F-09 com `job_id`s
+  públicos; F-13; F-14; ImageID não recertificado; spec v1 trivial; sem e-stop.
+- **Registro:** feito por sessão com permissão de escrita a partir da resposta
+  da revisão, que não podia editar arquivos.
+- **Próximo gate:** D4b, conforme `docs/handoffs/r-d4a-to-d4b.md`.
