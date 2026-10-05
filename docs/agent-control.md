@@ -1,10 +1,11 @@
-# Controle autônomo — R-D2e registrado (APROVADO COM RESSALVAS); próximo D4
+# Controle autônomo — D4a concluído (local); próximo R-D4a
 
 ## Objetivo atual
 
-Gate devnet (D4): escrow em Solana devnet com Test USDC, Router verificado e
-links do Explorer, conforme `docs/handoffs/r-d2e-to-d4.md` e as "Decisões
-humanas para o D4" (`docs/decisions.md`).
+Revisão delta somente leitura (R-D4a) do D4a, antes de qualquer escrita em
+devnet, conforme `docs/handoffs/d4a-to-r-d4a.md`. Se aprovada, segue o D4b:
+deploy do escrow em devnet, smoke, finalização da upgrade authority, Jobs
+PASS, FAIL e timeout, negativos no Explorer e C7.
 
 ## Marcos anteriores
 
@@ -13,86 +14,88 @@ humanas para o D4" (`docs/decisions.md`).
 - R-D2 `12529b4`: **REPROVADO** para o D2e original.
 - D2b.1 `0e9838e` (core), `5736565` (anchor), `75a1971` (docs).
 - D2e `2f10a8f` (anchor), `c0aba7d` (docs).
-- R-D2e: **APROVADO COM RESSALVAS** para o D4; registrado no commit
-  `docs: record R-D2e adversarial review`.
+- R-D2e `2d76441`: **APROVADO COM RESSALVAS** para o D4.
+- Prazo, congelamento do `JournalV1` e nomes de gate: `cfdd9d7`.
+- D4a: `fb4bfba` (anchor) e o commit `docs: record direct verifier,
+  admitted mint and frozen JournalV1 (D4a)`.
 
-## Baseline
+## Baseline (D4a)
 
 - Raiz `/home/lucas/src/vericode`; branch `main`; HEAD de baseline = commit
-  `docs: record R-D2e adversarial review`.
-- `.so` `6457aecf…ca96` (398.504 bytes). No mesmo out-dir: Router
-  `1b26b017…` e verificador `dab6746d…`.
-- Testes: escrow 25/25; settlement 16/16; layout 6/6; fixtures 2/2; core
-  42/42 nas duas raias.
-- IDL `37a3028a…`: 6 instruções, 36 erros.
-- Locks:
-  - raiz `191802b2…`; host `f5236689…`; guest `1116acef…`;
-  - `anchor/` `19a1db26…`; `anchor/tests-local` `be94760a…`.
+  `docs: record direct verifier, admitted mint and frozen JournalV1 (D4a)`.
+- `.so` `cdf6967f3abc63d0385e36909fe61b36f639203e2679209be60c4875114d8133`
+  (395.064 bytes).
+- Verificador: rebuild `dab6746d…` e dump de devnet `34ae6e5c…`.
+- Testes: escrow 26, settlement 15, regressions 7, layout 7, fixtures 2
+  (57/57), nas duas variantes do verificador; core 42/42 nas duas raias.
+- IDL `e8ce2c20…`: 6 instruções, 37 erros.
+- Locks inalterados: raiz `191802b2…`; host `f5236689…`; guest `1116acef…`;
+  `anchor/` `19a1db26…`; `anchor/tests-local` `be94760a…`.
+- Fora do clone: `~/.local/share/vericode-spikes/d4/` com
+  - `keys/`: deployer `617ogw9T…`, buyer `EZgGUg4J…`, executor `EdB25bVh…`
+    e mint `9TE2VPFm…`;
+  - `receipts-out/` (S, A, A′, B), `jobs/`, `logs/`, `out/` e `bin/`.
 
 ## Gate atual
 
-`R-D2e` (registrado) → próximo `D4`.
+`D4a` (registrado) → próximo `R-D4a`.
 
 ## Estado
 
-R-D2e (`docs/r-d2e-adversarial-review-results.md`): nenhum achado crítico ou
-alto no código de D2b.1/D2e. O deploy depende das condições C1 a C7. As
-decisões D4-0 a D4-6 foram delegadas pelo humano e tomadas pelo agente:
-- Router upstream verificado por RPC; se não for verificável, Router próprio
-  local e parada para R-D4a;
-- escrow `GZqbL2Tb…` com upgrade authority finalizada depois de um smoke
-  run;
-- mint conferido pelo cliente (ou allowlist no programa, em (b));
-- `job_id` aleatório e receipts novas;
-- `create_job`+`fund` atômicos.
-
-O humano aprovou congelar o `JournalV1` como está (165 bytes); o D4 atualiza
-`docs/manifest-schema.md` em Plan Mode. A partir do D4, gates recebem o ID do
-dia do plano que entregam; o próximo depois do D4 é o D7.
-
-Errata R-04 aplicada em `router-notes.md` e `escrow-program.md`. Router em
-devnet: `STATUS: NÃO VALIDADO`.
+- O Router upstream de devnet está implantado e imutável, mas não
+  inicializado. O verificador upstream `THq1q…` é imutável e nunca poderá
+  ser registrado nesse Router.
+- Por decisão humana (caminho (b′)), o escrow chama o verificador por CPI,
+  direto, sem Router. Além disso:
+  - só aceita o mint Test USDC `9TE2VPFm…` (6036);
+  - o `JournalV1` v1 está congelado;
+  - os PoCs 1 a 7 do R-D2e estão na suíte;
+  - as receipts S, A, A′ e B estão prontas.
+- Nada foi escrito em devnet.
 
 ## Decisões humanas registradas
 
 - D2a.1, D2a.2, D2b, D2c, D2d, D2c.1, "Decisões humanas para o D2b.1",
-  D2b.1, D2e, R-D2e, "Decisões humanas para o D4" e "Prazo de 11/10,
-  congelamento do JournalV1 v1 e nomes de gate" (`docs/decisions.md`).
+  D2b.1, D2e, R-D2e, "Decisões humanas para o D4", "Prazo de 11/10,
+  congelamento do JournalV1 v1 e nomes de gate" e D4a (`docs/decisions.md`).
 
 ## Ações proibidas (permanentes salvo novo objetivo)
 
 - Rede fora do autorizado por gate; instalação no perfil padrão; Docker sem
   gate explícito.
-- Alterar locks existentes, `JournalV1`, wire format ou
-  `docs/manifest-schema.md` sem decisão registrada.
+- Alterar locks existentes, `JournalV1` (v1 congelado), wire format ou o
+  core sem novo `schema_version` e decisão registrada.
 - Keypair fora de gate autorizado, de mainnet, dentro do clone ou com segredo
   exibido.
-- Devnet, airdrop, deploy sem gate autorizado; "ZK on-chain" em cluster sem
-  transação de CPI ao Router bem-sucedida.
+- Devnet, airdrop, deploy sem gate autorizado; "ZK on-chain" ou "verificado
+  on-chain" sem transação de liquidação em devnet com CPI bem-sucedida e link
+  do Explorer.
+- Chamar a verificação de "Verifier Router" depois do D4a.
 - Mock, dev mode ou receipt `Fake` como sucesso.
+- Builds, testes ou provas pesadas em paralelo (7,6 GiB de RAM).
 - Push, reescrita de histórico, stash, reset ou operação destrutiva.
 
 ## Riscos abertos
 
-- F-04: upgrade authorities. O D4 finaliza a do escrow; em (a), as do Router
-  e do verificador upstream ficam como confiança explícita.
-- F-05: mint sem allowlist no programa em (a); conferido pelo cliente.
-- R-01: Router em devnet não confirmado.
-- R-02: `fund` fora da janela; mitigado por `create_job`+`fund` atômicos.
-- R-03: replay entre implantações; mitigado por `job_id` aleatório.
-- R-05: PoCs do R-D2e ainda fora da suíte; entram no D4 como testes.
-- R-06: e-stop irreversível do dono do Router como alavanca de liveness.
-- R-07: margens de tamanho (114 bytes) e CU.
+- Sem e-stop contra bug de soundness do verificador (decisão humana D4a).
+- Bytes do verificador de devnet ≠ rebuild local; a equivalência é
+  funcional.
+- F-04: upgrade authority do escrow a finalizar no D4b, depois do smoke.
+- R-02: `fund` fora da janela, mitigado por `create_job`+`fund` atômicos.
+- R-03: replay entre implantações, mitigado por `job_id` aleatório.
+- SOL de devnet: cerca de 2,75 SOL de rent do escrow, e o faucet é
+  limitado.
+- Endereço do mint pré-financiado por terceiros pode fazer
+  `create_account` falhar; o D4b deve criar o mint com
+  transfer+allocate+assign ou checar antes.
 - ATA precisa existir antes da liquidação.
-- F-09, F-13, F-14: baixos ou informativos.
-- Spec v1 trivial; ImageID admitido não recertificado.
+- F-09, F-13, F-14; ImageID não recertificado; spec v1 trivial.
+- Margem de RAM do prover (cerca de 160 MiB no pico).
 - O WSL reinicia e limpa `/tmp`.
-- Calendário: 2026-10-05; prazo de entrega 11 out (decisão humana). As
-  datas da sequência são indicativas.
+- Calendário: 2026-10-05; prazo de entrega 11/10.
 
 ## Próxima transição permitida
 
-`D4`, conforme `docs/handoffs/r-d2e-to-d4.md`, em sessão nova (Opus 5.5,
-xhigh, Plan Mode). Se o Router upstream não for verificável: Router próprio
-local e parada para a revisão delta R-D4a antes de qualquer escrita em
-devnet.
+`R-D4a`, conforme `docs/handoffs/d4a-to-r-d4a.md`, em sessão nova e
+separada (Opus 5.5, max, somente leitura). Nenhuma escrita em devnet antes
+do veredito.

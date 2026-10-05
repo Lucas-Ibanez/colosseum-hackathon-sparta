@@ -15,8 +15,9 @@ incompatível e valor fora do limite retornam erro explícito.
 
 A crate não contém lógica Solana/Anchor/RISC Zero e não autoriza pagamentos.
 Borsh e SHA-2 são bibliotecas Rust puras fixadas pelo lock; não introduzem SDK
-de blockchain. O formato continua candidato local até validação por guest e
-por qualquer adaptador on-chain futuro.
+de blockchain. Desde 2026-10-05 o formato é o **`JournalV1` v1 congelado**
+(165 bytes, `docs/manifest-schema.md`), sem nenhum byte alterado desde o
+D1c2a.
 
 ## Estado D2a/D2b
 
@@ -80,13 +81,30 @@ em `solana-program-test` local com as receipts Groth16 reais. É
 "verificado por CPI ao Router em `solana-program-test` local", não "ZK
 on-chain": Router em devnet e deploy continuam `STATUS: NÃO VALIDADO`.
 Detalhes em [`docs/escrow-program.md`](escrow-program.md).
+O Router saiu do caminho no D4a (abaixo).
+
+## Estado D4a
+
+O reconhecimento somente leitura do devnet mostrou que o Verifier Router
+upstream está implantado e imutável, mas não inicializado, e que o
+verificador Groth16 upstream (`THq1q…`) é imutável e nunca poderá ser
+registrado nele. Por decisão humana, o escrow passou a:
+- chamar por CPI o verificador Groth16 direto, com `SHA-256(journal)` e o
+  `image_id` do Job, sem Router;
+- aceitar só o mint Test USDC admitido (`ADMITTED_MINT`, erro 6036).
+
+O `JournalV1` v1 foi congelado como estava. Tudo segue testado só em
+`solana-program-test`, agora também com os bytes do verificador implantado
+em devnet. O deploy e as transações em devnet ficam para o D4b, depois da
+revisão R-D4a. Detalhes em
+[`docs/d4a-direct-verifier-results.md`](d4a-direct-verifier-results.md).
 
 ## Fluxo
 
-`Buyer cria Job (termos da v1) e deposita Test USDC` -> `Executor entrega e compromete o hash do artefato (deliver)` -> `host executa o harness e gera receipt Groth16` -> `contrato valida journal contra o Job e a entrega e verifica a prova pelo Router (CPI)` -> `release ao executor em PASS válido ou refund conforme as regras do Job`
+`Buyer cria Job (termos da v1) e deposita Test USDC` -> `Executor entrega e compromete o hash do artefato (deliver)` -> `host executa o harness e gera receipt Groth16` -> `contrato valida journal contra o Job e a entrega e verifica a prova pelo verificador Groth16 (CPI)` -> `release ao executor em PASS válido ou refund conforme as regras do Job`
 
-O fluxo completo roda localmente em `solana-program-test` (D2e), com receipts
-geradas fora da transação. Ainda não roda em cluster, por CLI de ponta a
+O fluxo completo roda localmente em `solana-program-test` (D2e, D4a), com
+receipts geradas fora da transação. Ainda não roda em cluster, por CLI de ponta a
 ponta nem com worker ou UI.
 
 ## Componentes e responsabilidades
@@ -97,7 +115,7 @@ ponta nem com worker ou UI.
 | Guest RISC Zero | Ler entrada restrita, chamar o core e publicar `JournalV1` com `PASS` ou `FAIL` | Tratar `FAIL` como panic/assert ou expor dados privados desnecessários |
 | Host | Preparar entrada, executar/provar, obter receipt e conferir journal localmente | Ser fonte de verdade para liberar fundos |
 | Programa Anchor (`anchor/programs/vericode-escrow`) | Manter Job/escrow, custodiar no vault PDA e liquidar somente pelo core após validações do Job | Reexecutar regra de negócio, aceitar admin bypass ou confiar apenas no host |
-| Router/verificador | Verificar receipt Groth16 por CPI (comprovado em `solana-program-test` local, D2e) | Ser considerado disponível em cluster sem deployment validado |
+| Verificador Groth16 (`risc0-solana v3.0.0`) | Verificar receipt Groth16 por CPI direta do escrow (D4a; comprovado em `solana-program-test` local, inclusive com os bytes de devnet) | Ser considerado verificação on-chain em cluster sem transação de liquidação em devnet |
 | Front-end | Criar e consultar Jobs e apresentar estados/transações | Decidir verdict ou custodiar segredos do usuário |
 
 ## Fronteiras

@@ -1,6 +1,43 @@
 # Notas do Router Solana
 
-**STATUS: NÃO VALIDADO**
+**STATUS em devnet (D4a, 2026-10-05): Router upstream implantado e imutável,
+mas NÃO INICIALIZADO e inutilizável; verificador Groth16 upstream implantado,
+imutável e funcional em simulação. O escrow passou a chamar o verificador
+direto, sem Router. Nenhuma transação de verificação em devnet ainda.**
+
+**D4a (2026-10-05): reconhecimento somente leitura do Router upstream em
+devnet (decisão D4-1, caminho (a)) — reprovado.**
+- Critério 1 ok: `6JvFfBrv…` (Router) e `THq1qFYQ…` (verificador) existem e
+  são executáveis.
+  - ProgramData `HbJ7h1mN…` e `ENdLkqHp…`, com upgrade authority `None` nos
+    dois.
+  - Implantados em 23/10/2025 pela chave `7uAQqkPQ…`, que finalizou ambos
+    logo depois (`SetAuthority` sem nova autoridade). O verificador recebeu
+    um `Upgrade` antes da finalização.
+- Critério 2 falhou: a PDA `["router"]` (`4Sh5ofCz…`) e a entrada
+  `["verifier", 73c457ba]` (`4Z7ok78x…`) não existem.
+  - Só o `INITIAL_OWNER` embutido no Router upstream pode dar `initialize`.
+  - `add_verifier` exige `upgrade_authority(verificador) == PDA do Router`;
+    a de `THq1q…` é `None`, então esse verificador nunca poderá ser
+    registrado.
+- Critério 3 falhou: `simulateTransaction` de `Router.verify` → 3012
+  `AccountNotInitialized` (conta `router`) para FIB, PASS, FAIL, seal
+  adulterado e ImageID errado.
+- Dump do verificador: 199.256 bytes, SHA-256 `34ae6e5c…`; os primeiros
+  199.248 bytes (`638db2b9…`) diferem do rebuild local `dab6746d…`.
+- O verificador chamado direto, em simulação: FIB, PASS e FAIL aceitos a
+  99.541 CU, o mesmo valor local; seal adulterado → 6003; ImageID errado →
+  6000.
+- Decisão humana (D4a): caminho (b′), com CPI direta do escrow ao verificador
+  imutável e sem Router. Divergência do guia §1/§8 registrada em
+  `docs/decisions.md`. Relatório:
+  [`docs/d4a-direct-verifier-results.md`](d4a-direct-verifier-results.md).
+- Claim permitido até o D4b: "verificado por CPI ao verificador Groth16 de
+  `risc0-solana v3.0.0` em `solana-program-test` local, inclusive com os
+  bytes implantados em devnet". "Verificado on-chain em devnet" só com uma
+  transação de liquidação em devnet e o link do Explorer.
+
+Histórico anterior ao D4a:
 
 **Decisão D0: pendente de spike**
 
@@ -132,19 +169,20 @@ há evidência para chamá-la incompatível.
 | Rede | Status | Evidência encontrada |
 | --- | --- | --- |
 | localnet (em processo) | VERIFICADO EM `solana-program-test` (D2d, D2e) | D2d: Router `1b26b017…` e verificador `dab6746d…` compilados no Perfil A; `initialize`/`add_verifier` com dono de teste; FIB, PASS e FAIL aceitos (110.851 CU); quatro negativos por vetor rejeitados. D2e: CPI a partir do `vericode_escrow` em `release`/`refund_on_fail` com as receipts reais; negativos antes dos positivos. Sem validator nem deploy. |
-| Solana devnet | NÃO VALIDADO | Nenhum Program ID/deployment Solana devnet foi comprovado nas fontes oficiais consultadas. |
+| Solana devnet | Router: implantado, imutável, **não inicializado** (inutilizável). Verificador Groth16: implantado, imutável, funcional em simulação. Verificação pelo escrow: **NÃO VALIDADA** (D4b) | D4a: leitura RPC das contas e dos ProgramData, histórico de transações do loader e `simulateTransaction` (`docs/d4a-direct-verifier-results.md`). Achado por leitura on-chain, não em documentação oficial. |
 | Solana mainnet-beta | NÃO VALIDADO | Nenhum Program ID/deployment Solana mainnet-beta foi comprovado nas fontes oficiais consultadas. |
 
 O link de deployments no README oficial conduziu a uma página de contratos verificadores EVM, não a uma lista de deployments Solana. Endereço EVM não é evidência de deployment Solana.
 
 Consequências:
 
-- `RISC0_VERIFIER_ROUTER_PROGRAM_ID` permanece vazio;
-- não alegar verificação ZK on-chain;
-- a CPI existe desde o D2e, mas só foi exercitada em `solana-program-test`
-  local, contra os endereços upstream fixados no escrow. Os `.so` testados só
-  executam nesses endereços (R-D2e R-01). Nenhum deploy ou transação em
-  cluster antes do reconhecimento do Router em devnet (D4-1);
+- `RISC0_VERIFIER_ROUTER_PROGRAM_ID` permanece vazio: o escrow não usa
+  Router desde o D4a;
+- não alegar verificação ZK on-chain antes de uma transação de liquidação em
+  devnet com CPI bem-sucedida e link do Explorer (D4b);
+- até o D2e, a CPI ao Router só foi exercitada em `solana-program-test`
+  local (R-D2e R-01). Desde o D4a, a CPI vai direto ao verificador
+  `THq1q…`, testada localmente com o rebuild e com o dump de devnet;
 - qualquer atestado da plataforma deve ser rotulado como fallback, separado de prova ZK.
 
 ## O que precisa ser provado
@@ -157,11 +195,14 @@ Consequências:
 4. [x] Comparar bytes, discriminadores, metas, flags, owners, seal e journal
    gerados pelas crates; [x] provar CPI runtime (D2e, somente em
    `solana-program-test` local).
-5. Confirmar em fonte oficial o Program ID e o cluster antes de preencher qualquer variável.
+5. [x] Program ID e cluster: confirmados por leitura on-chain em devnet no
+   D4a. O Router está inutilizável; o verificador `THq1q…` é imutável e
+   funcional em simulação.
 6. [x] Validar receipt local, ImageID e rejeição de ImageID/journal
    divergentes; [x] testar Job, mint e executor (D2b.1 e D2e, somente em
    `solana-program-test` local).
-7. Comprovar devnet separadamente, se houver deployment oficial. Até lá, manter `STATUS: NÃO VALIDADO`.
+7. Comprovar devnet com uma transação de liquidação do escrow (D4b). Até lá,
+   a verificação pelo escrow em devnet fica `STATUS: NÃO VALIDADO`.
 
 O workflow oficial executa `solana-keygen new` antes de `anchor test`.
 Consequentemente, `anchor test`, validator, deploy, airdrop e transações estão

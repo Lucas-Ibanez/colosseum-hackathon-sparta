@@ -1,4 +1,4 @@
-# Máquina de estados do escrow — política pura (D2b, D2b.1; aplicada on-chain no D2e)
+# Máquina de estados do escrow — política pura (D2b, D2b.1; aplicada on-chain no D2e e no D4a)
 
 **Política pura em `crates/vericode-core/src/escrow.rs`. Não custodia
 fundos, não move tokens e não verifica prova.**
@@ -8,17 +8,20 @@ Este documento descreve a política do core: alinhada ao guia de produto
 entrega do executor no D2b.1. O programa Anchor local aplica essa política em
 todas as instruções (`docs/escrow-program.md`). Desde o D2e, `release` e
 `refund_on_fail` on-chain só chamam o core depois de decodificar o journal e
-só transferem depois que o Verifier Router aceita a prova por CPI, em
-`solana-program-test` local. Router em devnet: `STATUS: NÃO VALIDADO`.
+só transferem depois que o verificador Groth16 aceita a prova por CPI, em
+`solana-program-test` local. A CPI passava pelo Verifier Router no D2e e vai
+direto ao verificador desde o D4a. Verificação em devnet: `STATUS: NÃO
+VALIDADO` até o D4b.
 
 ## Pré-condição de prova
 
 `release` e `refund_on_fail` recebem um `JournalV1` já decodificado. A
 política **presume** que o adaptador verifica a receipt correspondente contra
 o ImageID do Job. Este módulo não verifica receipt, seal, Groth16, Router ou
-CPI e não deve ser citado como verificação ZK. No programa (D2e), essa
-verificação é a CPI ao Router na mesma instrução, depois do core e antes da
-transferência; um journal forjado é barrado por ela.
+CPI e não deve ser citado como verificação ZK. No programa, essa verificação
+é a CPI ao verificador Groth16 (D2e via Router; D4a direta) na mesma
+instrução, depois do core e antes da transferência; um journal forjado é
+barrado por ela.
 
 ## Tipos
 
@@ -156,7 +159,7 @@ entregue após o prazo é reportado como `DeadlinePassed`.
 | 7. sem admin nem destino arbitrário | nenhum parâmetro de autoridade; só o executor entrega; matriz com oráculo explícito |
 | 8. journal de outro job/spec/harness/ImageID falha | `Journal(...)` em `release` e `refund_on_fail`; também de outro artefato (D2b.1); termos fora da v1 rejeitados na criação |
 | 9. terminais impedem replay/dupla liquidação | `AlreadyReleased`, `AlreadyRefunded` em todas as 5 operações |
-| 1 (vault PDA), 6 (atomicidade), 10 (falha de CPI reverte) | **fora do core**; responsabilidade do programa Anchor/Router |
+| 1 (vault PDA), 6 (atomicidade), 10 (falha de CPI reverte) | **fora do core**; responsabilidade do programa Anchor e do verificador |
 
 ## Testes
 
@@ -175,5 +178,8 @@ entregue após o prazo é reportado como `DeadlinePassed`.
 - `release`/`refund_on_fail` on-chain com verificação pelo Router e destino
   canônico (ATA): **feitos no D2e**, em `solana-program-test` local
   (`docs/d2e-router-settlement-results.md`).
-- Router em devnet, upgrade authority (F-04) e allowlist do mint (F-05):
-  gate devnet.
+- Allowlist do mint (F-05) e CPI direta ao verificador imutável: **feitos
+  no D4a** (`docs/d4a-direct-verifier-results.md`).
+- Upgrade authority do escrow (F-04) e transações em devnet: D4b.
+- A regra de `fund` fora da janela (R-D2e R-02) continua no core; a
+  mitigação do MVP é `create_job`+`fund` na mesma transação.

@@ -1160,3 +1160,86 @@ Registre decisões relevantes do projeto neste formato.
     (journal congelado) e fechar R-05 sem pressa.
   - Os nomes D2a…D2e esconderam que D3, D5 e D6 já estavam feitos.
 - **Próximo gate:** D4, conforme `docs/handoffs/r-d2e-to-d4.md` (ajustado).
+
+## 2026-10-05 — D4a: Router upstream reprovado em devnet; CPI direta ao verificador Groth16 imutável e mint admitido
+
+- **Data:** 2026-10-05
+- **Resultado do D4-1, caminho (a) — reprovado** (reconhecimento somente
+  leitura, `docs/d4a-direct-verifier-results.md`):
+  1. Critério 1 ok: `6JvFfBrv…` e `THq1qFYQ…` executáveis; ProgramData com
+     upgrade authority `None` nos dois, finalizados em 23/10/2025 pela chave
+     upstream `7uAQqk…`.
+  2. Critério 2 falhou: a PDA `["router"]` e a entrada `73c457ba` não
+     existem. Só o `INITIAL_OWNER` upstream pode inicializar o Router, e
+     `add_verifier` exige o verificador sob a PDA do Router; com upgrade
+     authority `None`, `THq1q…` nunca poderá ser registrado.
+  3. Critério 3 falhou: `Router.verify` → 3012 `AccountNotInitialized` nos
+     5 casos simulados.
+  - O verificador `THq1q…` chamado direto, em simulação: FIB, PASS e FAIL
+    aceitos a 99.541 CU; seal adulterado → 6003; ImageID errado → 6000. Os
+    bytes implantados (`34ae6e5c…`) diferem do rebuild local `dab6746d…`.
+- **Decisão humana (AskUserQuestion nesta sessão), entre (b) Router próprio,
+  já decidido, e (b′) verificador direto: (b′).** O escrow chama por CPI o
+  verificador Groth16 imutável `THq1q…`, sem Router. Também foi decidido
+  gerar já as receipts novas de S, A, A′ e B.
+- **Divergência explícita do guia** §1 (item 5: "verificação on-chain pelo
+  Verifier Router") e §8 ("chama a verificação compatível pelo Router"), e
+  da decisão D4-1 (caminho (b) automático).
+  - Motivo:
+    - o Router upstream de devnet é permanentemente inutilizável com esse
+      verificador;
+    - um Router próprio traria um dono com e-stop e `add_verifier`
+      (confiança explícita) e cerca de 6,4 SOL de rent, o que provavelmente
+      exigiria o faucet web humano;
+    - o verificador chamado é o mesmo programa e os mesmos argumentos que o
+      Router repassaria; com selector e verificador já fixados no escrow, o
+      Router só acrescentava o e-stop;
+    - o verificador é imutável e de terceiros, então ninguém, nem o projeto,
+      pode trocá-lo ou pausá-lo.
+  - Custo aceito: não há e-stop contra um bug de soundness do verificador
+    (aviso do fonte upstream). Com o escrow finalizado, a correção exigiria
+    um novo program ID.
+  - Claim: "verificado por CPI ao verificador Groth16 de `risc0-solana
+    v3.0.0`"; nunca "Verifier Router". "Verificado on-chain em devnet" só
+    depois de uma transação de liquidação em devnet (D4b).
+- **Escolhas do agente dentro da decisão:**
+  - **Mint admitido (D4-3, opção (i)).** Motivo: o mesmo do caminho (b): a
+    mudança de código e a revisão já acontecem.
+    - Constante `ADMITTED_MINT = 9TE2VPFmgrNxT22yS3sEZyRcMxLgJkwzgAoquWRXwV2F`
+      (keypair em `d4/keys`, fora do clone).
+    - Erro 6036 `MintNotAdmitted` no fim do enum, checado depois da regra de
+      freeze (6024).
+  - **Selector `73c457ba` (6033) mantido** antes da CPI, como vínculo
+    explícito aos parâmetros do verificador.
+  - **Renomeações:** `RouterSeal` → `Groth16Seal` (mesmo layout Borsh) e
+    `ROUTER_VERIFY_DISCRIMINATOR` → `VERIFY_DISCRIMINATOR` (mesmos bytes).
+  - **Contas:** `SettleWithProof` passa a ter 7 contas (sem `router_program`,
+    `router` e `verifier_entry`); a CPI tem 328 bytes de dados e a única
+    conta é o system program.
+  - **`JournalV1` v1 congelado aplicado** em `docs/manifest-schema.md`
+    (decisão humana "Prazo de 11/10…"), sem mudança de código.
+  - **R-05:** os PoCs 1 a 7 do R-D2e entram como `tests/regressions.rs`.
+- **Evidência:**
+  - F1: `d4/logs/f1-recon.log` (contas, ProgramData, histórico do loader,
+    simulações); dump `34ae6e5c…`;
+  - `.so` D4a 395.064 bytes `cdf6967f…`; IDL `e8ce2c20…` (6 instruções, 37
+    erros);
+  - suíte 57/57 com o verificador `dab6746d…` e 57/57 com os bytes de
+    devnet: escrow 26, settlement 15, regressions 7, layout 7, fixtures 2;
+  - contra o `.so` do D2e: 25/26, 1/7 e 0/15 onde a mudança atua;
+  - `release` 121.885 CU e `refund_on_fail` 123.214–126.214 CU;
+  - receipts S, A, A′ e B (`job_id` aleatório) verificadas localmente e
+    aceitas pelo verificador de devnet em simulação; o journal A com o seal
+    de S é rejeitado (6000);
+  - baseline do R-D2e reproduzido; locks e perfil padrão inalterados;
+  - [`docs/d4a-direct-verifier-results.md`](d4a-direct-verifier-results.md).
+- **Risco aberto:**
+  - sem e-stop;
+  - bytes do verificador de devnet ≠ rebuild local (equivalência funcional
+    testada);
+  - upgrade authority do escrow ainda não finalizada (D4b);
+  - R-02 (fund fora da janela);
+  - ImageID não recertificado; spec v1 trivial;
+  - disponibilidade do faucet.
+- **Próximo gate:** R-D4a (revisão delta somente leitura), conforme
+  `docs/handoffs/d4a-to-r-d4a.md`; depois, D4b (devnet).
