@@ -1,21 +1,24 @@
-# Máquina de estados do escrow — política pura (D2b, D2b.1)
+# Máquina de estados do escrow — política pura (D2b, D2b.1; aplicada on-chain no D2e)
 
 **Política pura em `crates/vericode-core/src/escrow.rs`. Não custodia
 fundos, não move tokens e não verifica prova.**
 
 Este documento descreve a política do core: alinhada ao guia de produto
 (`docs/context/guia-mvp-agentes-de-codigo.md` §5 e §7) no D2b e vinculada à
-entrega do executor no D2b.1. O programa Anchor local aplica essa política
-(`docs/escrow-program.md`). `release` e `refund_on_fail` ainda não existem
-on-chain. Router/CPI/devnet: `STATUS: NÃO VALIDADO`.
+entrega do executor no D2b.1. O programa Anchor local aplica essa política em
+todas as instruções (`docs/escrow-program.md`). Desde o D2e, `release` e
+`refund_on_fail` on-chain só chamam o core depois de decodificar o journal e
+só transferem depois que o Verifier Router aceita a prova por CPI, em
+`solana-program-test` local. Router em devnet: `STATUS: NÃO VALIDADO`.
 
 ## Pré-condição de prova
 
 `release` e `refund_on_fail` recebem um `JournalV1` já decodificado. A
-política **presume** que um adaptador futuro verificou a receipt
-correspondente contra o ImageID do Job antes da chamada. Este módulo não
-verifica receipt, seal, Groth16, Router ou CPI e não deve ser citado como
-verificação ZK. Um journal forjado só é barrado por essa verificação (D2e).
+política **presume** que o adaptador verifica a receipt correspondente contra
+o ImageID do Job. Este módulo não verifica receipt, seal, Groth16, Router ou
+CPI e não deve ser citado como verificação ZK. No programa (D2e), essa
+verificação é a CPI ao Router na mesma instrução, depois do core e antes da
+transferência; um journal forjado é barrado por ela.
 
 ## Tipos
 
@@ -169,6 +172,8 @@ entregue após o prazo é reportado como `DeadlinePassed`.
 
 ## Pendências fora deste gate
 
-- `release`/`refund_on_fail` on-chain com verificação da receipt pelo
-  Router (D2e).
-- Destino canônico (ATA) nas liquidações (F-06, D2e).
+- `release`/`refund_on_fail` on-chain com verificação pelo Router e destino
+  canônico (ATA): **feitos no D2e**, em `solana-program-test` local
+  (`docs/d2e-router-settlement-results.md`).
+- Router em devnet, upgrade authority (F-04) e allowlist do mint (F-05):
+  gate devnet.

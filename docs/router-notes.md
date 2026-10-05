@@ -16,9 +16,29 @@ verificadas pelo programa Verifier Router em `solana-program-test` local
 (Perfil A).** Adulterações de proof, selector, ImageID e journal digest
 foram rejeitadas antes de cada positivo
 ([`docs/d2d-groth16-router-spike-results.md`](d2d-groth16-router-spike-results.md)).
-Isso não é verificação on-chain em cluster: devnet, Router real, Program ID
-de rede e CPI a partir do `vericode_escrow` continuam
-`STATUS: NÃO VALIDADO`.
+Isso não é verificação on-chain em cluster: devnet, Router real e Program ID
+de rede continuam `STATUS: NÃO VALIDADO`.
+
+**D2e (2026-10-04): o `vericode_escrow` chama o Router por CPI em `release` e
+`refund_on_fail`, testado em `solana-program-test` local.**
+- CPI manual: discriminador `verify` `85a18d3078c65896`, 332 bytes de dados,
+  contas `[router PDA, verifier entry, verificador, system program]`.
+- Constantes fixadas no programa:
+  - Router `6JvFfBrv…`; selector `73c457ba` (entrada `4Z7ok78x…`);
+  - verificador `THq1qFYQ…`; `image_id` do Job.
+- Rejeições testadas antes da CPI: artefato não entregue, selector ≠
+  `73c457ba`, contas do Router falsas.
+- Rejeições testadas pelo verificador: seal adulterado (6003) e seal de outro
+  journal (6000).
+- Rejeição testada pelo Router: entrada em e-stop (6001).
+- As receipts PASS/FAIL reais liquidam; o Router e o verificador consomem
+  110.701 CU.
+- As contas do Router são montadas no genesis dos testes com o layout do
+  fonte pinado.
+- Os `.so` foram reconstruídos offline do commit pinado, idênticos ao D2d.
+- Relatório: [`docs/d2e-router-settlement-results.md`](d2e-router-settlement-results.md).
+- Claim permitido: "verificado por CPI ao Verifier Router em
+  `solana-program-test` local".
 
 ## Objetivo
 
@@ -111,7 +131,7 @@ há evidência para chamá-la incompatível.
 
 | Rede | Status | Evidência encontrada |
 | --- | --- | --- |
-| localnet (em processo) | VERIFICADO EM `solana-program-test` (D2d) | Router `1b26b017…` e verificador `dab6746d…` compilados no Perfil A; `initialize`/`add_verifier` com dono de teste; FIB, PASS e FAIL aceitos (110.851 CU); quatro negativos por vetor rejeitados. Sem validator, deploy ou CPI a partir do `vericode_escrow`. |
+| localnet (em processo) | VERIFICADO EM `solana-program-test` (D2d, D2e) | D2d: Router `1b26b017…` e verificador `dab6746d…` compilados no Perfil A; `initialize`/`add_verifier` com dono de teste; FIB, PASS e FAIL aceitos (110.851 CU); quatro negativos por vetor rejeitados. D2e: CPI a partir do `vericode_escrow` em `release`/`refund_on_fail` com as receipts reais; negativos antes dos positivos. Sem validator nem deploy. |
 | Solana devnet | NÃO VALIDADO | Nenhum Program ID/deployment Solana devnet foi comprovado nas fontes oficiais consultadas. |
 | Solana mainnet-beta | NÃO VALIDADO | Nenhum Program ID/deployment Solana mainnet-beta foi comprovado nas fontes oficiais consultadas. |
 

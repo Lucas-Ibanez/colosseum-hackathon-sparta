@@ -21,17 +21,18 @@ Em desenvolvimento, sem deploy. Comprovado por evidência registrada:
   - criação de Job restrita à spec, ao harness e ao ImageID da v1, com prazo numa janela fixa;
   - depósito em vault controlado por PDA;
   - compromisso de entrega assinado pelo executor (`deliver`);
+  - release ao executor em `PASS` e refund ao buyer em `FAIL`, somente para o artefato entregue e somente depois que a receipt Groth16 foi verificada por CPI ao Verifier Router (`risc0-solana v3.0.0`) em `solana-program-test` local;
   - refund por timeout.
 
-Ainda não implementado: release ao executor e refund por `FAIL` on-chain, verificação de prova on-chain (Router/CPI), devnet, CLI de ponta a ponta, worker e interface.
+Ainda não implementado: devnet (programa, Router e Test USDC), CLI de ponta a ponta, worker e interface.
 
 ## Limitações atuais
 
-- Não há verificação on-chain; Router/CPI/devnet: `STATUS: NÃO VALIDADO`.
-- As receipts do repositório são `Composite`. Receipts Groth16 do VeriCode foram produzidas e verificadas pelo Verifier Router apenas em `solana-program-test` local, num spike fora do repositório (D2d); o escrow ainda não usa essa verificação.
-- Não há deploy nem transação em nenhuma rede.
+- A verificação da prova pelo Router só foi exercitada em `solana-program-test` local, com o Router e o verificador do commit pinado; não é "ZK on-chain" em cluster. Router em devnet: `STATUS: NÃO VALIDADO`.
+- As receipts Groth16 usadas nos testes (PASS e FAIL do Job de teste) estão versionadas em `anchor/tests-local/fixtures/groth16/`; a geração exige o prover Docker fora do repositório.
+- Não há deploy nem transação em nenhuma rede. As upgrade authorities (do escrow, do Router e do verificador) e a allowlist do mint ainda não foram tratadas.
 - O artefato atual é um registro de desenvolvimento (`saída = entrada * 2`), não código arbitrário. O executor escolhe a entrada, e qualquer par `(n, 2n)` passa: a tarefa é trivial e serve só para demonstrar o fluxo. O compromisso de entrega impede que terceiros troquem o artefato, mas não torna a tarefa difícil.
-- O programa de escrow só existe localmente e ainda não libera pagamento ao executor.
+- O programa de escrow só existe localmente: o pagamento ao executor e os refunds foram exercitados apenas em `solana-program-test`.
 
 ## Estrutura
 

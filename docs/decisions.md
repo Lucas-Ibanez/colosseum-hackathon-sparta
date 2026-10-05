@@ -906,3 +906,50 @@ Registre decisões relevantes do projeto neste formato.
   - F-03, F-06 e F-12 para o D2e; F-04 e F-05 antes do D4;
   - revisão adversarial de D2b.1 + D2e pendente.
 - **Próximo gate:** D2e, conforme `docs/handoffs/d2b1-to-d2e.md`.
+
+## 2026-10-04 — D2e: liquidação por veredito com CPI ao Verifier Router (local)
+
+- **Data:** 2026-10-04
+- **Decisões confirmadas no Plan Mode** (as "a confirmar" de
+  `docs/handoffs/d2b1-to-d2e.md`):
+  1. CPI manual ao Router (discriminador `verify` `85a18d3078c65896` +
+     `RouterSeal` com o Borsh do `Seal` + `image_id` + digest), sem
+     dependência nova;
+  2. Router ID fixo `6JvFfBrv…` (upstream), sem features de cluster;
+  3. `release`/`refund_on_fail` permissionless;
+  4. contas do Router montadas no genesis dos testes, com o layout do fonte
+     pinado; `.so` reconstruídos offline do commit pinado;
+  5. Program ID do verificador também fixado (`THq1qFYQ…`).
+- **Aplicado:**
+  - ordem decode → core → ATA canônica → selector → SHA-256 dos mesmos 165
+    bytes → CPI com `job.image_id` → transferência → estado;
+  - F-03: selector `73c457ba` e entrada `["verifier", 73c457ba]` fixos;
+  - F-06: ATA canônica nas três liquidações, incluindo `refund_on_timeout`;
+  - F-08: `address = job.mint` nas contas novas;
+  - F-12: digest e `image_id`, como na ordem acima.
+  - Erros 6033 `UnexpectedSelector`, 6034 `JournalMalformed`, 6035
+    `DestinationNotCanonical`; 6000–6032 e as tags 0–5 inalterados.
+- **Correção de premissa:** `release`/`refund_on_fail` consomem 135–142 k CU
+  e cabem no limite padrão de 200 k. O compute budget é margem, não
+  requisito.
+- **Evidência:**
+  - Router `1b26b017…` e verificador `dab6746d…` reproduzidos offline;
+  - `.so` `6457aecf…` reproduzido em target limpo;
+  - escrow 25/25, settlement 16/16, layout 6/6, fixtures 2/2;
+  - contra o `.so` do D2b.1: escrow 24/25 (só o teste F-06 falha) e
+    settlement 0/16;
+  - IDL com 6 instruções e 36 erros;
+  - locks e perfil padrão inalterados;
+  - [`docs/d2e-router-settlement-results.md`](d2e-router-settlement-results.md).
+- **Claim permitido:** "verificado por CPI ao Verifier Router em
+  `solana-program-test` local". Proibido: "ZK on-chain" em cluster.
+- **Risco aberto:**
+  - Router em devnet `NÃO VALIDADO`;
+  - confiança residual no e-stop do dono do Router e nas upgrade authorities
+    (F-04);
+  - F-05 (allowlist do mint);
+  - ATA precisa existir antes da liquidação;
+  - ImageID não recertificado;
+  - spec v1 trivial;
+  - revisão adversarial de D2b.1 + D2e pendente.
+- **Próximo gate:** R-D2e, conforme `docs/handoffs/d2e-to-r-d2e.md`.

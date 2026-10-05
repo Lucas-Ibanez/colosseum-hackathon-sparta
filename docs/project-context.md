@@ -42,7 +42,7 @@ evidência nem um escopo proibido.
 | `core-logic/` | `crates/vericode-core` | tipos, Borsh, SHA-256, harness restrito, `JournalV1`, política pura de escrow alinhada ao guia (D2b) e vinculada à entrega do executor, com termos admitidos e janela de prazo (D2b.1) |
 | `zk-guest/` | `zkvm/methods/guest` | guest real; dois builds determinísticos; ImageID `4da06f90…fb1a` (antes do D2a) |
 | `zk-host/` | `zkvm/host` | receipts locais reais PASS/FAIL `Composite`; compressão Groth16 demonstrada por harness fora do clone (D2d) |
-| `anchor-program/` | `anchor/programs/vericode-escrow` (workspace `anchor/`, testes em `anchor/tests-local`) | D2c/D2b.1: `create_job` (termos da v1, janela de prazo), `fund`, `deliver`, `refund_on_timeout` com vault PDA; testado em processo; sem `release`/`refund_on_fail`, Router ou deploy |
+| `anchor-program/` | `anchor/programs/vericode-escrow` (workspace `anchor/`, testes em `anchor/tests-local`) | D2c/D2b.1/D2e: `create_job` (termos da v1, janela de prazo), `fund`, `deliver`, `release`/`refund_on_fail` com CPI ao Verifier Router, `refund_on_timeout`; destino = ATA canônica; testado em processo com Router e verificador reais; sem deploy |
 | `worker-api/` | inexistente | não iniciado |
 | `frontend/` | inexistente | não iniciado |
 
@@ -58,16 +58,17 @@ subtarefa do dia D2. O dia é marco de escopo, não data de calendário.
 ## Estado da sequência (evidência, 2026-10-04)
 
 Data de calendário: 2026-10-04, que corresponde ao dia D8 do cronograma. O
-projeto está tecnicamente entre **D2 e D3** (D2b.1 concluído).
+projeto concluiu tecnicamente o **D3** e o caminho forte local dos **D5/D6**
+(D2e concluído); D4 (devnet) não começou.
 
 | Dia | Situação | Evidência / lacuna |
 | --- | --- | --- |
 | D0 | técnico concluído; administrativo fora do repositório | `docs/toolchain-matrix.md`, `docs/router-notes.md`, `docs/d1a3-spike-results.md`; inscrição, outreach e pitch não são rastreados aqui |
 | D1 | concluído (técnico) | crate e guest (D1c1–D1c2b); manifesto em `docs/manifest-schema.md`; Anchor skeleton e Perfil A (D2c); README corrigido (D2a.2) |
 | D2 | concluído (técnico) | GATE 48H atendido: receipts locais reais PASS/FAIL (`docs/d1c2b3i-local-receipts-results.md`); máquina de estados testada em Rust puro (D2b); custódia SPL em vault PDA testada em processo (D2c); vídeo fora do repositório |
-| D3 | parcial | journal com job_id, artifact, harness, versão e verdict; provas PASS/FAIL; create/fund/refund por timeout on-chain local testados (D2c); compromisso de entrega (`deliver`) e termos admitidos da v1 testados localmente (D2b.1); **falta** `release`/`refund_on_fail` com caminho de verificação (Router/CPI ou fallback atestado) |
+| D3 | concluído (local) | journal com job_id, artifact, harness, versão e verdict; provas PASS/FAIL; create/fund/refund por timeout (D2c); compromisso de entrega e termos admitidos da v1 (D2b.1); `release`/`refund_on_fail` vinculados ao Job e à entrega, com prova verificada por CPI ao Router (D2e); tudo em `solana-program-test` |
 | D4 | não iniciado | escrow em devnet com Test USDC e Explorer |
-| D5/D6 | spike GO (D2d) | receipts Groth16 PASS/FAIL reais verificadas pelo Verifier Router em `solana-program-test`, com negativos antes do positivo; falta CPI a partir do `vericode_escrow` (D2e) e Router em devnet |
+| D5/D6 | concluído localmente (D2d, D2e) | receipts Groth16 PASS/FAIL reais verificadas pelo Verifier Router em `solana-program-test` (D2d) e por CPI a partir do `vericode_escrow`, com prova errada rejeitada antes do happy path (D2e); **falta** Router em devnet |
 | D7–D12 | não iniciados | CLI E2E, estados ruins on-chain, worker e UI |
 
 ### Caminho crítico e risco de prazo
@@ -84,9 +85,10 @@ projeto está tecnicamente entre **D2 e D3** (D2b.1 concluído).
      (`docs/r-d2-adversarial-review-results.md`);
   2. D2b.1 concluído: liquidação vinculada ao artefato entregue e aos termos
      admitidos da v1 (`docs/d2b1-delivery-binding-results.md`);
-  3. D2e (`docs/handoffs/d2b1-to-d2e.md`): `release`/`refund_on_fail` a
-     partir de `Delivered`, com CPI ao Router e selector fixado;
-  4. revisão adversarial separada de D2b.1 + D2e;
+  3. D2e concluído: `release`/`refund_on_fail` a partir de `Delivered`, com
+     CPI ao Router e selector fixado (`docs/d2e-router-settlement-results.md`);
+  4. revisão adversarial separada de D2b.1 + D2e
+     (`docs/handoffs/d2e-to-r-d2e.md`);
   5. devnet, que exige confirmar o Program ID e o dono do Router ou implantar
      um Router próprio (a decidir), além de F-04 e F-05.
 - Wallets de devnet: o agente está autorizado a criar keypairs efêmeros de

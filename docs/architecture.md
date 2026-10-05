@@ -63,11 +63,31 @@ arbitrário para qualquer `job_id`. O D2b.1 vincula a liquidação à entrega:
 executor comprometeu com `deliver`. Isso está testado no core e no programa
 local; a verificação da receipt on-chain continua pendente (D2e).
 
+## Estado D2e
+
+`release` e `refund_on_fail` existem no programa local. Cada uma, na mesma
+instrução:
+1. decodifica o journal de 165 bytes;
+2. aplica o core (Job, artefato entregue, veredito, prazo e destinatário);
+3. exige a ATA canônica da parte paga;
+4. exige o selector `73c457ba`;
+5. chama o Verifier Router por CPI com `SHA-256(journal)` e o `image_id` do
+   Job;
+6. só então transfere.
+
+O Router e o verificador são os de `risc0-solana v3.0.0`. Isso foi testado
+em `solana-program-test` local com as receipts Groth16 reais. É
+"verificado por CPI ao Router em `solana-program-test` local", não "ZK
+on-chain": Router em devnet e deploy continuam `STATUS: NÃO VALIDADO`.
+Detalhes em [`docs/escrow-program.md`](escrow-program.md).
+
 ## Fluxo
 
-`Buyer cria Job (termos da v1) e deposita Test USDC` -> `Executor entrega e compromete o hash do artefato (deliver)` -> `host executa o harness e gera receipt` -> `contrato valida prova e journal contra o Job e a entrega` -> `release ao executor em PASS válido ou refund conforme as regras do Job`
+`Buyer cria Job (termos da v1) e deposita Test USDC` -> `Executor entrega e compromete o hash do artefato (deliver)` -> `host executa o harness e gera receipt Groth16` -> `contrato valida journal contra o Job e a entrega e verifica a prova pelo Router (CPI)` -> `release ao executor em PASS válido ou refund conforme as regras do Job`
 
-O fluxo acima é alvo de arquitetura, não evidência de integração já funcional. As condições de entrega, release, refund e timeout estão especificadas e testadas como política pura (`docs/escrow-state-machine.md`). O programa local aplica criação, depósito, entrega e timeout; release e refund por `FAIL` ainda não existem on-chain.
+O fluxo completo roda localmente em `solana-program-test` (D2e), com receipts
+geradas fora da transação. Ainda não roda em cluster, por CLI de ponta a
+ponta nem com worker ou UI.
 
 ## Componentes e responsabilidades
 
@@ -77,7 +97,7 @@ O fluxo acima é alvo de arquitetura, não evidência de integração já funcio
 | Guest RISC Zero | Ler entrada restrita, chamar o core e publicar `JournalV1` com `PASS` ou `FAIL` | Tratar `FAIL` como panic/assert ou expor dados privados desnecessários |
 | Host | Preparar entrada, executar/provar, obter receipt e conferir journal localmente | Ser fonte de verdade para liberar fundos |
 | Programa Anchor (`anchor/programs/vericode-escrow`) | Manter Job/escrow, custodiar no vault PDA e liquidar somente pelo core após validações do Job | Reexecutar regra de negócio, aceitar admin bypass ou confiar apenas no host |
-| Router/verificador | Verificar receipt Groth16 por CPI, se a integração Solana for comprovada | Ser considerado disponível sem deployment e CPI validados |
+| Router/verificador | Verificar receipt Groth16 por CPI (comprovado em `solana-program-test` local, D2e) | Ser considerado disponível em cluster sem deployment validado |
 | Front-end | Criar e consultar Jobs e apresentar estados/transações | Decidir verdict ou custodiar segredos do usuário |
 
 ## Fronteiras
