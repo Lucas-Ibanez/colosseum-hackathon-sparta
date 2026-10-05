@@ -1,26 +1,31 @@
-//! Local VeriCode escrow program (gates D2c, D2b.1).
+//! Local VeriCode escrow program (gates D2c, D2b.1, D2e).
 //!
 //! The program persists immutable Job terms, custodies the Job mint in a
 //! vault owned by the Job PDA and settles only through the pure policy in
 //! `vericode-core`. Economic checks (identities, admitted v1 terms, deadline
-//! window, delivery, mint, amount and state) are delegated to the core.
-//! Anchor constraints and the program check account structure (PDAs,
-//! owners, signers, account types and the Job mint address) and two custody
-//! preconditions on Solana accounts: a mint without freeze authority and an
-//! executor that is not a program account of the Job.
+//! window, delivery, journal binding, verdict, mint, amount and state) are
+//! delegated to the core. Anchor constraints and the program check account
+//! structure (PDAs, owners, signers, account types, the Job mint address and
+//! the fixed Router accounts), the canonical associated token account of the
+//! paid party, and two custody preconditions on Solana accounts: a mint
+//! without freeze authority and an executor that is not a program account of
+//! the Job.
 //!
-//! This program implements `create_job`, `fund`, `deliver` and
-//! `refund_on_timeout`. Release and refund on `Fail` need a verified journal
-//! and are not implemented: no receipt, seal, Groth16, Router or CPI
-//! verification exists here. There is no administrative instruction.
+//! `release` and `refund_on_fail` settle only after the RISC Zero Verifier
+//! Router accepted, by CPI in the same instruction, a Groth16 seal for the
+//! exact journal bytes and the Job image ID. There is no administrative
+//! instruction.
 
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::hash::hash as sha256;
+use anchor_lang::solana_program::instruction::{AccountMeta, Instruction};
+use anchor_lang::solana_program::program::invoke;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, TransferChecked};
 use vericode_core::escrow::{
     Amount, AmountError, BuyerId, EscrowError, EscrowState, ExecutorId, JobError, JobParty,
-    JobV1, MintId, RefundReason,
+    JobV1, MintId, PayoutRecipient, RefundReason, Settlement,
 };
-use vericode_core::{Hash32, ImageId, JobId, JournalValidationError};
+use vericode_core::{Hash32, ImageId, JobId, JournalV1, JournalValidationError, Verdict};
 
 declare_id!("GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH");
 
@@ -40,6 +45,43 @@ pub const ADMITTED_IMAGE_ID_V1: [u8; 32] = [
     0x83, 0x70, 0xfd, 0xdb, 0xf3, 0xaa, 0x27, 0x68,
     0x9d, 0x37, 0x5d, 0x78, 0xfa, 0xc0, 0xfb, 0x1a,
 ];
+
+/// RISC Zero Verifier Router program (`risc0-solana v3.0.0`, commit
+/// `ee415935`). Only this program may verify a settlement proof.
+pub const VERIFIER_ROUTER_ID: Pubkey =
+    Pubkey::from_str_const("6JvFfBrvCcWgANKh1Eae9xDq4RC6cfJuBcf71rp2k9Y7");
+/// Groth16 verifier program of the same release, registered in the Router
+/// under [`GROTH16_SELECTOR`].
+pub const GROTH16_VERIFIER_ID: Pubkey =
+    Pubkey::from_str_const("THq1qFYQoh7zgcjXoMXduDBqiZRCPeg3PvvMbrVQUge");
+/// Router selector of the Groth16 verifier: the first bytes of the digest of
+/// `Groth16ReceiptVerifierParameters::default()` in `risc0-zkvm 3.0.3`.
+pub const GROTH16_SELECTOR: [u8; 4] = [0x73, 0xc4, 0x57, 0xba];
+/// Router state PDA `["router"]` of [`VERIFIER_ROUTER_ID`], precomputed;
+/// `tests/layout.rs` checks the derivation.
+pub const ROUTER_PDA: Pubkey =
+    Pubkey::from_str_const("4Sh5ofCzLmmCg1zQraXRoPL2oB88bDZJEEbsfjXaauZT");
+/// Router verifier entry PDA `["verifier", GROTH16_SELECTOR]` of
+/// [`VERIFIER_ROUTER_ID`], precomputed; `tests/layout.rs` checks the
+/// derivation.
+pub const GROTH16_VERIFIER_ENTRY: Pubkey =
+    Pubkey::from_str_const("4Z7ok78xEh7vYmtHSnzF1Tobtm4sozZfHoQfUBgfG8pi");
+/// Anchor discriminator of the Router `verify` instruction.
+pub const ROUTER_VERIFY_DISCRIMINATOR: [u8; 8] = [0x85, 0xa1, 0x8d, 0x30, 0x78, 0xc6, 0x58, 0x96];
+/// Associated Token Account program, which fixes the canonical destination
+/// of every settlement.
+pub const ATA_PROGRAM_ID: Pubkey =
+    Pubkey::from_str_const("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
+
+/// Groth16 seal in the Borsh layout of the Router `Seal`: the selector, then
+/// the proof points. `pi_a` is already negated, as the Router expects.
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, Eq, PartialEq)]
+pub struct RouterSeal {
+    pub selector: [u8; 4],
+    pub pi_a: [u8; 64],
+    pub pi_b: [u8; 128],
+    pub pi_c: [u8; 64],
+}
 
 #[program]
 pub mod vericode_escrow {
@@ -156,11 +198,35 @@ pub mod vericode_escrow {
         Ok(())
     }
 
+    /// Releases the Job to the executor on a verified `Pass` journal of the
+    /// delivered artifact, up to the deadline.
+    ///
+    /// Permissionless: the destination is the canonical associated token
+    /// account of the Job executor, and the proof is verified by CPI to the
+    /// fixed Verifier Router before any transfer.
+    pub fn release(ctx: Context<SettleWithProof>, journal: Vec<u8>, seal: RouterSeal) -> Result<()> {
+        settle_with_proof(ctx, Verdict::Pass, &journal, &seal)
+    }
+
+    /// Refunds the buyer on a verified `Fail` journal of the delivered
+    /// artifact, at any slot.
+    ///
+    /// Permissionless, with the same checks as `release`; the destination is
+    /// the canonical associated token account of the Job buyer.
+    pub fn refund_on_fail(
+        ctx: Context<SettleWithProof>,
+        journal: Vec<u8>,
+        seal: RouterSeal,
+    ) -> Result<()> {
+        settle_with_proof(ctx, Verdict::Fail, &journal, &seal)
+    }
+
     /// Refunds the buyer once the current slot is past the deadline, whether
     /// or not the executor delivered.
     ///
-    /// Permissionless: any fee payer may crank it. The destination must be a
-    /// token account of the Job mint owned by the Job buyer.
+    /// Permissionless: any fee payer may crank it. The destination must be
+    /// the canonical associated token account of the Job buyer for the Job
+    /// mint.
     pub fn refund_on_timeout(ctx: Context<RefundOnTimeout>) -> Result<()> {
         let job = &ctx.accounts.job;
         let terms = job.terms()?;
@@ -172,28 +238,165 @@ pub mod vericode_escrow {
                 MintId::new(ctx.accounts.buyer_token.mint.to_bytes()),
             )
             .map_err(escrow_error)?;
+        require_canonical_destination(&ctx.accounts.buyer_token.key(), &settlement, &job.mint)?;
 
-        let job_id = job.job_id;
-        let bump = [job.bump];
-        let signer_seeds: &[&[u8]] = &[JOB_SEED, &job_id, &bump];
-        token::transfer_checked(
-            CpiContext::new_with_signer(
-                ctx.accounts.token_program.to_account_info(),
-                TransferChecked {
-                    from: ctx.accounts.vault.to_account_info(),
-                    mint: ctx.accounts.mint.to_account_info(),
-                    to: ctx.accounts.buyer_token.to_account_info(),
-                    authority: ctx.accounts.job.to_account_info(),
-                },
-                &[signer_seeds],
-            ),
+        transfer_from_vault(
+            ctx.accounts.token_program.to_account_info(),
+            ctx.accounts.vault.to_account_info(),
+            &ctx.accounts.mint,
+            ctx.accounts.buyer_token.to_account_info(),
+            &ctx.accounts.job,
             settlement.payout().amount().base_units(),
-            ctx.accounts.mint.decimals,
         )?;
 
         ctx.accounts.job.status = EscrowStatus::from_core(settlement.state());
         Ok(())
     }
+}
+
+/// Settles by verdict, in this order: journal decoding, core policy (state,
+/// deadline, binding to the Job and the delivered artifact, verdict,
+/// recipient and mint), canonical destination, Router selector, Router
+/// verification of `SHA-256(journal)` against the Job image ID, transfer and
+/// terminal state. Any failure reverts the whole instruction.
+fn settle_with_proof(
+    ctx: Context<SettleWithProof>,
+    verdict: Verdict,
+    journal: &[u8],
+    seal: &RouterSeal,
+) -> Result<()> {
+    let accounts = &ctx.accounts;
+    let job = &accounts.job;
+    let terms = job.terms()?;
+    let decoded =
+        JournalV1::decode_candidate(journal).map_err(|_| error!(VericodeEscrowError::JournalMalformed))?;
+    let recipient_mint = MintId::new(accounts.recipient_token.mint.to_bytes());
+    let recipient_owner = accounts.recipient_token.owner.to_bytes();
+    let settlement = match verdict {
+        Verdict::Pass => terms.release(
+            job.status.to_core(),
+            &decoded,
+            Clock::get()?.slot,
+            ExecutorId::new(recipient_owner),
+            recipient_mint,
+        ),
+        Verdict::Fail => terms.refund_on_fail(
+            job.status.to_core(),
+            &decoded,
+            BuyerId::new(recipient_owner),
+            recipient_mint,
+        ),
+    }
+    .map_err(escrow_error)?;
+    require_canonical_destination(&accounts.recipient_token.key(), &settlement, &job.mint)?;
+    require!(
+        seal.selector == GROTH16_SELECTOR,
+        VericodeEscrowError::UnexpectedSelector
+    );
+    // The digest covers exactly the bytes the core decoded, and the image ID
+    // comes from the Job, never from the caller or the journal.
+    verify_with_router(accounts, seal, job.image_id, sha256(journal).to_bytes())?;
+
+    transfer_from_vault(
+        accounts.token_program.to_account_info(),
+        accounts.vault.to_account_info(),
+        &accounts.mint,
+        accounts.recipient_token.to_account_info(),
+        &accounts.job,
+        settlement.payout().amount().base_units(),
+    )?;
+
+    ctx.accounts.job.status = EscrowStatus::from_core(settlement.state());
+    Ok(())
+}
+
+/// Requires the canonical associated token account of the party paid by
+/// `settlement` for the Job mint (R-D2 F-06), so a caller cannot choose
+/// another account of that party.
+fn require_canonical_destination(destination: &Pubkey, settlement: &Settlement, mint: &Pubkey) -> Result<()> {
+    let party = match settlement.payout().recipient() {
+        PayoutRecipient::Executor(executor) => Pubkey::new_from_array(*executor.as_bytes()),
+        PayoutRecipient::Buyer(buyer) => Pubkey::new_from_array(*buyer.as_bytes()),
+    };
+    let (canonical, _) = Pubkey::find_program_address(
+        &[party.as_ref(), token::ID.as_ref(), mint.as_ref()],
+        &ATA_PROGRAM_ID,
+    );
+    require_keys_eq!(
+        *destination,
+        canonical,
+        VericodeEscrowError::DestinationNotCanonical
+    );
+    Ok(())
+}
+
+/// Calls the Router `verify(seal, image_id, journal_digest)` by CPI with the
+/// fixed Router, entry and verifier accounts. The Router fails, and with it
+/// this instruction, unless the Groth16 proof is valid for the claim.
+fn verify_with_router(
+    accounts: &SettleWithProof,
+    seal: &RouterSeal,
+    image_id: [u8; 32],
+    journal_digest: [u8; 32],
+) -> Result<()> {
+    let mut data = Vec::with_capacity(8 + 4 + 64 + 128 + 64 + 32 + 32);
+    data.extend_from_slice(&ROUTER_VERIFY_DISCRIMINATOR);
+    data.extend_from_slice(&seal.selector);
+    data.extend_from_slice(&seal.pi_a);
+    data.extend_from_slice(&seal.pi_b);
+    data.extend_from_slice(&seal.pi_c);
+    data.extend_from_slice(&image_id);
+    data.extend_from_slice(&journal_digest);
+    let instruction = Instruction {
+        program_id: VERIFIER_ROUTER_ID,
+        accounts: vec![
+            AccountMeta::new_readonly(accounts.router.key(), false),
+            AccountMeta::new_readonly(accounts.verifier_entry.key(), false),
+            AccountMeta::new_readonly(accounts.verifier_program.key(), false),
+            AccountMeta::new_readonly(accounts.system_program.key(), false),
+        ],
+        data,
+    };
+    invoke(
+        &instruction,
+        &[
+            accounts.router.to_account_info(),
+            accounts.verifier_entry.to_account_info(),
+            accounts.verifier_program.to_account_info(),
+            accounts.system_program.to_account_info(),
+            accounts.router_program.to_account_info(),
+        ],
+    )?;
+    Ok(())
+}
+
+/// Moves `amount` of the Job mint from the vault to `destination`, signed by
+/// the Job PDA.
+fn transfer_from_vault<'info>(
+    token_program: AccountInfo<'info>,
+    vault: AccountInfo<'info>,
+    mint: &Account<'info, Mint>,
+    destination: AccountInfo<'info>,
+    job: &Account<'info, JobAccount>,
+    amount: u64,
+) -> Result<()> {
+    let job_id = job.job_id;
+    let bump = [job.bump];
+    let signer_seeds: &[&[u8]] = &[JOB_SEED, &job_id, &bump];
+    token::transfer_checked(
+        CpiContext::new_with_signer(
+            token_program,
+            TransferChecked {
+                from: vault,
+                mint: mint.to_account_info(),
+                to: destination,
+                authority: job.to_account_info(),
+            },
+            &[signer_seeds],
+        ),
+        amount,
+        mint.decimals,
+    )
 }
 
 #[derive(Accounts)]
@@ -247,6 +450,34 @@ pub struct Deliver<'info> {
     pub executor: Signer<'info>,
     #[account(mut, seeds = [JOB_SEED, job.job_id.as_ref()], bump = job.bump)]
     pub job: Account<'info, JobAccount>,
+}
+
+#[derive(Accounts)]
+pub struct SettleWithProof<'info> {
+    #[account(mut, seeds = [JOB_SEED, job.job_id.as_ref()], bump = job.bump)]
+    pub job: Box<Account<'info, JobAccount>>,
+    #[account(address = job.mint @ VericodeEscrowError::MintMismatch)]
+    pub mint: Box<Account<'info, Mint>>,
+    #[account(mut, seeds = [VAULT_SEED, job.key().as_ref()], bump = job.vault_bump)]
+    pub vault: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub recipient_token: Box<Account<'info, TokenAccount>>,
+    pub token_program: Program<'info, Token>,
+    /// CHECK: fixed Verifier Router program.
+    #[account(address = VERIFIER_ROUTER_ID)]
+    pub router_program: UncheckedAccount<'info>,
+    /// CHECK: fixed Router state PDA; the Router validates its data.
+    #[account(address = ROUTER_PDA)]
+    pub router: UncheckedAccount<'info>,
+    /// CHECK: fixed Router entry of `GROTH16_SELECTOR`; the Router validates
+    /// its data and rejects an emergency-stopped entry.
+    #[account(address = GROTH16_VERIFIER_ENTRY)]
+    pub verifier_entry: UncheckedAccount<'info>,
+    /// CHECK: fixed Groth16 verifier; the Router also checks it against the
+    /// entry.
+    #[account(address = GROTH16_VERIFIER_ID)]
+    pub verifier_program: UncheckedAccount<'info>,
+    pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
@@ -436,6 +667,12 @@ pub enum VericodeEscrowError {
     DeadlineOutOfWindow,
     #[msg("Executor is a program account of the Job")]
     ExecutorIsProgramAccount,
+    #[msg("Seal selector is not the fixed Groth16 selector")]
+    UnexpectedSelector,
+    #[msg("Journal is not a JournalV1 of the candidate wire format")]
+    JournalMalformed,
+    #[msg("Destination is not the canonical token account of the paid party")]
+    DestinationNotCanonical,
 }
 
 fn amount_error(error: AmountError) -> Error {

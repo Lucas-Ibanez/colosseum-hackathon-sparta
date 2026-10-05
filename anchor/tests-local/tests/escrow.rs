@@ -1,481 +1,13 @@
-//! In-process tests of the SBF build of `vericode_escrow`.
+//! In-process tests of the SBF build of `vericode_escrow`: Job creation,
+//! funding, delivery, timeout refund and account binding.
 //!
-//! The program is loaded from `SBF_OUT_DIR` by `solana-program-test`; no
-//! validator, cluster, RPC or keypair file is used. Every rejected
-//! instruction is checked for unchanged Job, vault and token balances, and
-//! expected error codes are literals, not values derived from the program.
+//! Every rejected instruction is checked for unchanged Job, vault and token
+//! balances. Settlement by verdict through the Verifier Router is tested in
+//! `tests/settlement.rs`.
 
-use std::{fs, path::PathBuf};
+mod common;
 
-use anchor_lang::solana_program::clock::Clock;
-use anchor_lang::solana_program::instruction::{Instruction, InstructionError};
-use anchor_lang::solana_program::program_pack::Pack;
-use anchor_lang::solana_program::pubkey::Pubkey;
-use anchor_lang::{AccountDeserialize, InstructionData, ToAccountMetas};
-use anchor_spl::token::spl_token;
-use anchor_spl::token_2022::spl_token_2022;
-use solana_keypair::Keypair;
-use solana_program_test::{tokio, BanksClientError, ProgramTest, ProgramTestContext};
-use solana_signer::Signer;
-use solana_system_interface::instruction as system_instruction;
-use solana_system_interface::program as system_program;
-use solana_transaction::Transaction;
-use solana_transaction_error::TransactionError;
-use vericode_core::{hash_restricted_artifact, JournalV1, RestrictedArtifactV1};
-use vericode_escrow::{
-    accounts, instruction, EscrowStatus, JobAccount, JOB_ACCOUNT_VERSION, JOB_SEED, VAULT_SEED,
-};
-
-const PROGRAM_NAME: &str = "vericode_escrow";
-const DECIMALS: u8 = 6;
-const AMOUNT: u64 = 1_000_000;
-const BUYER_START_BALANCE: u64 = 5_000_000;
-// Inside the creation window of a Job created at the first slots of the test.
-const DEADLINE: u64 = 5_000;
-const JOB_ID: [u8; 32] = [0x11; 32];
-// Final D1c2b guest ImageID, the only image a v1 Job admits.
-const IMAGE_ID_HEX: &str = "4da06f90da75ec8980c943ce017d69c48370fddbf3aa27689d375d78fac0fb1a";
-// Creation window decided for D2b.1, in slots.
-const MIN_WINDOW: u64 = 1_500;
-const MAX_WINDOW: u64 = 1_512_000;
-const OTHER: [u8; 32] = [0x99; 32];
-
-// `VericodeEscrowError` codes; `tests/layout.rs` binds each to its variant.
-const E_AMOUNT_ZERO: u32 = 6000;
-const E_ZERO_EXECUTOR: u32 = 6002;
-const E_BUYER_IS_EXECUTOR: u32 = 6004;
-const E_NOT_FUNDED: u32 = 6005;
-const E_ALREADY_FUNDED: u32 = 6006;
-const E_ALREADY_REFUNDED: u32 = 6008;
-const E_DEPOSITOR_MISMATCH: u32 = 6009;
-const E_RECIPIENT_MISMATCH: u32 = 6010;
-const E_MINT_MISMATCH: u32 = 6011;
-const E_AMOUNT_MISMATCH: u32 = 6012;
-const E_DEADLINE_NOT_REACHED: u32 = 6021;
-const E_DEADLINE_PASSED: u32 = 6022;
-const E_UNSUPPORTED_ACCOUNT_VERSION: u32 = 6023;
-const E_MINT_HAS_FREEZE_AUTHORITY: u32 = 6024;
-const E_ALREADY_DELIVERED: u32 = 6026;
-const E_DELIVERER_MISMATCH: u32 = 6027;
-const E_SPEC_NOT_ADMITTED: u32 = 6028;
-const E_HARNESS_NOT_ADMITTED: u32 = 6029;
-const E_IMAGE_ID_NOT_ADMITTED: u32 = 6030;
-const E_DEADLINE_OUT_OF_WINDOW: u32 = 6031;
-const E_EXECUTOR_IS_PROGRAM_ACCOUNT: u32 = 6032;
-// Anchor 0.31.1 framework errors.
-const ANCHOR_CONSTRAINT_SEEDS: u32 = 2006;
-const ANCHOR_ACCOUNT_OWNED_BY_WRONG_PROGRAM: u32 = 3007;
-const ANCHOR_INVALID_PROGRAM_ID: u32 = 3008;
-const ANCHOR_ACCOUNT_NOT_SIGNER: u32 = 3010;
-// System Program `AccountAlreadyInUse`.
-const SYSTEM_ACCOUNT_ALREADY_IN_USE: u32 = 0;
-
-struct Env {
-    ctx: ProgramTestContext,
-    buyer: Keypair,
-    executor: Keypair,
-    mint: Pubkey,
-    mint_authority: Keypair,
-    buyer_token: Pubkey,
-}
-
-/// Commitments sent to `create_job`.
-#[derive(Clone, Copy)]
-struct Commitments {
-    spec_hash: [u8; 32],
-    harness_hash: [u8; 32],
-    image_id: [u8; 32],
-}
-
-fn hex32(hex: &str) -> [u8; 32] {
-    decode_hex(hex).try_into().expect("32 bytes")
-}
-
-fn decode_hex(hex: &str) -> Vec<u8> {
-    assert!(hex.len() % 2 == 0, "odd hex length");
-    (0..hex.len())
-        .step_by(2)
-        .map(|index| u8::from_str_radix(&hex[index..index + 2], 16).unwrap())
-        .collect()
-}
-
-fn admitted() -> Commitments {
-    Commitments {
-        spec_hash: vericode_core::hash_restricted_spec(&vericode_core::RESTRICTED_SPEC_V1)
-            .unwrap()
-            .into_bytes(),
-        harness_hash: vericode_core::hash_harness_version(vericode_core::DETERMINISTIC_HARNESS_VERSION)
-            .unwrap()
-            .into_bytes(),
-        image_id: hex32(IMAGE_ID_HEX),
-    }
-}
-
-/// Commitment of the artifact `(7, 14)` that the executor delivers.
-fn delivered_artifact_hash() -> [u8; 32] {
-    hash_restricted_artifact(&RestrictedArtifactV1::new(7, 14))
-        .unwrap()
-        .into_bytes()
-}
-
-/// Artifact commitment of a versioned Groth16 fixture journal (Job `0x11`).
-fn fixture_artifact_hash(name: &str) -> [u8; 32] {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("fixtures/groth16")
-        .join(format!("{name}.txt"));
-    let text = fs::read_to_string(&path).unwrap();
-    let journal = text
-        .lines()
-        .find_map(|line| line.strip_prefix("journal="))
-        .expect("journal line");
-    JournalV1::decode_candidate(&decode_hex(journal.trim()))
-        .unwrap()
-        .artifact_hash()
-        .into_bytes()
-}
-
-fn job_pda(job_id: &[u8; 32]) -> Pubkey {
-    Pubkey::find_program_address(&[JOB_SEED, job_id], &vericode_escrow::ID).0
-}
-
-fn vault_pda(job: &Pubkey) -> Pubkey {
-    Pubkey::find_program_address(&[VAULT_SEED, job.as_ref()], &vericode_escrow::ID).0
-}
-
-/// Replaces one account of an instruction, keeping its signer and writable flags.
-fn substitute(mut ix: Instruction, original: &Pubkey, replacement: &Pubkey) -> Instruction {
-    let meta = ix
-        .accounts
-        .iter_mut()
-        .find(|meta| meta.pubkey == *original)
-        .expect("account in instruction");
-    meta.pubkey = *replacement;
-    ix
-}
-
-/// Clears the signer flag of one account, as a caller without its key would.
-fn unsigned(mut ix: Instruction, key: &Pubkey) -> Instruction {
-    let meta = ix
-        .accounts
-        .iter_mut()
-        .find(|meta| meta.pubkey == *key)
-        .expect("account in instruction");
-    meta.is_signer = false;
-    ix
-}
-
-fn signed_transaction(
-    ctx: &ProgramTestContext,
-    instructions: &[Instruction],
-    signers: &[&Keypair],
-    blockhash: anchor_lang::solana_program::hash::Hash,
-) -> Transaction {
-    let mut all_signers: Vec<&Keypair> = vec![&ctx.payer];
-    all_signers.extend_from_slice(signers);
-    Transaction::new_signed_with_payer(instructions, Some(&ctx.payer.pubkey()), &all_signers, blockhash)
-}
-
-async fn send(
-    ctx: &mut ProgramTestContext,
-    instructions: &[Instruction],
-    signers: &[&Keypair],
-) -> Result<(), BanksClientError> {
-    let blockhash = ctx.get_new_latest_blockhash().await.unwrap();
-    let transaction = signed_transaction(ctx, instructions, signers, blockhash);
-    ctx.banks_client.process_transaction(transaction).await
-}
-
-/// Simulates a transaction, then sends the same transaction, and returns the
-/// compute units the simulation consumed.
-///
-/// Simulation takes no account locks, so it cannot race with the transaction
-/// queue of the test bank as a direct execution with metadata can.
-async fn compute_units(ctx: &mut ProgramTestContext, instructions: &[Instruction], signers: &[&Keypair]) -> u64 {
-    let blockhash = ctx.get_new_latest_blockhash().await.unwrap();
-    let transaction = signed_transaction(ctx, instructions, signers, blockhash);
-    let simulation = ctx
-        .banks_client
-        .simulate_transaction(transaction.clone())
-        .await
-        .unwrap();
-    simulation.result.unwrap().unwrap();
-    ctx.banks_client.process_transaction(transaction).await.unwrap();
-    simulation.simulation_details.unwrap().units_consumed
-}
-
-fn assert_custom(result: Result<(), BanksClientError>, expected: u32) {
-    match result {
-        Err(BanksClientError::TransactionError(TransactionError::InstructionError(
-            _,
-            InstructionError::Custom(code),
-        ))) => assert_eq!(code, expected, "unexpected custom error code"),
-        other => panic!("expected custom error {expected}, got {other:?}"),
-    }
-}
-
-async fn current_slot(ctx: &mut ProgramTestContext) -> u64 {
-    ctx.banks_client.get_sysvar::<Clock>().await.unwrap().slot
-}
-
-async fn warp(ctx: &mut ProgramTestContext, slot: u64) {
-    ctx.warp_to_slot(slot).unwrap();
-    assert_eq!(current_slot(ctx).await, slot, "Clock.slot after warp");
-}
-
-async fn transfer_lamports(ctx: &mut ProgramTestContext, to: &Pubkey, lamports: u64) {
-    let ix = system_instruction::transfer(&ctx.payer.pubkey(), to, lamports);
-    send(ctx, &[ix], &[]).await.unwrap();
-}
-
-async fn create_mint(ctx: &mut ProgramTestContext, authority: &Pubkey) -> Pubkey {
-    create_mint_with_freeze(ctx, authority, None).await
-}
-
-async fn create_mint_with_freeze(
-    ctx: &mut ProgramTestContext,
-    authority: &Pubkey,
-    freeze_authority: Option<&Pubkey>,
-) -> Pubkey {
-    let mint = Keypair::new();
-    let rent = ctx.banks_client.get_rent().await.unwrap();
-    let create = system_instruction::create_account(
-        &ctx.payer.pubkey(),
-        &mint.pubkey(),
-        rent.minimum_balance(spl_token::state::Mint::LEN),
-        spl_token::state::Mint::LEN as u64,
-        &spl_token::ID,
-    );
-    let init =
-        spl_token::instruction::initialize_mint2(
-            &spl_token::ID,
-            &mint.pubkey(),
-            authority,
-            freeze_authority,
-            DECIMALS,
-        )
-        .unwrap();
-    send(ctx, &[create, init], &[&mint]).await.unwrap();
-    mint.pubkey()
-}
-
-/// Token-2022 mint without extensions or freeze authority.
-async fn create_token_2022_mint(ctx: &mut ProgramTestContext, authority: &Pubkey) -> Pubkey {
-    let mint = Keypair::new();
-    let rent = ctx.banks_client.get_rent().await.unwrap();
-    // The base Token-2022 mint has the classic 82-byte layout.
-    let create = system_instruction::create_account(
-        &ctx.payer.pubkey(),
-        &mint.pubkey(),
-        rent.minimum_balance(spl_token::state::Mint::LEN),
-        spl_token::state::Mint::LEN as u64,
-        &spl_token_2022::ID,
-    );
-    let init = spl_token_2022::instruction::initialize_mint2(
-        &spl_token_2022::ID,
-        &mint.pubkey(),
-        authority,
-        None,
-        DECIMALS,
-    )
-    .unwrap();
-    send(ctx, &[create, init], &[&mint]).await.unwrap();
-    mint.pubkey()
-}
-
-async fn create_token_account(ctx: &mut ProgramTestContext, mint: &Pubkey, owner: &Pubkey) -> Pubkey {
-    let account = Keypair::new();
-    let rent = ctx.banks_client.get_rent().await.unwrap();
-    let create = system_instruction::create_account(
-        &ctx.payer.pubkey(),
-        &account.pubkey(),
-        rent.minimum_balance(spl_token::state::Account::LEN),
-        spl_token::state::Account::LEN as u64,
-        &spl_token::ID,
-    );
-    let init =
-        spl_token::instruction::initialize_account3(&spl_token::ID, &account.pubkey(), mint, owner)
-            .unwrap();
-    send(ctx, &[create, init], &[&account]).await.unwrap();
-    account.pubkey()
-}
-
-async fn mint_to(ctx: &mut ProgramTestContext, mint: &Pubkey, to: &Pubkey, authority: &Keypair, amount: u64) {
-    let ix =
-        spl_token::instruction::mint_to(&spl_token::ID, mint, to, &authority.pubkey(), &[], amount).unwrap();
-    send(ctx, &[ix], &[authority]).await.unwrap();
-}
-
-async fn token_balance(ctx: &mut ProgramTestContext, account: &Pubkey) -> u64 {
-    let data = ctx.banks_client.get_account(*account).await.unwrap().unwrap().data;
-    spl_token::state::Account::unpack(&data).unwrap().amount
-}
-
-async fn read_job(ctx: &mut ProgramTestContext, job: &Pubkey) -> JobAccount {
-    let data = ctx.banks_client.get_account(*job).await.unwrap().unwrap().data;
-    JobAccount::try_deserialize(&mut data.as_slice()).unwrap()
-}
-
-/// Raw bytes and lamports of the given accounts, for unchanged-state checks.
-async fn snapshot(ctx: &mut ProgramTestContext, keys: &[Pubkey]) -> Vec<Option<(u64, Vec<u8>)>> {
-    let mut out = Vec::new();
-    for key in keys {
-        let account = ctx.banks_client.get_account(*key).await.unwrap();
-        out.push(account.map(|account| (account.lamports, account.data)));
-    }
-    out
-}
-
-#[allow(clippy::too_many_arguments)]
-fn create_job_ix_with(
-    buyer: &Pubkey,
-    mint: &Pubkey,
-    job_id: [u8; 32],
-    executor: Pubkey,
-    amount: u64,
-    deadline_slot: u64,
-    commitments: Commitments,
-) -> Instruction {
-    let job = job_pda(&job_id);
-    Instruction {
-        program_id: vericode_escrow::ID,
-        accounts: accounts::CreateJob {
-            buyer: *buyer,
-            mint: *mint,
-            job,
-            vault: vault_pda(&job),
-            token_program: spl_token::ID,
-            system_program: system_program::ID,
-        }
-        .to_account_metas(None),
-        data: instruction::CreateJob {
-            job_id,
-            executor,
-            amount,
-            deadline_slot,
-            spec_hash: commitments.spec_hash,
-            harness_hash: commitments.harness_hash,
-            image_id: commitments.image_id,
-        }
-        .data(),
-    }
-}
-
-fn create_job_ix(
-    buyer: &Pubkey,
-    mint: &Pubkey,
-    job_id: [u8; 32],
-    executor: Pubkey,
-    amount: u64,
-    deadline_slot: u64,
-) -> Instruction {
-    create_job_ix_with(buyer, mint, job_id, executor, amount, deadline_slot, admitted())
-}
-
-fn fund_ix(buyer: &Pubkey, job_id: [u8; 32], mint: &Pubkey, buyer_token: &Pubkey, amount: u64) -> Instruction {
-    let job = job_pda(&job_id);
-    Instruction {
-        program_id: vericode_escrow::ID,
-        accounts: accounts::Fund {
-            buyer: *buyer,
-            job,
-            mint: *mint,
-            buyer_token: *buyer_token,
-            vault: vault_pda(&job),
-            token_program: spl_token::ID,
-        }
-        .to_account_metas(None),
-        data: instruction::Fund { amount }.data(),
-    }
-}
-
-fn deliver_ix(executor: &Pubkey, job_id: [u8; 32], artifact_hash: [u8; 32]) -> Instruction {
-    Instruction {
-        program_id: vericode_escrow::ID,
-        accounts: accounts::Deliver {
-            executor: *executor,
-            job: job_pda(&job_id),
-        }
-        .to_account_metas(None),
-        data: instruction::Deliver { artifact_hash }.data(),
-    }
-}
-
-fn refund_ix(job_id: [u8; 32], mint: &Pubkey, buyer_token: &Pubkey) -> Instruction {
-    let job = job_pda(&job_id);
-    Instruction {
-        program_id: vericode_escrow::ID,
-        accounts: accounts::RefundOnTimeout {
-            job,
-            mint: *mint,
-            vault: vault_pda(&job),
-            buyer_token: *buyer_token,
-            token_program: spl_token::ID,
-        }
-        .to_account_metas(None),
-        data: instruction::RefundOnTimeout {}.data(),
-    }
-}
-
-async fn setup() -> Env {
-    let mut program_test = ProgramTest::new(PROGRAM_NAME, vericode_escrow::ID, None);
-    program_test.prefer_bpf(true);
-    let mut ctx = program_test.start_with_context().await;
-
-    let buyer = Keypair::new();
-    let executor = Keypair::new();
-    let mint_authority = Keypair::new();
-    transfer_lamports(&mut ctx, &buyer.pubkey(), 1_000_000_000).await;
-    let mint = create_mint(&mut ctx, &mint_authority.pubkey()).await;
-    let buyer_token = create_token_account(&mut ctx, &mint, &buyer.pubkey()).await;
-    mint_to(&mut ctx, &mint, &buyer_token, &mint_authority, BUYER_START_BALANCE).await;
-
-    Env {
-        ctx,
-        buyer,
-        executor,
-        mint,
-        mint_authority,
-        buyer_token,
-    }
-}
-
-async fn create_job_with_deadline(env: &mut Env, job_id: [u8; 32], deadline_slot: u64) {
-    let slot = current_slot(&mut env.ctx).await;
-    assert!(
-        slot + MIN_WINDOW <= deadline_slot && deadline_slot <= slot + MAX_WINDOW,
-        "deadline {deadline_slot} outside the creation window at slot {slot}"
-    );
-    let ix = create_job_ix(
-        &env.buyer.pubkey(),
-        &env.mint,
-        job_id,
-        env.executor.pubkey(),
-        AMOUNT,
-        deadline_slot,
-    );
-    let buyer = env.buyer.insecure_clone();
-    send(&mut env.ctx, &[ix], &[&buyer]).await.unwrap();
-}
-
-async fn create_default_job(env: &mut Env) {
-    create_job_with_deadline(env, JOB_ID, DEADLINE).await;
-}
-
-async fn fund_job(env: &mut Env, job_id: [u8; 32]) {
-    let ix = fund_ix(&env.buyer.pubkey(), job_id, &env.mint, &env.buyer_token, AMOUNT);
-    let buyer = env.buyer.insecure_clone();
-    send(&mut env.ctx, &[ix], &[&buyer]).await.unwrap();
-}
-
-async fn fund_default_job(env: &mut Env) {
-    fund_job(env, JOB_ID).await;
-}
-
-async fn deliver_default_job(env: &mut Env) {
-    let executor = env.executor.insecure_clone();
-    let ix = deliver_ix(&executor.pubkey(), JOB_ID, delivered_artifact_hash());
-    send(&mut env.ctx, &[ix], &[&executor]).await.unwrap();
-}
+use common::*;
 
 #[tokio::test]
 async fn create_job_rejects_invalid_terms_without_creating_accounts() {
@@ -841,7 +373,7 @@ async fn deliver_records_the_executor_commitment_once() {
     let vault = vault_pda(&job);
     let hash = delivered_artifact_hash();
     // The same artifact as the versioned Groth16 PASS fixture of Job 0x11.
-    assert_eq!(hash, fixture_artifact_hash("pass"));
+    assert_eq!(hash, fixture("pass").artifact_hash());
 
     let balances = snapshot(&mut env.ctx, &[vault, env.buyer_token]).await;
     deliver_default_job(&mut env).await;
@@ -854,7 +386,7 @@ async fn deliver_records_the_executor_commitment_once() {
     let watched = [job, vault, env.buyer_token];
     let delivered = snapshot(&mut env.ctx, &watched).await;
     let executor = env.executor.insecure_clone();
-    for artifact in [hash, fixture_artifact_hash("fail")] {
+    for artifact in [hash, fixture("fail").artifact_hash()] {
         let again = deliver_ix(&executor.pubkey(), JOB_ID, artifact);
         assert_custom(send(&mut env.ctx, &[again], &[&executor]).await, E_ALREADY_DELIVERED);
     }
@@ -911,6 +443,46 @@ async fn timeout_refund_rejects_other_recipients_and_mints() {
     let foreign_mint_account = refund_ix(JOB_ID, &other_mint, &env.buyer_token);
     assert_custom(send(&mut env.ctx, &[foreign_mint_account], &[]).await, E_MINT_MISMATCH);
     assert_eq!(snapshot(&mut env.ctx, &watched).await, before);
+}
+
+#[tokio::test]
+async fn timeout_refund_pays_only_the_canonical_buyer_account() {
+    let mut env = setup().await;
+    create_default_job(&mut env).await;
+    fund_default_job(&mut env).await;
+    let job = job_pda(&JOB_ID);
+    // R-D2 PoC-4: another account of the buyer, with the Job mint and an old
+    // delegate that could drain it.
+    let buyer = env.buyer.insecure_clone();
+    let delegate = Keypair::new();
+    let delegated = create_token_account(&mut env.ctx, &env.mint, &buyer.pubkey()).await;
+    let approve = spl_token::instruction::approve(
+        &spl_token::ID,
+        &delegated,
+        &delegate.pubkey(),
+        &buyer.pubkey(),
+        &[],
+        AMOUNT,
+    )
+    .unwrap();
+    send(&mut env.ctx, &[approve], &[&buyer]).await.unwrap();
+    warp(&mut env.ctx, DEADLINE + 1).await;
+
+    let watched = [job, vault_pda(&job), env.buyer_token, delegated];
+    let before = snapshot(&mut env.ctx, &watched).await;
+    // A permissionless caller cannot choose the destination (R-D2 F-06).
+    let to_delegated = refund_ix(JOB_ID, &env.mint, &delegated);
+    assert_custom(send(&mut env.ctx, &[to_delegated], &[]).await, E_DESTINATION_NOT_CANONICAL);
+    assert_eq!(snapshot(&mut env.ctx, &watched).await, before);
+
+    let to_canonical = refund_ix(JOB_ID, &env.mint, &env.buyer_token);
+    send(&mut env.ctx, &[to_canonical], &[]).await.unwrap();
+    assert_eq!(env.buyer_token, ata_address(&buyer.pubkey(), &env.mint));
+    assert_eq!(
+        token_balance(&mut env.ctx, &env.buyer_token.clone()).await,
+        BUYER_START_BALANCE
+    );
+    assert_eq!(token_balance(&mut env.ctx, &delegated).await, 0);
 }
 
 #[tokio::test]

@@ -7,6 +7,8 @@
 
 use std::{fs, path::PathBuf};
 
+use anchor_lang::solana_program::hash::hash as sha256;
+use anchor_lang::solana_program::pubkey::Pubkey;
 use anchor_lang::{AnchorDeserialize, AnchorSerialize, Space};
 use vericode_core::escrow::{
     EscrowState, RefundReason, MAX_DEADLINE_WINDOW_SLOTS, MIN_DEADLINE_WINDOW_SLOTS,
@@ -15,7 +17,11 @@ use vericode_core::{
     hash_harness_version, hash_restricted_spec, Hash32, DETERMINISTIC_HARNESS_VERSION,
     RESTRICTED_SPEC_V1,
 };
-use vericode_escrow::{EscrowStatus, JobAccount, VericodeEscrowError, ADMITTED_IMAGE_ID_V1};
+use vericode_escrow::{
+    EscrowStatus, JobAccount, RouterSeal, VericodeEscrowError, ADMITTED_IMAGE_ID_V1,
+    ATA_PROGRAM_ID, GROTH16_SELECTOR, GROTH16_VERIFIER_ENTRY, GROTH16_VERIFIER_ID, ROUTER_PDA,
+    ROUTER_VERIFY_DISCRIMINATOR, VERIFIER_ROUTER_ID,
+};
 
 const IMAGE_ID_HEX: &str = "4da06f90da75ec8980c943ce017d69c48370fddbf3aa27689d375d78fac0fb1a";
 const SPEC_HASH_HEX: &str = "af642b561ac73a0f78ae767123f95a0c6ece6ce89f2a5e5e20cb86bec49fb778";
@@ -62,6 +68,9 @@ fn error_codes_are_stable_literals() {
         (ImageIdNotAdmitted, 6030),
         (DeadlineOutOfWindow, 6031),
         (ExecutorIsProgramAccount, 6032),
+        (UnexpectedSelector, 6033),
+        (JournalMalformed, 6034),
+        (DestinationNotCanonical, 6035),
     ];
     for (error, code) in codes {
         let name = format!("{error:?}");
@@ -157,4 +166,56 @@ fn admitted_terms_are_the_decided_v1_values() {
             .expect("image_id line");
         assert_eq!(image_id.trim(), IMAGE_ID_HEX, "{name}");
     }
+}
+
+#[test]
+fn router_accounts_are_the_pinned_release() {
+    // `risc0-solana v3.0.0` (commit `ee415935`) program IDs.
+    assert_eq!(VERIFIER_ROUTER_ID.to_string(), "6JvFfBrvCcWgANKh1Eae9xDq4RC6cfJuBcf71rp2k9Y7");
+    assert_eq!(GROTH16_VERIFIER_ID.to_string(), "THq1qFYQoh7zgcjXoMXduDBqiZRCPeg3PvvMbrVQUge");
+    assert_eq!(ATA_PROGRAM_ID.to_string(), "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
+    assert_eq!(GROTH16_SELECTOR, [0x73, 0xc4, 0x57, 0xba]);
+    assert_eq!(
+        ROUTER_PDA,
+        Pubkey::find_program_address(&[b"router"], &VERIFIER_ROUTER_ID).0
+    );
+    assert_eq!(
+        GROTH16_VERIFIER_ENTRY,
+        Pubkey::find_program_address(&[b"verifier", GROTH16_SELECTOR.as_ref()], &VERIFIER_ROUTER_ID).0
+    );
+    assert_eq!(
+        ROUTER_VERIFY_DISCRIMINATOR,
+        sha256(b"global:verify").to_bytes()[..8]
+    );
+
+    // The versioned Groth16 fixtures use the fixed selector.
+    for name in ["pass", "fail"] {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("fixtures/groth16")
+            .join(format!("{name}.txt"));
+        let text = fs::read_to_string(&path).unwrap();
+        let selector = text
+            .lines()
+            .find_map(|line| line.strip_prefix("selector="))
+            .expect("selector line");
+        assert_eq!(selector.trim(), to_hex(&GROTH16_SELECTOR), "{name}");
+    }
+}
+
+#[test]
+fn router_seal_has_the_borsh_layout_of_the_router_seal() {
+    // `Seal { selector: [u8; 4], proof: Proof { pi_a, pi_b, pi_c } }`.
+    let seal = RouterSeal {
+        selector: [1; 4],
+        pi_a: [2; 64],
+        pi_b: [3; 128],
+        pi_c: [4; 64],
+    };
+    let mut bytes = Vec::new();
+    seal.serialize(&mut bytes).unwrap();
+    let mut expected = vec![1; 4];
+    expected.extend_from_slice(&[2; 64]);
+    expected.extend_from_slice(&[3; 128]);
+    expected.extend_from_slice(&[4; 64]);
+    assert_eq!(bytes, expected);
 }
