@@ -1,0 +1,40 @@
+[package]
+name = "vericode-cli"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "Devnet client of the VeriCode escrow: create, deliver, settle and refund Jobs"
+publish = false
+
+# Separate workspace with its own lock (gate D7), seeded from
+# `anchor/tests-local/Cargo.lock` (`be94760a…`): the dev-dependencies are the
+# test dependencies of that suite, so the instruction tests can compare the
+# bytes of this client with the builders of `tests/common/mod.rs`. Neither the
+# program nor any existing lock changes.
+[workspace]
+
+[[bin]]
+name = "vericode"
+path = "src/main.rs"
+
+[dependencies]
+base64 = "=0.22.1"
+getrandom = { version = "=0.2.16", features = ["std"] }
+reqwest = { version = "=0.12.28", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+serde_json = "=1.0.145"
+sha2 = "=0.10.9"
+solana-hash = "=2.3.0"
+solana-instruction = { version = "=2.3.0", features = ["std"] }
+solana-keypair = "=2.2.3"
+solana-pubkey = { version = "=2.4.0", features = ["curve25519"] }
+solana-signer = "=2.2.1"
+solana-transaction = { version = "=2.2.3", features = ["bincode"] }
+vericode-core = { path = "../crates/vericode-core" }
+
+[dev-dependencies]
+anchor-lang = "=0.31.1"
+anchor-spl = { version = "=0.31.1", default-features = false, features = ["token", "token_2022"] }
+solana-program-test = "=2.3.9"
+solana-system-interface = { version = "=1.0.0", features = ["bincode"] }
+solana-transaction-error = "=2.2.1"
+vericode-escrow = { path = "../anchor/programs/vericode-escrow", features = ["no-entrypoint"] }
