@@ -99,13 +99,56 @@ em devnet. O deploy e as transações em devnet ficam para o D4b, depois da
 revisão R-D4a. Detalhes em
 [`docs/d4a-direct-verifier-results.md`](d4a-direct-verifier-results.md).
 
+## Estado D4b/D7
+
+- **D4b:** o escrow do D4a está implantado em devnet
+  (`GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH`, 395.064 bytes
+  `cdf6967f…`) com upgrade authority `none`. O mint Test USDC admitido
+  (`9TE2V…`) existe com 6 decimais e sem freeze. A receipt é **verificada em
+  devnet por CPI ao verificador Groth16 imutável de risc0-solana v3.0.0**
+  (`docs/d4b-devnet-results.md`).
+- **D7:** o caminho de ponta a ponta passou a ser reproduzível a partir do
+  repositório, com duas peças fora dos workspaces existentes:
+  - `prover/` (`vericode-prover`): prova o guest admitido, versionado em
+    `prover/artifacts/vericode-guest.bin` (`e09ba8cf…`, ImageID
+    `4da06f90…`), com o prover local do RISC Zero 3.0.3; comprime para
+    Groth16 pelo Docker local por digest, sem rede e sem pull. Não recompila
+    o guest.
+  - `cli/` (`vericode`): monta as instruções a partir da IDL do D4a e dos
+    compromissos do `vericode-core`, confere cluster, programa, mint, termos,
+    receipt e estado antes de enviar, simula, envia de forma cadenciada e
+    confirma. Não contém regra econômica: quem decide é o programa.
+- Workspaces e locks: `prover/Cargo.lock` foi semeado do lock do harness do
+  D4a; `cli/Cargo.lock`, de `anchor/tests-local/Cargo.lock`. Nenhum lock
+  existente mudou. Os detalhes estão em `docs/d7-cli-results.md`.
+
+| Componente | Alvo | Workspace / lock | Papel |
+| --- | --- | --- | --- |
+| `crates/vericode-core` | host, guest (`no_std`) e SBF | raiz | regra, journal, hashes e política de escrow |
+| `zkvm/` | guest RISC-V e host | `zkvm/` | build determinístico do guest (D1c2b); não muda no D7 |
+| `anchor/programs/vericode-escrow` | SBF | `anchor/` | custódia e liquidação; imutável em devnet |
+| `anchor/tests-local` | host | próprio | suíte em processo, com o verificador real |
+| `prover/` | host | próprio | receipts `Composite` → `Groth16` do guest admitido |
+| `cli/` | host | próprio | cliente de devnet |
+
 ## Fluxo
 
 `Buyer cria Job (termos da v1) e deposita Test USDC` -> `Executor entrega e compromete o hash do artefato (deliver)` -> `host executa o harness e gera receipt Groth16` -> `contrato valida journal contra o Job e a entrega e verifica a prova pelo verificador Groth16 (CPI)` -> `release ao executor em PASS válido ou refund conforme as regras do Job`
 
-O fluxo completo roda localmente em `solana-program-test` (D2e, D4a), com
-receipts geradas fora da transação. Ainda não roda em cluster, por CLI de ponta a
-ponta nem com worker ou UI.
+O fluxo completo roda em `solana-program-test` (D2e, D4a) e em devnet (D4b,
+com ferramentas fora do clone; D7, com `vericode` e `vericode-prover` do
+repositório):
+
+```text
+vericode job create      -> create_job + fund (buyer; job_id aleatório)
+vericode-prover prove    -> receipt Composite do guest admitido (local)
+vericode-prover compress -> receipt Groth16 (Docker local por digest)
+vericode job settle      -> deliver + release (PASS) ou refund_on_fail (FAIL),
+                            com CPI ao verificador Groth16 na mesma instrução
+vericode job refund-timeout -> refund_on_timeout depois do prazo
+```
+
+Worker e UI ainda não existem (D10–D12).
 
 ## Componentes e responsabilidades
 
@@ -113,9 +156,10 @@ ponta nem com worker ou UI.
 | --- | --- | --- |
 | Core Rust puro | Tipos de domínio, bytes candidatos, hashes, regra determinística, validação do artefato e `Verdict`; política pura de escrow (D2a) | Depender de Solana, Anchor ou RISC Zero; custodiar fundos, transferir tokens, verificar prova ou deter autoridade de release |
 | Guest RISC Zero | Ler entrada restrita, chamar o core e publicar `JournalV1` com `PASS` ou `FAIL` | Tratar `FAIL` como panic/assert ou expor dados privados desnecessários |
-| Host | Preparar entrada, executar/provar, obter receipt e conferir journal localmente | Ser fonte de verdade para liberar fundos |
+| Host e `prover/` | Preparar entrada, executar/provar, obter receipt e conferir journal localmente | Ser fonte de verdade para liberar fundos |
+| CLI (`cli/`) | Montar, conferir, simular, enviar e confirmar as instruções do escrow em devnet | Decidir veredito, escolher destino ou guardar chaves dentro do clone |
 | Programa Anchor (`anchor/programs/vericode-escrow`) | Manter Job/escrow, custodiar no vault PDA e liquidar somente pelo core após validações do Job | Reexecutar regra de negócio, aceitar admin bypass ou confiar apenas no host |
-| Verificador Groth16 (`risc0-solana v3.0.0`) | Verificar receipt Groth16 por CPI direta do escrow (D4a; comprovado em `solana-program-test` local, inclusive com os bytes de devnet) | Ser considerado verificação on-chain em cluster sem transação de liquidação em devnet |
+| Verificador Groth16 (`risc0-solana v3.0.0`) | Verificar receipt Groth16 por CPI direta do escrow (D4a em `solana-program-test`; em devnet desde o D4b) | Ser chamado de "Verifier Router" ou ter o claim estendido a mainnet |
 | Front-end | Criar e consultar Jobs e apresentar estados/transações | Decidir verdict ou custodiar segredos do usuário |
 
 ## Fronteiras

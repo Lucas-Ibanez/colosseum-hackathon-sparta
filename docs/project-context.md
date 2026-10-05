@@ -41,8 +41,9 @@ evidência nem um escopo proibido.
 | --- | --- | --- |
 | `core-logic/` | `crates/vericode-core` | tipos, Borsh, SHA-256, harness restrito, `JournalV1`, política pura de escrow alinhada ao guia (D2b) e vinculada à entrega do executor, com termos admitidos e janela de prazo (D2b.1) |
 | `zk-guest/` | `zkvm/methods/guest` | guest real; dois builds determinísticos; ImageID `4da06f90…fb1a` (antes do D2a) |
-| `zk-host/` | `zkvm/host` | receipts locais reais PASS/FAIL `Composite`; compressão Groth16 demonstrada por harness fora do clone (D2d) |
+| `zk-host/` | `zkvm/host`; `prover/` (D7) | receipts locais reais PASS/FAIL `Composite` (D1c2b); compressão Groth16 por harness fora do clone (D2d, D4a); desde o D7, `vericode-prover` no repositório prova o guest admitido versionado (`prover/artifacts`, `e09ba8cf…`) e comprime para Groth16 pelo Docker local por digest |
 | `anchor-program/` | `anchor/programs/vericode-escrow` (workspace `anchor/`, testes em `anchor/tests-local`) | D2c/D2b.1/D2e/D4a: `create_job` (termos da v1, mint Test USDC admitido, janela de prazo), `fund`, `deliver`, `release`/`refund_on_fail` com CPI direta ao verificador Groth16 de `risc0-solana v3.0.0` (sem Router desde o D4a), `refund_on_timeout`; destino = ATA canônica; testado em processo com o verificador real (rebuild e bytes de devnet); **implantado e finalizado em devnet** (D4b: `GZqbL2Tb…`, authority `none`) |
+| CLI (guia §3 e §10: "CLI como fonte de verdade") | `cli/` (D7) | `vericode`: `check`, `job create/deliver/settle/refund-timeout/show` em devnet; instruções iguais byte a byte aos builders da suíte; Jobs P e T liquidados em devnet |
 | `worker-api/` | inexistente | não iniciado |
 | `frontend/` | inexistente | não iniciado |
 
@@ -81,7 +82,8 @@ adversariais com prefixo `R-`). O gate seguinte ao D4 é o `D7`, não "D5".
 | D4a | reconhecimento do Router em devnet (reprovado); CPI direta ao verificador imutável; mint admitido; `JournalV1` v1 congelado; PoCs do R-D2e na suíte; receipts novas | D4 (parte local) |
 | R-D4a | revisão delta somente leitura do D4a (APROVADO COM RESSALVAS, CD1 a CD9) | guia §11 |
 | D4b | deploy em devnet, smoke, finalização, Jobs PASS/FAIL/timeout e negativos no Explorer | D4 e parte de D7/D8 (em devnet) |
-| D7 (próximo depois do D4) | CLI de ponta a ponta, README com versões, hashes, links e limitações, roteiro da demo | D7, D9 |
+| D7 | CLI e prover reproduzíveis no repositório; Job P (PASS) e T (timeout) em devnet pela CLI; invariante 9 em devnet; README de entrega e roteiro da demo; RD4A-07 (a)(e)(f) | D7, D8 (dupla liquidação em devnet), D9 (README e roteiro) |
+| R-D7 (próximo) | revisão adversarial final do MVP, somente leitura | guia §11 |
 | D10–D12 | worker de prova e telas Buyer, Submit e Result | D10–D12, se houver tempo |
 
 Itens de produto e mercado do plano (inscrição, outreach, design partners,
@@ -96,7 +98,11 @@ projeto concluiu tecnicamente o **D3** e o caminho forte local dos **D5/D6**
 - a parte em devnet (D4b) implantou e finalizou o escrow e liquidou Jobs
   PASS, FAIL e timeout com negativos.
 
-Isso entrega em devnet parte do D7/D8. O próximo gate é o D7.
+O **D7** também está concluído: CLI (`cli/`) e prover (`prover/`) no
+repositório, Job P liquidado por PASS e Job T por timeout em devnet pela
+CLI, dupla liquidação rejeitada em devnet (6007/6008), README de entrega e
+roteiro da demo (`docs/d7-cli-results.md`). O próximo gate é a revisão
+adversarial final **R-D7**.
 
 | Dia | Situação | Evidência / lacuna |
 | --- | --- | --- |
@@ -106,7 +112,10 @@ Isso entrega em devnet parte do D7/D8. O próximo gate é o D7.
 | D3 | concluído (local) | journal com job_id, artifact, harness, versão e verdict; provas PASS/FAIL; create/fund/refund por timeout (D2c); compromisso de entrega e termos admitidos da v1 (D2b.1); `release`/`refund_on_fail` vinculados ao Job e à entrega, com prova verificada por CPI ao Router (D2e); tudo em `solana-program-test` |
 | D4 | **concluído**: D4a (local, aprovado com ressalvas pelo R-D4a) e D4b (devnet) | Router upstream de devnet inutilizável; o escrow chama direto o verificador Groth16 imutável; mint admitido; `JournalV1` v1 congelado (`docs/d4a-direct-verifier-results.md`). D4b: escrow `GZqbL2Tb…` implantado com `cdf6967f…` e authority `none`; mint Test USDC criado; Jobs S (smoke), A `Released`, B `RefundedOnFail`, C `RefundedOnTimeout`; negativos e C7 no Explorer (`docs/d4b-devnet-results.md`) |
 | D5/D6 | concluído localmente (D2d, D2e, D4a) | receipts Groth16 PASS/FAIL reais verificadas pelo Verifier Router em `solana-program-test` (D2d) e por CPI a partir do `vericode_escrow` (D2e via Router; D4a direto ao verificador, também com os bytes de devnet), com prova errada rejeitada antes do happy path; **em devnet desde o D4b**: liquidações PASS/FAIL verificadas por CPI ao verificador imutável e seals errados rejeitados (6000/6003) |
-| D7–D12 | D7 a iniciar; D8 em parte feito em devnet (D4b) | falta CLI E2E reproduzível no repositório, README com versões, hashes e links, roteiro da demo, worker e UI. Os estados ruins on-chain já foram exercitados em devnet no D4b: prova errada, journal de outro Job, timeout antecipado |
+| D7 | **concluído** | `cli/` e `prover/` reproduzíveis com `--locked` (sem crate novo); Job P: `create_job`+`fund`, prova `(21,42)` nova, `deliver`+`release` com CPI ao verificador (`4oWhwZfU…`); Job T: 6021 antes do prazo e `RefundedOnTimeout` (`3fiNWgTW…`); journal de outro Job → 6014 (`docs/d7-cli-results.md`) |
+| D8 | concluído em devnet (D4b + D7) | prova errada (6000/6003), journal de outro Job ou artefato (6014/6017), FAIL (refund), timeout antecipado (6021) e **dupla liquidação** (6007/6008, D7) |
+| D9 | roteiro pronto; execução pendente | `README.md` com comandos, versões, hashes, links e limitações; `docs/demo-script.md`; falta rodar a demo em ambiente limpo e gravar |
+| D10–D12 | não iniciado | worker e UI fina, se houver tempo |
 
 ### Caminho crítico e risco de prazo
 
@@ -137,8 +146,10 @@ Isso entrega em devnet parte do D7/D8. O próximo gate é o D7.
      - escrow implantado e finalizado em devnet;
      - Jobs PASS, FAIL e timeout e negativos no Explorer
        (`docs/d4b-devnet-results.md`);
-     - próximo: D7 (`docs/handoffs/d4b-to-d7.md`);
-  6. D7 (com o D9): CLI reproduzível, README com versões, hashes, links e
+     - D7 concluído: CLI e prover no repositório, Jobs P e T em devnet,
+       invariante 9 em devnet, README e roteiro (`docs/d7-cli-results.md`);
+     - próximo: R-D7 (`docs/handoffs/d7-to-r-d7.md`);
+  6. D7 (com o D9) concluído: CLI reproduzível, README com versões, hashes, links e
      limitações (M6/M7) e roteiro da demo;
   7. D10–D12: worker e telas, se houver tempo.
 - Wallets de devnet: o agente está autorizado a criar keypairs efêmeros de

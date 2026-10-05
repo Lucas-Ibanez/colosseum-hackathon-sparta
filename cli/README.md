@@ -42,20 +42,21 @@ o de devnet (`EtWTRABZ…`).
 
 ```bash
 V=cli/target/release/vericode
+RUN=~/vericode-run; mkdir -p $RUN          # receipts e registros fora do clone
 
 $V check                                    # escrow, ProgramData, verificador, mint (só leitura)
 
 # buyer: cria e financia na MESMA transação (create_job + fund)
 $V job create --buyer-keypair ~/keys/buyer.json --executor <PUBKEY_DO_EXECUTOR> \
-   --amount 1000000 --deadline-offset 9000 --job-file job.json
+   --amount 1000000 --deadline-offset 9000 --job-file $RUN/job.json
 
 # executor: prova com o prover (ver prover/README.md), depois entrega e libera
 # na mesma transação (deliver + release); FAIL vira refund_on_fail ao buyer
-$V job settle --job-id <JOB_ID_HEX> --receipt receipts/P --deliver --executor-keypair ~/keys/executor.json
+$V job settle --job-id <JOB_ID_HEX> --receipt $RUN/P --deliver --executor-keypair ~/keys/executor.json
 
 # alternativa em duas etapas
 $V job deliver --executor-keypair ~/keys/executor.json --job-id <JOB_ID_HEX> --artifact 21,42
-$V job settle --job-id <JOB_ID_HEX> --receipt receipts/P --payer-keypair ~/keys/qualquer.json
+$V job settle --job-id <JOB_ID_HEX> --receipt $RUN/P --payer-keypair ~/keys/qualquer.json
 
 # qualquer pagador: reembolso depois do prazo (--wait espera o slot)
 $V job refund-timeout --job-id <JOB_ID_HEX> --payer-keypair ~/keys/buyer.json --wait
@@ -78,9 +79,9 @@ o verificador rejeitar a prova (`verifier:6003`).
 
 ```bash
 # journal de outro Job → 6014, antes da CPI
-$V job settle --job-id <P> --receipt receipts/A --deliver --executor-keypair … --expect-error escrow:6014
+$V job settle --job-id <P> --receipt $RUN/A --deliver --executor-keypair … --expect-error escrow:6014
 # dupla liquidação (invariante 9) → 6007 / 6008
-$V job settle --job-id <A> --receipt receipts/A --payer-keypair … --expect-error escrow:6007
+$V job settle --job-id <A> --receipt $RUN/A --payer-keypair … --expect-error escrow:6007
 # reembolso antes do prazo → 6021
 $V job refund-timeout --job-id <T> --payer-keypair … --expect-error escrow:6021
 ```

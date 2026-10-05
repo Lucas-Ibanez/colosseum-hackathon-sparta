@@ -38,10 +38,11 @@ cargo +1.89.0 build --locked --release --manifest-path prover/Cargo.toml
 cargo +1.89.0 test  --locked --release --manifest-path prover/Cargo.toml
 
 P=prover/target/release/vericode-prover
+RUN=~/vericode-run; mkdir -p $RUN          # receipts fora do clone
 $P check                                   # guest admitido: SHA-256, ImageID, selector
-$P prove <job_id_hex> 21 42 receipts/P     # Composite; journal == core
-$P compress receipts/P                     # Groth16 via Docker local
-$P verify receipts/P                       # reconfere a receipt e os vetores
+$P prove <job_id_hex> 21 42 $RUN/P     # Composite; journal == core
+$P compress $RUN/P                     # Groth16 via Docker local
+$P verify $RUN/P                       # reconfere a receipt e os vetores
 ```
 
 `<job_id_hex>` é o `job_id` impresso por `vericode job create`. `21 42` é o

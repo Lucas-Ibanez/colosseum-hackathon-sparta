@@ -10,6 +10,13 @@ e FAIL
 [`2osG9m8J…`](https://explorer.solana.com/tx/2osG9m8JcE1CpAKt8JribtJCw8ffrdhBh6hYm5xKeLPptM9YLsugouMRH2KnmRXAymwAMvBABUmuZY6tkwHoVbP4?cluster=devnet)
 (`docs/d4b-devnet-results.md`).**
 
+**D7 (2026-10-05): liquidação pela CLI do repositório.** O Job P foi
+liquidado por `vericode job settle` (`deliver`+`release`) com uma receipt
+nova do `vericode-prover`; o verificador `THq1q…` foi invocado em
+profundidade 2, com 99.541 CU
+([`4oWhwZfU…`](https://explorer.solana.com/tx/4oWhwZfUzZhVhrTydrhdBx1TJxWVH2mdWdKwiUhtHtMnhmeJg3MprEshvp592hYMgsaiwwhyvsDHek1egS9zKM1L?cluster=devnet);
+`docs/d7-cli-results.md`). Claim inalterado; sem Router.
+
 **D4b (2026-10-05): primeira verificação real em devnet.**
 - `release` (Job A) e `refund_on_fail` (Job B) invocaram `THq1q…` em
   profundidade 2, com 99.541 CU cada, e liquidaram o Test USDC.
@@ -192,8 +199,9 @@ O link de deployments no README oficial conduziu a uma página de contratos veri
 
 Consequências:
 
-- `RISC0_VERIFIER_ROUTER_PROGRAM_ID` permanece vazio: o escrow não usa
-  Router desde o D4a;
+- o escrow não usa Router desde o D4a; no D7, `.env.example` trocou
+  `RISC0_VERIFIER_ROUTER_PROGRAM_ID` por `RISC0_GROTH16_VERIFIER_PROGRAM_ID`,
+  vazio (só o nome; o valor fixo é `THq1q…`, constante do programa e da CLI);
 - a transação de liquidação em devnet com CPI bem-sucedida existe desde o
   D4b. O claim é exatamente o de CD7, com os links; não se estende a
   mainnet nem ao Router;

@@ -1,4 +1,4 @@
-# Programa `vericode_escrow` — especificação (D2c, D2c.1, D2b.1, D2e, D4a, D4b)
+# Programa `vericode_escrow` — especificação (D2c, D2c.1, D2b.1, D2e, D4a, D4b, D7)
 
 **Programa Anchor implantado em Solana devnet e imutável desde o D4b**
 (upgrade authority `none`; `docs/d4b-devnet-results.md`). Também é testado em
@@ -211,6 +211,10 @@ budget):
 | `deliver` | 4.947 | 243 B |
 | `refund_on_timeout` | 14.605 | 342 B |
 
+No D7, a CLI do repositório (`cli/`) liquidou o Job P com `deliver`+`release`
+(122.156 CU, 883 B; verificador 99.541 CU) e o Job T por timeout (14.605 CU,
+342 B), com os mesmos valores (`docs/d7-cli-results.md`).
+
 Não existem instruções administrativas, close ou realloc. A IDL gerada
 (`anchor idl build`) contém exatamente as seis instruções acima e não é
 versionada; só seu hash está registrado.
@@ -279,7 +283,7 @@ o programa que falhou pelos logs de uma simulação da mesma transação.
 | 6. estado e transferência atômicos | **testado localmente**: toda rejeição, inclusive no verificador, deixa Job, vault e saldos byte a byte iguais. Em devnet (D4b): 8 negativos e o C7 aterrissaram com erro e estado igual |
 | 7. sem admin nem destino livre | nenhuma instrução administrativa; destino = ATA canônica; selector e verificador fixos; verificador imutável em devnet; **upgrade authority do escrow `none` em devnet** (D4b, F-04 fechado) |
 | 8. journal de outro Job/spec/harness/ImageID | termos fora da v1 rejeitados na criação; journal de outro artefato → 6017 antes da CPI; prova verificada contra `job.image_id` |
-| 9. terminal impede dupla liquidação | **testado**: release→release/refund/timeout/deliver, refund→release, timeout→release |
+| 9. terminal impede dupla liquidação | **testado**: release→release/refund/timeout/deliver, refund→release, timeout→release; replay das receipts do D4b (D7). **Em devnet (D7):** `release` de novo no Job A → 6007 (`61de4rBk…`) e `refund_on_fail` de novo no Job B → 6008 (`5vZ6TGRo…`), estado igual |
 | 10. falha de CPI/verificação reverte | **testado**: seal adulterado e seal de outro journal revertem sem movimento, com o rebuild local e com os bytes de devnet do verificador |
 
 ## Pendências e riscos conhecidos

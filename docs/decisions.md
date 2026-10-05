@@ -1363,3 +1363,93 @@ Registre decisões relevantes do projeto neste formato.
   - ImageID não recertificado; spec v1 trivial;
   - RD4A-07 (a), (e) e (f) para o D7.
 - **Próximo gate:** D7, conforme `docs/handoffs/d4b-to-d7.md`.
+
+## 2026-10-05 — D7: CLI e prover no repositório; fluxo de ponta a ponta em devnet
+
+- **Data:** 2026-10-05
+- **Decisões humanas** (recomendadas pelo agente e ratificadas ao enviar o
+  prompt do D7, versão revisada de `docs/handoffs/d4b-to-d7.md`):
+  1. **CLI em Rust em `cli/`**, com workspace e lock próprios. Monta as
+     instruções a partir das contas e dos discriminadores da IDL do D4a
+     (`e8ce2c20…`) e usa o `vericode-core` para hashes e journal. Nenhum lock
+     existente muda.
+  2. **Dependências:** lock novo semeado de `anchor/tests-local/Cargo.lock` e
+     de `d4/receipts/Cargo.lock`, compilado `--offline`. Um único fetch do
+     crates.io ficou autorizado se faltasse um crate.
+  3. **Prover em `prover/`**, com workspace e lock próprios (semente
+     `ec0dd8d6…`), fora de `zkvm/`:
+     - binário do guest versionado em `prover/artifacts/vericode-guest.bin`,
+       com proveniência, e `*.bin binary` em `.gitattributes`;
+     - SHA-256 e ImageID conferidos antes de provar;
+     - Groth16 pelo Docker local por digest, com `--pull=never
+       --network=none`.
+  4. **Escritas em devnet em lista fechada:**
+     - SOL do deployer: 0,1 ao buyer e 0,02 ao executor;
+     - Job P (PASS);
+     - Job T (timeout, com 6021 antes do prazo);
+     - negativos: journal de outro Job no P (6014) e a invariante 9 (6007 em
+       A, 6008 em B).
+- **Escolhas do agente, aprovadas no plano (Plan Mode):**
+  - Ordem T antes de P, para a espera do prazo de T correr junto com a prova
+    de P.
+  - O negativo 6014 tem a forma da liquidação positiva, `deliver`+`release`
+    numa transação, com o journal do Job A. Num P em `Funded`, um `release`
+    sozinho daria 6025.
+  - Artefato do P: `(21, 42)`. Prazos: T = slot + 1.560 (janela mínima + 60
+    de margem); P = slot + 9.000.
+  - CLI:
+    - binário `vericode`, sem clap;
+    - RPC por `reqwest` (blocking, rustls com webpki-roots), cadenciado e
+      com backoff;
+    - recusa clusters cujo genesis não seja o de devnet;
+    - keypairs só por caminho, recusados dentro de work tree Git ou com
+      permissão para grupo ou outros;
+    - `--expect-error` para negativos, com simulação, `skipPreflight` e
+      contas iguais antes e depois;
+    - `check` (só leitura, com hash do ProgramData) como extra;
+    - `--tamper-seal` para a demo, testado só offline.
+  - Prover:
+    - guest embutido com `include_bytes!`;
+    - shim Docker versionado, que o prover põe no `PATH` do próprio processo;
+    - `RISC0_WORK_DIR` padrão em `<dir>/groth16-work`;
+    - subcomandos `check` e `verify` como extras.
+  - `anchor/tests-local`:
+    - fixtures `d4b/` com as receipts de devnet;
+    - `tests/d4b_receipts.rs` (replay do D4b e invariante 9);
+    - variantes do endereço do mint em `escrow.rs`;
+    - verificador ausente em `settlement.rs`.
+- **Resultado (evidência):**
+  - nenhum crate novo: o lock da CLI e o do prover só renomeiam o pacote
+    raiz das sementes;
+  - prover 4/4; CLI 14/14, com as 6 instruções byte a byte iguais aos
+    builders da suíte;
+  - suíte 61/61 com o verificador do rebuild e com os bytes de devnet;
+  - core 42/42 A/B;
+  - devnet:
+    - P `Released`, com o verificador invocado em
+      [`4oWhwZfU…`](https://explorer.solana.com/tx/4oWhwZfUzZhVhrTydrhdBx1TJxWVH2mdWdKwiUhtHtMnhmeJg3MprEshvp592hYMgsaiwwhyvsDHek1egS9zKM1L?cluster=devnet);
+    - T `RefundedOnTimeout`
+      ([`3fiNWgTW…`](https://explorer.solana.com/tx/3fiNWgTWdscCB8kRTE4gxacQgNXCZ36NHNhazzgUtRBiF7ub7Zs3NDBBZ7qwEdXGEy2HGUsZyyZX9sv7gxFsVZ7?cluster=devnet));
+    - 6021, 6014, 6007 e 6008 aterrissados com estado igual;
+  - RD4A-07 (a), (e) e (f) fechados;
+  - relatório: [`docs/d7-cli-results.md`](d7-cli-results.md).
+- **Claim:** inalterado (CD7). "Verificada em devnet por CPI ao verificador
+  Groth16 imutável de risc0-solana v3.0.0", com links. Agora também com a
+  liquidação feita pela CLI do repositório.
+- **Incidente registrado:** duas execuções da suíte foram interrompidas por
+  pressão de memória do WSL. A sessão do editor caiu e levou o build (exit
+  137). A correção foi rodar destacado (`setsid nohup`), com
+  `CARGO_BUILD_JOBS=2` e `nice`. O código não falhou.
+- **Risco aberto:**
+  - sem e-stop;
+  - rent preso (F-13);
+  - mint authority = deployer: reproduzir as escritas exige receber Test
+    USDC do projeto;
+  - `job_id` público;
+  - limite de taxa do RPC;
+  - memória do WSL;
+  - ImageID não recertificado; spec v1 trivial;
+  - errata pendente em `docs/manifest-schema.md` ("a implantar em devnet"),
+    arquivo que exige Plan Mode.
+- **Próximo gate:** R-D7, revisão adversarial final do MVP, conforme
+  `docs/handoffs/d7-to-r-d7.md`.
