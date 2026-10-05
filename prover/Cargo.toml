@@ -1,0 +1,17 @@
+[package]
+name = "vericode-prover"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "Local RISC Zero prover of the admitted VeriCode guest (Composite, then Groth16)"
+publish = false
+
+# Separate workspace with its own lock (gate D7), seeded from the audited D4a
+# receipt harness lock (`ec0dd8d6…`, itself seeded from `zkvm/Cargo.lock`).
+# It stays outside `zkvm/` so the guest and host locks are never touched.
+[workspace]
+
+[dependencies]
+bincode = "=1.3.3"
+risc0-zkvm = { version = "=3.0.3", features = ["disable-dev-mode", "prove"] }
+vericode-core = { path = "../crates/vericode-core" }

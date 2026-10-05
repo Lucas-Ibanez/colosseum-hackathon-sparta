@@ -1,0 +1,34 @@
+#!/bin/bash
+# VeriCode Docker shim (gate D7).
+#
+# `vericode-prover compress` puts this directory first on PATH, so the
+# `docker run ... risczero/risc0-groth16-prover:v2025-04-03.1` issued by
+# risc0-groth16 3.0.2 runs only the local image by digest, never pulls and has
+# no network. Any other `docker run` is refused. Other subcommands
+# (`--version`, `image inspect`) pass through unchanged.
+set -u
+TAG=risczero/risc0-groth16-prover:v2025-04-03.1
+DIGEST=risczero/risc0-groth16-prover@sha256:7f173963196570b7a71816ed70565a4579264c5d2e3e0ecb028102538ad0e331
+REAL=${VERICODE_REAL_DOCKER:-/usr/bin/docker}
+if [ "${1:-}" = "run" ]; then
+  shift
+  args=(run --pull=never --network=none)
+  found=0
+  for a in "$@"; do
+    if [ "$a" = "$TAG" ]; then
+      args+=("$DIGEST")
+      found=1
+    else
+      args+=("$a")
+    fi
+  done
+  if [ "$found" -ne 1 ]; then
+    echo "vericode docker-shim: refusing a docker run without $TAG" >&2
+    exit 2
+  fi
+  if [ -n "${VERICODE_DOCKER_SHIM_LOG:-}" ]; then
+    echo "$(date -Iseconds) $REAL ${args[*]}" >> "$VERICODE_DOCKER_SHIM_LOG"
+  fi
+  exec "$REAL" "${args[@]}"
+fi
+exec "$REAL" "$@"
