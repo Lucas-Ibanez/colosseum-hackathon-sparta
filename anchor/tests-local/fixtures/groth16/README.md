@@ -2,8 +2,12 @@
 
 Dados **públicos**: selector, ImageID, journal, digest do journal e seal
 Groth16. Não há chave, keypair ou segredo. Estes arquivos sozinhos **não**
-são verificação on-chain. Eles só se tornam evidência quando verificados pelo
-Verifier Router em teste (D2d em spike; D2e no programa).
+são verificação on-chain. Eles só se tornam evidência quando verificados em
+teste: pelo Verifier Router (D2d em spike; D2e no programa) e, desde o D4a,
+pelo verificador Groth16 chamado direto pelo programa.
+
+Job `0x11` é só para testes locais (fallback rotulado). Em devnet, cada Job
+usa `job_id` aleatório e receipts novas (D4-4, R-D2e R-03).
 
 ## Formato
 

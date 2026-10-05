@@ -1,4 +1,5 @@
-//! Host checks of the stable interface of `vericode_escrow` (gate D2b.1).
+//! Host checks of the stable interface of `vericode_escrow` (gates D2b.1,
+//! D2e, D4a).
 //!
 //! Error codes, `EscrowStatus` Borsh tags and the `JobAccount` size are part
 //! of the on-chain interface. They are compared here with literals, so a
@@ -18,9 +19,8 @@ use vericode_core::{
     RESTRICTED_SPEC_V1,
 };
 use vericode_escrow::{
-    EscrowStatus, JobAccount, RouterSeal, VericodeEscrowError, ADMITTED_IMAGE_ID_V1,
-    ATA_PROGRAM_ID, GROTH16_SELECTOR, GROTH16_VERIFIER_ENTRY, GROTH16_VERIFIER_ID, ROUTER_PDA,
-    ROUTER_VERIFY_DISCRIMINATOR, VERIFIER_ROUTER_ID,
+    EscrowStatus, Groth16Seal, JobAccount, VericodeEscrowError, ADMITTED_IMAGE_ID_V1,
+    ADMITTED_MINT, ATA_PROGRAM_ID, GROTH16_SELECTOR, GROTH16_VERIFIER_ID, VERIFY_DISCRIMINATOR,
 };
 
 const IMAGE_ID_HEX: &str = "4da06f90da75ec8980c943ce017d69c48370fddbf3aa27689d375d78fac0fb1a";
@@ -71,6 +71,7 @@ fn error_codes_are_stable_literals() {
         (UnexpectedSelector, 6033),
         (JournalMalformed, 6034),
         (DestinationNotCanonical, 6035),
+        (MintNotAdmitted, 6036),
     ];
     for (error, code) in codes {
         let name = format!("{error:?}");
@@ -169,24 +170,13 @@ fn admitted_terms_are_the_decided_v1_values() {
 }
 
 #[test]
-fn router_accounts_are_the_pinned_release() {
-    // `risc0-solana v3.0.0` (commit `ee415935`) program IDs.
-    assert_eq!(VERIFIER_ROUTER_ID.to_string(), "6JvFfBrvCcWgANKh1Eae9xDq4RC6cfJuBcf71rp2k9Y7");
+fn verifier_is_the_pinned_release() {
+    // `risc0-solana v3.0.0` (commit `ee415935`) Groth16 verifier, deployed on
+    // devnet with upgrade authority `None` (D4a). No Verifier Router.
     assert_eq!(GROTH16_VERIFIER_ID.to_string(), "THq1qFYQoh7zgcjXoMXduDBqiZRCPeg3PvvMbrVQUge");
     assert_eq!(ATA_PROGRAM_ID.to_string(), "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
     assert_eq!(GROTH16_SELECTOR, [0x73, 0xc4, 0x57, 0xba]);
-    assert_eq!(
-        ROUTER_PDA,
-        Pubkey::find_program_address(&[b"router"], &VERIFIER_ROUTER_ID).0
-    );
-    assert_eq!(
-        GROTH16_VERIFIER_ENTRY,
-        Pubkey::find_program_address(&[b"verifier", GROTH16_SELECTOR.as_ref()], &VERIFIER_ROUTER_ID).0
-    );
-    assert_eq!(
-        ROUTER_VERIFY_DISCRIMINATOR,
-        sha256(b"global:verify").to_bytes()[..8]
-    );
+    assert_eq!(VERIFY_DISCRIMINATOR, sha256(b"global:verify").to_bytes()[..8]);
 
     // The versioned Groth16 fixtures use the fixed selector.
     for name in ["pass", "fail"] {
@@ -203,9 +193,16 @@ fn router_accounts_are_the_pinned_release() {
 }
 
 #[test]
-fn router_seal_has_the_borsh_layout_of_the_router_seal() {
+fn admitted_mint_is_the_devnet_test_usdc() {
+    // Public key only; the mint keypair stays outside the repository (D4a).
+    assert_eq!(ADMITTED_MINT.to_string(), "9TE2VPFmgrNxT22yS3sEZyRcMxLgJkwzgAoquWRXwV2F");
+    assert_ne!(ADMITTED_MINT, Pubkey::default());
+}
+
+#[test]
+fn groth16_seal_has_the_borsh_layout_of_the_upstream_seal() {
     // `Seal { selector: [u8; 4], proof: Proof { pi_a, pi_b, pi_c } }`.
-    let seal = RouterSeal {
+    let seal = Groth16Seal {
         selector: [1; 4],
         pi_a: [2; 64],
         pi_b: [3; 128],

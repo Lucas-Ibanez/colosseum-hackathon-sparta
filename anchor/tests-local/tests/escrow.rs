@@ -2,7 +2,7 @@
 //! funding, delivery, timeout refund and account binding.
 //!
 //! Every rejected instruction is checked for unchanged Job, vault and token
-//! balances. Settlement by verdict through the Verifier Router is tested in
+//! balances. Settlement by verdict through the Groth16 verifier is tested in
 //! `tests/settlement.rs`.
 
 mod common;
@@ -149,10 +149,32 @@ async fn create_job_rejects_a_mint_with_freeze_authority() {
     .await;
     let job = job_pda(&JOB_ID);
 
+    // The freeze rule is a raw constraint, checked before the admitted mint
+    // address (6036) by Anchor 0.31.1.
     let ix = create_job_ix(&buyer.pubkey(), &freezable, JOB_ID, env.executor.pubkey(), AMOUNT, DEADLINE);
     assert_custom(send(&mut env.ctx, &[ix], &[&buyer]).await, E_MINT_HAS_FREEZE_AUTHORITY);
     assert!(env.ctx.banks_client.get_account(job).await.unwrap().is_none());
     assert!(env.ctx.banks_client.get_account(vault_pda(&job)).await.unwrap().is_none());
+}
+
+#[tokio::test]
+async fn create_job_admits_only_the_test_usdc_mint() {
+    let mut env = setup().await;
+    let buyer = env.buyer.insecure_clone();
+    // A classic SPL mint without freeze authority, controlled by the buyer
+    // (R-D2 F-05): a Job in a worthless token could deceive an executor.
+    let own_mint = create_mint(&mut env.ctx, &buyer.pubkey()).await;
+    let job = job_pda(&JOB_ID);
+    let watched = [buyer.pubkey(), job, vault_pda(&job)];
+    let before = snapshot(&mut env.ctx, &watched).await;
+
+    let ix = create_job_ix(&buyer.pubkey(), &own_mint, JOB_ID, env.executor.pubkey(), AMOUNT, DEADLINE);
+    assert_custom(send(&mut env.ctx, &[ix], &[&buyer]).await, E_MINT_NOT_ADMITTED);
+    assert_eq!(snapshot(&mut env.ctx, &watched).await, before);
+
+    let admitted = create_job_ix(&buyer.pubkey(), &ADMITTED_MINT, JOB_ID, env.executor.pubkey(), AMOUNT, DEADLINE);
+    send(&mut env.ctx, &[admitted], &[&buyer]).await.unwrap();
+    assert_eq!(read_job(&mut env.ctx, &job).await.mint, ADMITTED_MINT);
 }
 
 #[tokio::test]
@@ -184,12 +206,12 @@ async fn create_job_rejects_a_duplicate_job_id() {
     let mut env = setup().await;
     let job = job_pda(&JOB_ID);
 
-    // R-D2 PoC-9: a squatter takes the Job ID first, with its own mint and
-    // amount, inside the creation window.
+    // R-D2 PoC-9: a squatter takes the Job ID first, with its own amount,
+    // inside the creation window. Since D4a only the admitted mint is
+    // accepted, so the squatter uses it too.
     let squatter = Keypair::new();
     transfer_lamports(&mut env.ctx, &squatter.pubkey(), 1_000_000_000).await;
-    let squatter_mint = create_mint(&mut env.ctx, &squatter.pubkey()).await;
-    let squat = create_job_ix(&squatter.pubkey(), &squatter_mint, JOB_ID, env.executor.pubkey(), 1, DEADLINE);
+    let squat = create_job_ix(&squatter.pubkey(), &env.mint, JOB_ID, env.executor.pubkey(), 1, DEADLINE);
     send(&mut env.ctx, &[squat], &[&squatter]).await.unwrap();
 
     let buyer = env.buyer.insecure_clone();

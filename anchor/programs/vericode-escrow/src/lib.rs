@@ -1,4 +1,4 @@
-//! Local VeriCode escrow program (gates D2c, D2b.1, D2e).
+//! VeriCode escrow program (gates D2c, D2b.1, D2e, D4a).
 //!
 //! The program persists immutable Job terms, custodies the Job mint in a
 //! vault owned by the Job PDA and settles only through the pure policy in
@@ -6,15 +6,15 @@
 //! window, delivery, journal binding, verdict, mint, amount and state) are
 //! delegated to the core. Anchor constraints and the program check account
 //! structure (PDAs, owners, signers, account types, the Job mint address and
-//! the fixed Router accounts), the canonical associated token account of the
-//! paid party, and two custody preconditions on Solana accounts: a mint
-//! without freeze authority and an executor that is not a program account of
-//! the Job.
+//! the fixed verifier program), the canonical associated token account of the
+//! paid party, and three custody preconditions on Solana accounts: the
+//! admitted Test USDC mint, a mint without freeze authority and an executor
+//! that is not a program account of the Job.
 //!
-//! `release` and `refund_on_fail` settle only after the RISC Zero Verifier
-//! Router accepted, by CPI in the same instruction, a Groth16 seal for the
-//! exact journal bytes and the Job image ID. There is no administrative
-//! instruction.
+//! `release` and `refund_on_fail` settle only after the RISC Zero Groth16
+//! verifier (immutable on devnet) accepted, by CPI in the same instruction, a
+//! seal for the exact journal bytes and the Job image ID. There is no
+//! Verifier Router in the path (D4a) and no administrative instruction.
 
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::hash::hash as sha256;
@@ -46,37 +46,31 @@ pub const ADMITTED_IMAGE_ID_V1: [u8; 32] = [
     0x9d, 0x37, 0x5d, 0x78, 0xfa, 0xc0, 0xfb, 0x1a,
 ];
 
-/// RISC Zero Verifier Router program (`risc0-solana v3.0.0`, commit
-/// `ee415935`). Only this program may verify a settlement proof.
-pub const VERIFIER_ROUTER_ID: Pubkey =
-    Pubkey::from_str_const("6JvFfBrvCcWgANKh1Eae9xDq4RC6cfJuBcf71rp2k9Y7");
-/// Groth16 verifier program of the same release, registered in the Router
-/// under [`GROTH16_SELECTOR`].
+/// RISC Zero Groth16 verifier program of `risc0-solana v3.0.0` (commit
+/// `ee415935`). Only this program may verify a settlement proof. On devnet it
+/// is deployed with upgrade authority `None`, so nobody can change, stop or
+/// close it (D4a).
 pub const GROTH16_VERIFIER_ID: Pubkey =
     Pubkey::from_str_const("THq1qFYQoh7zgcjXoMXduDBqiZRCPeg3PvvMbrVQUge");
-/// Router selector of the Groth16 verifier: the first bytes of the digest of
-/// `Groth16ReceiptVerifierParameters::default()` in `risc0-zkvm 3.0.3`.
+/// Selector of the Groth16 verifier parameters: the first bytes of the digest
+/// of `Groth16ReceiptVerifierParameters::default()` in `risc0-zkvm 3.0.3`, the
+/// parameters [`GROTH16_VERIFIER_ID`] verifies against.
 pub const GROTH16_SELECTOR: [u8; 4] = [0x73, 0xc4, 0x57, 0xba];
-/// Router state PDA `["router"]` of [`VERIFIER_ROUTER_ID`], precomputed;
-/// `tests/layout.rs` checks the derivation.
-pub const ROUTER_PDA: Pubkey =
-    Pubkey::from_str_const("4Sh5ofCzLmmCg1zQraXRoPL2oB88bDZJEEbsfjXaauZT");
-/// Router verifier entry PDA `["verifier", GROTH16_SELECTOR]` of
-/// [`VERIFIER_ROUTER_ID`], precomputed; `tests/layout.rs` checks the
-/// derivation.
-pub const GROTH16_VERIFIER_ENTRY: Pubkey =
-    Pubkey::from_str_const("4Z7ok78xEh7vYmtHSnzF1Tobtm4sozZfHoQfUBgfG8pi");
-/// Anchor discriminator of the Router `verify` instruction.
-pub const ROUTER_VERIFY_DISCRIMINATOR: [u8; 8] = [0x85, 0xa1, 0x8d, 0x30, 0x78, 0xc6, 0x58, 0x96];
+/// Anchor discriminator of the verifier `verify` instruction.
+pub const VERIFY_DISCRIMINATOR: [u8; 8] = [0x85, 0xa1, 0x8d, 0x30, 0x78, 0xc6, 0x58, 0x96];
+/// The only mint a Job admits: the devnet Test USDC of the VeriCode MVP
+/// (6 decimals, no freeze authority), R-D2 F-05.
+pub const ADMITTED_MINT: Pubkey =
+    Pubkey::from_str_const("9TE2VPFmgrNxT22yS3sEZyRcMxLgJkwzgAoquWRXwV2F");
 /// Associated Token Account program, which fixes the canonical destination
 /// of every settlement.
 pub const ATA_PROGRAM_ID: Pubkey =
     Pubkey::from_str_const("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
 
-/// Groth16 seal in the Borsh layout of the Router `Seal`: the selector, then
-/// the proof points. `pi_a` is already negated, as the Router expects.
+/// Groth16 seal in the Borsh layout of the upstream `Seal`: the selector,
+/// then the proof points. `pi_a` is already negated, as the verifier expects.
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, Eq, PartialEq)]
-pub struct RouterSeal {
+pub struct Groth16Seal {
     pub selector: [u8; 4],
     pub pi_a: [u8; 64],
     pub pi_b: [u8; 128],
@@ -203,8 +197,8 @@ pub mod vericode_escrow {
     ///
     /// Permissionless: the destination is the canonical associated token
     /// account of the Job executor, and the proof is verified by CPI to the
-    /// fixed Verifier Router before any transfer.
-    pub fn release(ctx: Context<SettleWithProof>, journal: Vec<u8>, seal: RouterSeal) -> Result<()> {
+    /// fixed Groth16 verifier before any transfer.
+    pub fn release(ctx: Context<SettleWithProof>, journal: Vec<u8>, seal: Groth16Seal) -> Result<()> {
         settle_with_proof(ctx, Verdict::Pass, &journal, &seal)
     }
 
@@ -216,7 +210,7 @@ pub mod vericode_escrow {
     pub fn refund_on_fail(
         ctx: Context<SettleWithProof>,
         journal: Vec<u8>,
-        seal: RouterSeal,
+        seal: Groth16Seal,
     ) -> Result<()> {
         settle_with_proof(ctx, Verdict::Fail, &journal, &seal)
     }
@@ -256,14 +250,14 @@ pub mod vericode_escrow {
 
 /// Settles by verdict, in this order: journal decoding, core policy (state,
 /// deadline, binding to the Job and the delivered artifact, verdict,
-/// recipient and mint), canonical destination, Router selector, Router
+/// recipient and mint), canonical destination, seal selector, Groth16
 /// verification of `SHA-256(journal)` against the Job image ID, transfer and
 /// terminal state. Any failure reverts the whole instruction.
 fn settle_with_proof(
     ctx: Context<SettleWithProof>,
     verdict: Verdict,
     journal: &[u8],
-    seal: &RouterSeal,
+    seal: &Groth16Seal,
 ) -> Result<()> {
     let accounts = &ctx.accounts;
     let job = &accounts.job;
@@ -295,7 +289,7 @@ fn settle_with_proof(
     );
     // The digest covers exactly the bytes the core decoded, and the image ID
     // comes from the Job, never from the caller or the journal.
-    verify_with_router(accounts, seal, job.image_id, sha256(journal).to_bytes())?;
+    verify_groth16(accounts, seal, job.image_id, sha256(journal).to_bytes())?;
 
     transfer_from_vault(
         accounts.token_program.to_account_info(),
@@ -330,41 +324,33 @@ fn require_canonical_destination(destination: &Pubkey, settlement: &Settlement, 
     Ok(())
 }
 
-/// Calls the Router `verify(seal, image_id, journal_digest)` by CPI with the
-/// fixed Router, entry and verifier accounts. The Router fails, and with it
-/// this instruction, unless the Groth16 proof is valid for the claim.
-fn verify_with_router(
+/// Calls the verifier `verify(proof, image_id, journal_digest)` by CPI. The
+/// verifier fails, and with it this instruction, unless the Groth16 proof is
+/// valid for the claim of `image_id` and `journal_digest`. The selector was
+/// checked by the caller and is not part of the verifier arguments.
+fn verify_groth16(
     accounts: &SettleWithProof,
-    seal: &RouterSeal,
+    seal: &Groth16Seal,
     image_id: [u8; 32],
     journal_digest: [u8; 32],
 ) -> Result<()> {
-    let mut data = Vec::with_capacity(8 + 4 + 64 + 128 + 64 + 32 + 32);
-    data.extend_from_slice(&ROUTER_VERIFY_DISCRIMINATOR);
-    data.extend_from_slice(&seal.selector);
+    let mut data = Vec::with_capacity(8 + 64 + 128 + 64 + 32 + 32);
+    data.extend_from_slice(&VERIFY_DISCRIMINATOR);
     data.extend_from_slice(&seal.pi_a);
     data.extend_from_slice(&seal.pi_b);
     data.extend_from_slice(&seal.pi_c);
     data.extend_from_slice(&image_id);
     data.extend_from_slice(&journal_digest);
     let instruction = Instruction {
-        program_id: VERIFIER_ROUTER_ID,
-        accounts: vec![
-            AccountMeta::new_readonly(accounts.router.key(), false),
-            AccountMeta::new_readonly(accounts.verifier_entry.key(), false),
-            AccountMeta::new_readonly(accounts.verifier_program.key(), false),
-            AccountMeta::new_readonly(accounts.system_program.key(), false),
-        ],
+        program_id: GROTH16_VERIFIER_ID,
+        accounts: vec![AccountMeta::new_readonly(accounts.system_program.key(), false)],
         data,
     };
     invoke(
         &instruction,
         &[
-            accounts.router.to_account_info(),
-            accounts.verifier_entry.to_account_info(),
-            accounts.verifier_program.to_account_info(),
             accounts.system_program.to_account_info(),
-            accounts.router_program.to_account_info(),
+            accounts.verifier_program.to_account_info(),
         ],
     )?;
     Ok(())
@@ -404,10 +390,12 @@ fn transfer_from_vault<'info>(
 pub struct CreateJob<'info> {
     #[account(mut)]
     pub buyer: Signer<'info>,
-    /// A mint without freeze authority can never gain one (SPL Token
-    /// `MintCannotFreeze`), so the vault can never be frozen.
+    /// Only the admitted Test USDC mint. A mint without freeze authority can
+    /// never gain one (SPL Token `MintCannotFreeze`), so the vault can never
+    /// be frozen.
     #[account(
-        constraint = mint.freeze_authority.is_none() @ VericodeEscrowError::MintHasFreezeAuthority
+        constraint = mint.freeze_authority.is_none() @ VericodeEscrowError::MintHasFreezeAuthority,
+        address = ADMITTED_MINT @ VericodeEscrowError::MintNotAdmitted
     )]
     pub mint: Account<'info, Mint>,
     #[account(
@@ -463,20 +451,10 @@ pub struct SettleWithProof<'info> {
     #[account(mut)]
     pub recipient_token: Box<Account<'info, TokenAccount>>,
     pub token_program: Program<'info, Token>,
-    /// CHECK: fixed Verifier Router program.
-    #[account(address = VERIFIER_ROUTER_ID)]
-    pub router_program: UncheckedAccount<'info>,
-    /// CHECK: fixed Router state PDA; the Router validates its data.
-    #[account(address = ROUTER_PDA)]
-    pub router: UncheckedAccount<'info>,
-    /// CHECK: fixed Router entry of `GROTH16_SELECTOR`; the Router validates
-    /// its data and rejects an emergency-stopped entry.
-    #[account(address = GROTH16_VERIFIER_ENTRY)]
-    pub verifier_entry: UncheckedAccount<'info>,
-    /// CHECK: fixed Groth16 verifier; the Router also checks it against the
-    /// entry.
+    /// CHECK: fixed Groth16 verifier program, the target of the CPI.
     #[account(address = GROTH16_VERIFIER_ID)]
     pub verifier_program: UncheckedAccount<'info>,
+    /// The only account of the verifier `verify` instruction.
     pub system_program: Program<'info, System>,
 }
 
@@ -673,6 +651,8 @@ pub enum VericodeEscrowError {
     JournalMalformed,
     #[msg("Destination is not the canonical token account of the paid party")]
     DestinationNotCanonical,
+    #[msg("Mint is not the admitted Test USDC mint")]
+    MintNotAdmitted,
 }
 
 fn amount_error(error: AmountError) -> Error {

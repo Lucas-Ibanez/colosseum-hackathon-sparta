@@ -4,7 +4,8 @@
 //! Programs are loaded from `SBF_OUT_DIR` by `solana-program-test`; no
 //! validator, cluster, RPC or keypair file is used. Expected error codes are
 //! literals, not values derived from the program; `tests/layout.rs` binds
-//! each VeriCode code to its enum variant.
+//! each VeriCode code to its enum variant. The admitted Test USDC mint is
+//! injected in genesis at its fixed address, with an in-memory authority.
 
 // Each test crate uses a different subset of these helpers.
 #![allow(dead_code, unused_imports)]
@@ -29,10 +30,10 @@ pub use solana_transaction::Transaction;
 pub use solana_transaction_error::TransactionError;
 pub use vericode_core::{hash_restricted_artifact, JournalV1, RestrictedArtifactV1};
 pub use vericode_escrow::{
-    accounts, instruction, EscrowStatus, JobAccount, RouterSeal, ATA_PROGRAM_ID,
-    GROTH16_SELECTOR, GROTH16_VERIFIER_ENTRY, GROTH16_VERIFIER_ID, JOB_ACCOUNT_VERSION, JOB_SEED,
-    ROUTER_PDA, VAULT_SEED, VERIFIER_ROUTER_ID,
+    accounts, instruction, EscrowStatus, Groth16Seal, JobAccount, ADMITTED_MINT, ATA_PROGRAM_ID,
+    GROTH16_SELECTOR, GROTH16_VERIFIER_ID, JOB_ACCOUNT_VERSION, JOB_SEED, VAULT_SEED,
 };
+use spl_token::solana_program::program_option::COption;
 
 pub const PROGRAM_NAME: &str = "vericode_escrow";
 pub const DECIMALS: u8 = 6;
@@ -79,6 +80,7 @@ pub const E_EXECUTOR_IS_PROGRAM_ACCOUNT: u32 = 6032;
 pub const E_UNEXPECTED_SELECTOR: u32 = 6033;
 pub const E_JOURNAL_MALFORMED: u32 = 6034;
 pub const E_DESTINATION_NOT_CANONICAL: u32 = 6035;
+pub const E_MINT_NOT_ADMITTED: u32 = 6036;
 // Anchor 0.31.1 framework errors.
 pub const ANCHOR_CONSTRAINT_SEEDS: u32 = 2006;
 pub const ANCHOR_CONSTRAINT_ADDRESS: u32 = 2012;
@@ -88,7 +90,7 @@ pub const ANCHOR_ACCOUNT_NOT_SIGNER: u32 = 3010;
 // System Program `AccountAlreadyInUse`.
 pub const SYSTEM_ACCOUNT_ALREADY_IN_USE: u32 = 0;
 
-// BN254 base field modulus, to negate `pi_a` as the Router client does.
+// BN254 base field modulus, to negate `pi_a` as the upstream client does.
 const BN254_BASE_FIELD_MODULUS: &str =
     "30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd47";
 const COMPUTE_BUDGET_PROGRAM_ID: Pubkey =
@@ -98,6 +100,7 @@ pub struct Env {
     pub ctx: ProgramTestContext,
     pub buyer: Keypair,
     pub executor: Keypair,
+    /// The admitted Test USDC mint, at [`ADMITTED_MINT`].
     pub mint: Pubkey,
     pub mint_authority: Keypair,
     /// Canonical associated token account of the buyer for the Job mint.
@@ -167,7 +170,7 @@ pub fn fixture(name: &str) -> Fixture {
     }
 }
 
-/// Negates a BN254 G1 point (`y' = q - y`), as the Router client does for
+/// Negates a BN254 G1 point (`y' = q - y`), as the upstream client does for
 /// `pi_a` before verification.
 pub fn negate_g1(point: &[u8]) -> [u8; 64] {
     let modulus = decode_hex(BN254_BASE_FIELD_MODULUS);
@@ -182,9 +185,9 @@ pub fn negate_g1(point: &[u8]) -> [u8; 64] {
     out
 }
 
-/// Router seal of a fixture, encoded like the upstream client.
-pub fn router_seal(fixture: &Fixture) -> RouterSeal {
-    RouterSeal {
+/// Groth16 seal of a fixture, encoded like the upstream client.
+pub fn groth16_seal(fixture: &Fixture) -> Groth16Seal {
+    Groth16Seal {
         selector: fixture.selector,
         pi_a: negate_g1(&fixture.seal[0..64]),
         pi_b: fixture.seal[64..192].try_into().unwrap(),
@@ -329,8 +332,8 @@ pub fn assert_custom(result: Result<(), BanksClientError>, expected: u32) {
 
 /// Simulates a failing transaction to read its logs, then sends it.
 ///
-/// Custom codes of different programs overlap (the verifier, the Router and
-/// VeriCode all start at 6000), so the logs name the program that failed.
+/// Custom codes of different programs overlap (the verifier and VeriCode
+/// both start at 6000), so the logs name the program that failed.
 /// Returns the simulation logs.
 pub async fn assert_failure(
     ctx: &mut ProgramTestContext,
@@ -592,9 +595,6 @@ fn settle_accounts(job_id: [u8; 32], mint: &Pubkey, recipient_token: &Pubkey) ->
         vault: vault_pda(&job),
         recipient_token: *recipient_token,
         token_program: spl_token::ID,
-        router_program: VERIFIER_ROUTER_ID,
-        router: ROUTER_PDA,
-        verifier_entry: GROTH16_VERIFIER_ENTRY,
         verifier_program: GROTH16_VERIFIER_ID,
         system_program: system_program::ID,
     }
@@ -606,7 +606,7 @@ pub fn release_ix(
     mint: &Pubkey,
     recipient_token: &Pubkey,
     journal: Vec<u8>,
-    seal: RouterSeal,
+    seal: Groth16Seal,
 ) -> Instruction {
     Instruction {
         program_id: vericode_escrow::ID,
@@ -620,7 +620,7 @@ pub fn refund_on_fail_ix(
     mint: &Pubkey,
     recipient_token: &Pubkey,
     journal: Vec<u8>,
-    seal: RouterSeal,
+    seal: Groth16Seal,
 ) -> Instruction {
     Instruction {
         program_id: vericode_escrow::ID,
@@ -636,16 +636,43 @@ pub fn program_test() -> ProgramTest {
     program_test
 }
 
-/// Starts the bank and creates a funded buyer, an executor, a mint without
-/// freeze authority and the buyer's associated token account.
-pub async fn start(program_test: ProgramTest) -> Env {
+/// The escrow and the Groth16 verifier of `risc0-solana v3.0.0` (commit
+/// `ee415935`) at its fixed address. `SBF_OUT_DIR` must also hold
+/// `groth_16_verifier.so`: the offline rebuild or the bytes dumped from
+/// devnet.
+pub fn verifier_program_test() -> ProgramTest {
+    let mut program_test = program_test();
+    program_test.add_program("groth_16_verifier", GROTH16_VERIFIER_ID, None);
+    program_test
+}
+
+/// Adds the admitted Test USDC mint to genesis at [`ADMITTED_MINT`]: 6
+/// decimals, no supply, `authority` as mint authority.
+pub fn add_admitted_mint(program_test: &mut ProgramTest, authority: &Pubkey, freeze_authority: Option<Pubkey>) {
+    let mint = spl_token::state::Mint {
+        mint_authority: COption::Some(*authority),
+        supply: 0,
+        decimals: DECIMALS,
+        is_initialized: true,
+        freeze_authority: freeze_authority.map_or(COption::None, COption::Some),
+    };
+    let mut data = vec![0_u8; spl_token::state::Mint::LEN];
+    spl_token::state::Mint::pack(mint, &mut data).unwrap();
+    let lamports = Rent::default().minimum_balance(data.len());
+    program_test.add_account_with_base64_data(ADMITTED_MINT, lamports, spl_token::ID, &base64(&data));
+}
+
+/// Starts the bank with the admitted mint in genesis and creates a funded
+/// buyer, an executor and the buyer's associated token account.
+pub async fn start(mut program_test: ProgramTest) -> Env {
+    let mint_authority = Keypair::new();
+    add_admitted_mint(&mut program_test, &mint_authority.pubkey(), None);
     let mut ctx = program_test.start_with_context().await;
 
     let buyer = Keypair::new();
     let executor = Keypair::new();
-    let mint_authority = Keypair::new();
     transfer_lamports(&mut ctx, &buyer.pubkey(), 1_000_000_000).await;
-    let mint = create_mint(&mut ctx, &mint_authority.pubkey()).await;
+    let mint = ADMITTED_MINT;
     let buyer_token = create_ata(&mut ctx, &buyer.pubkey(), &mint).await;
     mint_to(&mut ctx, &mint, &buyer_token, &mint_authority, BUYER_START_BALANCE).await;
 
