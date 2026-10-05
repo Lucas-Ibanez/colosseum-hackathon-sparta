@@ -1,4 +1,4 @@
-# Fixtures Groth16 do VeriCode (D2d → D2c.1)
+# Fixtures Groth16 do VeriCode (D2d → D2c.1; D4b no D7)
 
 Dados **públicos**: selector, ImageID, journal, digest do journal e seal
 Groth16. Não há chave, keypair ou segredo. Estes arquivos sozinhos **não**
@@ -6,8 +6,9 @@ são verificação on-chain. Eles só se tornam evidência quando verificados em
 teste: pelo Verifier Router (D2d em spike; D2e no programa) e, desde o D4a,
 pelo verificador Groth16 chamado direto pelo programa.
 
-Job `0x11` é só para testes locais (fallback rotulado). Em devnet, cada Job
-usa `job_id` aleatório e receipts novas (D4-4, R-D2e R-03).
+Job `0x11` (`pass.txt`, `fail.txt`) é só para testes locais (fallback
+rotulado). Em devnet, cada Job usa `job_id` aleatório e receipts novas (D4-4,
+R-D2e R-03); os vetores de `d4b/` são dessas receipts de devnet.
 
 ## Formato
 
@@ -44,3 +45,24 @@ comentários `#`:
 
 O teste `tests/groth16_fixtures.rs` confere esses hashes, o digest e o
 vínculo do journal com o Job pelo `vericode-core`.
+
+## Receipts do D4b (`d4b/`, D7)
+
+`d4b/S.txt`, `d4b/A.txt`, `d4b/A-fail.txt` e `d4b/B.txt` são os vetores
+públicos das receipts que liquidaram (ou foram rejeitadas) em devnet no D4b
+(`docs/d4b-devnet-results.md`), no mesmo formato acima. Foram gerados no D7
+dos arquivos de `~/.local/share/vericode-spikes/d4/receipts-out/` (fora do
+clone), depois de `sha256sum -c` da lista `d4/logs/receipts-out.sha256`
+(28/28 OK). Atendem RD4A-07 (f) da R-D4a.
+
+| Vetor | `job_id` de devnet | Artefato | Veredito | SHA-256 do journal | SHA-256 do seal |
+| --- | --- | --- | --- | --- | --- |
+| `S` | `fe6d25fe…0959b` | `(7,14)` | PASS | `20b3353c…b1` | `4f1131c2…8ef` |
+| `A` | `3f0dd1c8…aec8a` | `(7,14)` | PASS | `a1060efe…f47` | `610704b1…cf0` |
+| `A-fail` (A′) | `3f0dd1c8…aec8a` | `(7,15)`, nunca entregue | FAIL | `e04f62d9…63c` | `7c596225…036` |
+| `B` | `5a25ae48…fc309` | `(7,15)` | FAIL | `e931596b…741` | `462c4855…63f` |
+
+`tests/d4b_receipts.rs` confere o vínculo de cada vetor ao seu Job e
+reproduz em processo, com o verificador real, as liquidações e os negativos
+do D4b e a dupla liquidação (invariante 9). Os Jobs S, A e B já estão
+consumidos em devnet: esses vetores não liquidam mais nada lá.

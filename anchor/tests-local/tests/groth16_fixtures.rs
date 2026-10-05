@@ -1,8 +1,10 @@
 //! Consistency checks of the versioned Groth16 fixtures (gate D2c.1).
 //!
 //! These checks bind the public vectors to the VeriCode Job used by the
-//! escrow tests. They do not verify the Groth16 proof itself; that is done by
-//! the Verifier Router in process (D2d spike, D2e program tests).
+//! escrow tests. They do not verify the Groth16 proof itself: since D4a that
+//! is done by the Groth16 verifier, called by CPI from the escrow in
+//! `tests/settlement.rs` and `tests/d4b_receipts.rs` (the D2d spike and the
+//! D2e tests went through the Verifier Router, which is no longer used).
 
 use std::{collections::HashMap, fs, path::PathBuf};
 

@@ -30,7 +30,12 @@ impl Scenario {
     /// Job `0x11` created and funded, with the executor's associated token
     /// account, and the artifact of `delivered` (a fixture name) delivered.
     async fn new(delivered: Option<&str>) -> Self {
-        let mut env = start(verifier_program_test()).await;
+        Self::with(verifier_program_test(), delivered).await
+    }
+
+    /// The same scenario on another set of genesis programs and accounts.
+    async fn with(program_test: ProgramTest, delivered: Option<&str>) -> Self {
+        let mut env = start(program_test).await;
         create_default_job(&mut env).await;
         fund_default_job(&mut env).await;
         if let Some(name) = delivered {
@@ -211,8 +216,10 @@ async fn seals_of_another_selector_are_rejected_by_the_escrow() {
 
 #[tokio::test]
 async fn verifier_program_is_fixed() {
-    // Neither a program that accepts anything nor a non-program account can
-    // stand in for the verifier.
+    // Another program (SPL Token), the system program and an arbitrary
+    // address cannot stand in for the verifier: the address constraint (2012)
+    // rejects each one before any CPI. The Router and an accept-all program
+    // at their own addresses were checked the same way in R-D4a (PoC i1).
     let mut scenario = Scenario::new(Some("pass")).await;
     let pass = fixture("pass");
     for replacement in [spl_token::ID, system_program::ID, Pubkey::new_unique()] {
@@ -323,6 +330,40 @@ async fn release_after_a_timeout_refund_is_rejected() {
 
     let release = scenario.release(&fixture("pass"));
     scenario.reject_before_verifier(release, E_ALREADY_REFUNDED).await;
+}
+
+#[tokio::test]
+async fn settlement_fails_closed_without_an_executable_verifier() {
+    // R-D4a RD4A-07 (f), PoC i1: with no program, or with a plain data
+    // account, at the fixed verifier address, the CPI cannot run: the release
+    // fails and nothing moves.
+    for case in ["absent", "non-executable data account"] {
+        let mut program_test = program_test();
+        if case != "absent" {
+            program_test.add_account_with_base64_data(
+                GROTH16_VERIFIER_ID,
+                Rent::default().minimum_balance(16),
+                system_program::ID,
+                &base64(&[0_u8; 16]),
+            );
+        }
+        let mut scenario = Scenario::with(program_test, Some("pass")).await;
+        let pass = fixture("pass");
+        let ix = scenario.release(&pass);
+        let before = scenario.snapshot().await;
+        let result = send(&mut scenario.env.ctx, &[compute_unit_limit_ix(COMPUTE_UNIT_LIMIT), ix], &[]).await;
+        match result {
+            Err(BanksClientError::TransactionError(TransactionError::InstructionError(1, error))) => {
+                assert_eq!(error, InstructionError::UnsupportedProgramId, "{case}")
+            }
+            other => panic!("{case}: expected the release to fail, got {other:?}"),
+        }
+        assert_eq!(scenario.snapshot().await, before, "{case}: a failed CPI moved state");
+        assert_eq!(
+            read_job(&mut scenario.env.ctx, &job_pda(&JOB_ID)).await.status,
+            EscrowStatus::Delivered { artifact_hash: pass.artifact_hash() }
+        );
+    }
 }
 
 #[tokio::test]

@@ -178,6 +178,58 @@ async fn create_job_admits_only_the_test_usdc_mint() {
 }
 
 #[tokio::test]
+async fn create_job_with_variants_of_the_account_at_the_admitted_mint_address() {
+    // R-D4a RD4A-07 (f), PoC i5: what `create_job` does if the account at
+    // `ADMITTED_MINT` is not the planned Test USDC. A 9-decimal mint is
+    // accepted: the program does not check decimals (RD4A-02); the devnet
+    // client checks 6 decimals and no freeze authority before every operation.
+    use anchor_spl::token::spl_token::solana_program::program_option::COption;
+    const ANCHOR_ACCOUNT_NOT_INITIALIZED: u32 = 3012;
+    let authority = Keypair::new().pubkey();
+    let cases: [(&str, Pubkey, u8, Option<Pubkey>, Option<u32>); 4] = [
+        ("SPL Token, freeze authority", spl_token::ID, DECIMALS, Some(authority), Some(E_MINT_HAS_FREEZE_AUTHORITY)),
+        ("Token-2022 owner", spl_token_2022::ID, DECIMALS, None, Some(ANCHOR_ACCOUNT_OWNED_BY_WRONG_PROGRAM)),
+        ("SPL Token, 9 decimals", spl_token::ID, 9, None, None),
+        ("absent", Pubkey::default(), DECIMALS, None, Some(ANCHOR_ACCOUNT_NOT_INITIALIZED)),
+    ];
+    for (label, owner, decimals, freeze_authority, expected) in cases {
+        let mut program_test = program_test();
+        if owner != Pubkey::default() {
+            let mint = spl_token::state::Mint {
+                mint_authority: COption::Some(authority),
+                supply: 0,
+                decimals,
+                is_initialized: true,
+                freeze_authority: freeze_authority.map_or(COption::None, COption::Some),
+            };
+            let mut data = vec![0_u8; spl_token::state::Mint::LEN];
+            spl_token::state::Mint::pack(mint, &mut data).unwrap();
+            let lamports = Rent::default().minimum_balance(data.len());
+            program_test.add_account_with_base64_data(ADMITTED_MINT, lamports, owner, &base64(&data));
+        }
+        let mut ctx = program_test.start_with_context().await;
+        let buyer = Keypair::new();
+        transfer_lamports(&mut ctx, &buyer.pubkey(), 1_000_000_000).await;
+        let slot = current_slot(&mut ctx).await;
+        let executor = Keypair::new().pubkey();
+        let ix = create_job_ix(&buyer.pubkey(), &ADMITTED_MINT, JOB_ID, executor, AMOUNT, slot + 3_000);
+        let job = job_pda(&JOB_ID);
+        let watched = [buyer.pubkey(), job, vault_pda(&job)];
+        match expected {
+            Some(code) => {
+                let before = snapshot(&mut ctx, &watched).await;
+                assert_custom(send(&mut ctx, &[ix], &[&buyer]).await, code);
+                assert_eq!(snapshot(&mut ctx, &watched).await, before, "{label}");
+            }
+            None => {
+                send(&mut ctx, &[ix], &[&buyer]).await.unwrap();
+                assert_eq!(read_job(&mut ctx, &job).await.mint, ADMITTED_MINT, "{label}");
+            }
+        }
+    }
+}
+
+#[tokio::test]
 async fn freeze_authority_cannot_be_added_to_the_job_mint() {
     let mut env = setup().await;
     create_default_job(&mut env).await;
