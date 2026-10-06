@@ -86,8 +86,9 @@ adversariais com prefixo `R-`). O gate seguinte ao D4 é o `D7`, não "D5".
 | R-D7 | revisão adversarial final do MVP, somente leitura (APROVADO COM RESSALVAS, CR1 a CR8) | guia §11 |
 | D9 | demo em ambiente limpo (W1–W8 em devnet), congelamento dos claims, erratas da CR1, roteiro de gravação; vídeo gravado pelo humano | D9 |
 | D10a | endurecimento da CLI e do prover (RD7-01, 02, 03, 04, 07 e os opcionais 06, 09, 10), com testes que falham no D9 | preparação de D10–D12 |
-| R-D10a (próximo) | revisão delta curta do D10a, somente leitura | guia §11 |
-| D10–D12 | worker de prova e telas Buyer, Submit e Result (CR8) | D10–D12 |
+| R-D10a | revisão delta curta do D10a, somente leitura (APROVADO COM RESSALVAS, C10-1 a C10-10) | guia §11 |
+| D10 (próximo) | worker local em Python (stdlib), em `127.0.0.1`, sobre os binários do D10a; escritas W1–W7 pela API | D10 |
+| D11–D12 | telas finas Buyer, Submit e Result servidas pelo worker (sem carteira no navegador) | D11–D12 |
 
 Itens de produto e mercado do plano (inscrição, outreach, design partners,
 pitch, telas, vídeo) não são rastreados neste repositório.
@@ -124,7 +125,9 @@ O **D10a** também está concluído (`docs/d10a-hardening-results.md`):
 - nenhuma escrita em devnet; programa, core, `zkvm/`, guest e locks
   inalterados.
 
-O próximo gate é a revisão delta **R-D10a**.
+A revisão delta **R-D10a** aprovou com ressalvas (condições C10-1 a C10-10,
+`docs/r-d10a-review-results.md`). O próximo gate é o **D10** (worker
+local), conforme `docs/handoffs/r-d10a-to-d10.md`.
 
 | Dia | Situação | Evidência / lacuna |
 | --- | --- | --- |
@@ -138,7 +141,7 @@ O próximo gate é a revisão delta **R-D10a**.
 | D8 | concluído em devnet (D4b + D7) | prova errada (6000/6003), journal de outro Job ou artefato (6014/6017), FAIL (refund), timeout antecipado (6021) e **dupla liquidação** (6007/6008, D7) |
 | D9 | **concluído** (técnico); vídeo de reserva a gravar pelo humano | demo em ambiente limpo pela CLI (CR4 (a), não máquina nova): core 42/42 ×2, CLI 14/14, suíte 61/61, prover 4/4; P′ `Released` (`5tjezXYh…`, 99.541 CU no verificador), T′ `RefundedOnTimeout` (`33ezPvow…`), negativos 6021/6014/`verifier:6003`/6007; frases permitidas congeladas no `README.md` e no roteiro; seção "Gravação" em `docs/demo-script.md` (`docs/d9-demo-results.md`) |
 | D10a | **concluído**; revisão delta R-D10a pendente | antes × depois: lógica do D9 com 7 falhas em `negative_runs` e 2 no `docker_shim`; CLI do D9 aceitava `escrow:6003` sobre falha do verificador e dava erro falso com "already processed"/nó atrasado; prover do D9 chamava o Bonsai. Depois: core 42/42 ×2, CLI 30/30, suíte 61/61, prover 5/5 + 2/2; `Groth16` pelo shim novo; `check=ok` com o verificador `34ae6e5c…` (`docs/d10a-hardening-results.md`) |
-| D10–D12 | não iniciado; planejado depois da R-D10a | worker e UI fina (CR8) |
+| D10–D12 | não iniciado; D10 liberado pela R-D10a | worker local (D10, até 07/10) e telas finas (D11–D12, 08–09/10); sem carteira no navegador (divergência registrada) |
 
 ### Caminho crítico e risco de prazo
 
@@ -177,10 +180,12 @@ O próximo gate é a revisão delta **R-D10a**.
      gravação (`docs/d9-demo-results.md`); vídeo de reserva gravado pelo
      humano, pela seção "Gravação" de `docs/demo-script.md`;
   7. D10a concluído: endurecimento da CLI e do prover (RD7-01, 02, 03, 04,
-     07; opcionais 06, 09, 10), `docs/d10a-hardening-results.md`; segue a
-     revisão delta curta R-D10a;
-  8. D10–D12: worker e telas finas (CR8); revisão curta da interface; vídeo
-     definitivo e submissão até 11/10.
+     07; opcionais 06, 09, 10), `docs/d10a-hardening-results.md`; R-D10a
+     concluído: **APROVADO COM RESSALVAS** para o D10
+     (`docs/r-d10a-review-results.md`);
+  8. D10: worker local (`docs/handoffs/r-d10a-to-d10.md`), até 07/10;
+  9. D11–D12: telas finas (08–09/10); revisão curta da interface (09/10);
+     vídeo definitivo numa tomada contínua (10/10); submissão (11/10).
 - Wallets de devnet: o agente está autorizado a criar keypairs efêmeros de
   devnet/localnet (D2a.2), sob as restrições do princípio 9 de `AGENTS.md`.
 

@@ -1701,3 +1701,120 @@ Registre decisões relevantes do projeto neste formato.
     recertificado; spec v1 trivial.
 - **Próximo gate:** R-D10a, revisão delta curta, somente leitura, conforme
   `docs/handoffs/d10a-to-r-d10a.md`.
+
+## 2026-10-06 — R-D10a: revisão delta do D10a (APROVADO COM RESSALVAS para o D10)
+
+- **Data:** 2026-10-06 (15:01–16:06 -03:00)
+- **Revisor:** Claude Code (Opus 5.5, esforço max), sessão separada e somente
+  leitura; HEAD revisado `2a2e3c5` (sobre `7fe9c3b` e `50dede0`); delta
+  `39a87f7..2a2e3c5`.
+- **Resultado:** **APROVADO COM RESSALVAS** para o D10; nenhum achado
+  crítico, alto ou médio.
+  - RD10A-01 (baixo): o prover executa o shim da árvore de fontes do build
+    (`CARGO_MANIFEST_DIR`), conferido só com `is_file()`; sem bit de execução,
+    o `docker` seguinte do `PATH` recebe o argv cru; o `compress` não exige a
+    linha `run` do shim. Solidez intacta.
+  - RD10A-02 a 07 (info): ambiente ainda escolhe `RISC0_WORK_DIR`,
+    `VERICODE_REAL_DOCKER`, `DOCKER_HOST=unix://…` e `DOCKER_CONFIG`; linha
+    forjável no `docker-shim.log`; exit 1 depois de uma transação aterrissada
+    (leitura posterior ou saldo); testes do casamento com logs sintéticos;
+    slice sem checagem no `check` do escrow; "daemon local" nos READMEs.
+- **RD7:** 01, 02 (argv), 03, 04 e 07 fechados; opcionais 06, 09 e 10
+  fechados; 05 fechado no D9; **08 aberto**.
+- **Condições:** C10-1 a C10-10 (`docs/r-d10a-review-results.md`, seção 5).
+- **Evidência:**
+  - clone de `2a2e3c5`, homes copiadas de `d10a/homes`, targets próprios,
+    `--locked --offline`: CLI 30/30, prover 5/5 + 2/2, `check` com
+    `prover=LocalProver env=ok`, core 42/42 ×2, suíte 61/61 com os `.so` de
+    devnet;
+  - CLI D9 × D10a × HEAD em 39 cenários de RPC falso, inclusive os logs reais
+    de 24 transações de devnet (W5 `HXgnGUhh…`, gravações): o D9 aceita
+    `escrow:6003` sobre o W5 real; D10a = HEAD em todos os cenários;
+  - shim com `docker` falso (28 casos), prover com ambiente Bonsai (0
+    conexões; D9: 1), caminho do shim sem bit de execução;
+  - devnet só leitura: `check=ok` com o verificador `34ae6e5c…`; P′, T′,
+    `8ab4ee8d`/`8bce67f2` (`Funded`, vencidos); saldos iguais ao D10a;
+  - varredura de segredos limpa;
+  - [`docs/r-d10a-review-results.md`](r-d10a-review-results.md).
+- **Incidente:** uma chamada real e só de leitura `docker image inspect`
+  ao daemon local, pelo binário do prover do D9 numa PoC (o shim do D9
+  repassa `image inspect`); sem container, pull ou rede; `~/.docker`
+  inalterado.
+- **Propostas para o D10:** avaliadas no relatório; seguem como "propostas a
+  ratificar" no prompt do D10. O item 7 da resposta (prompt do D10) chegou
+  truncado à sessão de registro, que o reconstruiu a partir das condições
+  C10-1 a C10-10 e da avaliação de P1 a P6 (`docs/handoffs/r-d10a-to-d10.md`).
+- **Registro:** feito por sessão com permissão de escrita a partir da
+  resposta da revisão, que não podia editar arquivos.
+- **Próximo gate:** D10, conforme `docs/handoffs/r-d10a-to-d10.md`.
+
+## 2026-10-06 — Decisões humanas para o D10
+
+- **Data:** 2026-10-06
+- **Origem:** propostas P1 a P6 do agente da sessão de registro, avaliadas
+  pelo R-D10a. O humano autorizou o registro ("autorizo") e as ratifica ao
+  enviar o prompt `docs/handoffs/r-d10a-to-d10.md`.
+- **Decisões:**
+  1. **P1 — arquitetura:**
+     - worker HTTP em `127.0.0.1` que só chama `vericode` e
+       `vericode-prover` do D10a por `subprocess`, com argv fixo e sem shell;
+     - sem duplicar instruções, regras ou hashing;
+     - chaves só no worker, por caminho: buyer e executor, **nunca a do
+       deployer** (mint authority);
+     - estados `Draft` (só UI), `Funded`, `Proving` (etapa local do
+       executor), `Submitted`, `Released`, `RefundedOnFail`/`OnTimeout`,
+       `Failed` (operacional).
+  2. **P2 — sem dependência nova:** Python 3.12 só com a biblioteca padrão;
+     testes `unittest`; front-end sem framework nem build; nenhum npm, crate
+     ou lock novo.
+  3. **P3 — sem carteira no navegador.**
+     - **Divergência explícita** do D11 da sequência ("conectar carteira
+       devnet"), que tem a menor precedência (`docs/project-context.md`).
+     - Motivo: exigiria refazer as instruções em JavaScript (duplicação
+       vetada pela CR8) e trazer dependência npm.
+     - Limitação declarada: chaves de devnet do projeto num worker local; o
+       mesmo operador local opera buyer e executor.
+  4. **P4 — rótulo do programa que rejeitou:** permitido, só a partir da
+     saída da CLI do D10a (C10-7), porque o RD7-01 foi fechado.
+  5. **P5 — escritas em devnet do D10 (lista fechada, pela API do worker):**
+     - W1/W2: `refund-timeout` de `8ab4ee8d…` e `8bce67f2…` (Jobs das
+       gravações, prazo vencido), pagador buyer;
+     - W3: `create` (1.000.000, offset 9.000);
+     - W4: `escrow:6021` no mesmo Job, logo após criar (C10-8);
+     - prova `(21,42)` e `compress` locais;
+     - W6: `verifier:6003` (`--tamper-seal`);
+     - W5: `settle --deliver` → `Released`;
+     - W7: `escrow:6007`.
+
+     Ordem: W1, W2, W3, W4, prova, W6, W5, W7.
+  6. **P6 — ordem até 11/10:** D10 (até 07/10) → D11–D12 telas (08–09/10) →
+     revisão curta da interface (09/10) → vídeo definitivo numa tomada
+     contínua (10/10) → submissão (11/10).
+
+## 2026-10-06 — Vídeo de reserva (gravações do humano)
+
+- **Data:** 2026-10-06
+- **Onde:** `C:\Users\lucas\Videos\`, 17 clipes de 08:15 a 10:17 (-03:00):
+  "Cena 1 - conferência pública.mp4" até "Cena 8 - Detalhes.mp4". Não há
+  vídeo editado único nem cena 9. Fora do repositório.
+- **Binários:** os do D9 (seção "Gravação" de `docs/demo-script.md`).
+- **Correspondência clipe → Job** (pelos horários das transações em
+  `rec-*/logs/cli-tx.jsonl`):
+
+  | Clipes | Job | Estado |
+  | --- | --- | --- |
+  | Cena 1 | — (conferência pública) | — |
+  | Cena 2 | `8ab4ee8d…` (`rec-1006-0804`) | `Funded` até o W1 do D10 |
+  | Cenas 3, 4, 5a | `8bce67f2…` (`rec-1006-0838`) | `Funded` até o W2 do D10 |
+  | Cenas 5b, 6, 7 | `cd77e7bd…` (`rec-1006-0933`) | `Released` |
+  | Cena 8 | `104f9a21…` (`rec-1006-1011`) | `RefundedOnTimeout` |
+
+  A tomada `rec-1006-1011` rodou o fluxo inteiro com os mesmos P
+  (`3e115ca8…`) e T (`104f9a21…`), mas só a cena 8 dela foi gravada.
+- **Regra:**
+  - os clipes misturam Jobs; emendados como uma história só, mostrariam a
+    criação e a prova de um Job e a liquidação de outro;
+  - como reserva, só podem ser usados com legendas que identifiquem o Job
+    de cada trecho;
+  - **o vídeo definitivo deve ser uma tomada contínua, com os mesmos Jobs
+    do início ao fim**.

@@ -1,13 +1,13 @@
-# Controle autônomo — D10a concluído; próximo R-D10a
+# Controle autônomo — R-D10a registrado (APROVADO COM RESSALVAS); próximo D10
 
 ## Objetivo atual
 
-R-D10a, conforme `docs/handoffs/d10a-to-r-d10a.md`: revisão delta curta,
-somente leitura e em sessão separada, do diff do D10a contra RD7-01, 02, 03,
-04 e 07 (e os opcionais RD7-06, 09, 10).
+D10, conforme `docs/handoffs/r-d10a-to-d10.md`: worker local em Python
+(stdlib), em `127.0.0.1`, que só chama os binários do D10a, sob as condições
+C10-1 a C10-10 do R-D10a, com as escritas W1 a W7 em devnet pela própria API.
 
-Depois: D10 (worker com prova local forçada), D11–D12 (telas finas, CR8),
-revisão curta da interface, vídeo definitivo e submissão até 11/10.
+Depois: D11–D12 (telas finas), revisão curta da interface, vídeo definitivo
+numa tomada contínua e submissão até 11/10.
 
 ## Marcos anteriores
 
@@ -33,12 +33,14 @@ revisão curta da interface, vídeo definitivo e submissão até 11/10.
 - D10a: endurecimento da CLI e do prover:
   - `50dede0` (cli);
   - `7fe9c3b` (prover);
-  - `docs: record D10a hardening`.
+  - `2a2e3c5` (docs).
+- R-D10a: **APROVADO COM RESSALVAS** para o D10 (C10-1 a C10-10);
+  registrado no commit `docs: record R-D10a review`.
 
 ## Baseline (D10a)
 
 - Raiz `/home/lucas/src/vericode`; branch `main`; HEAD de baseline = commit
-  `docs: record D10a hardening`.
+  `docs: record R-D10a review`.
 - **Devnet:**
   - escrow `GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH`, 395.064 bytes
     `cdf6967f…`, upgrade authority **`none`**;
@@ -85,7 +87,7 @@ revisão curta da interface, vídeo definitivo e submissão até 11/10.
 
 ## Gate atual
 
-`D10a` (concluído) → próximo `R-D10a`.
+`R-D10a` (registrado) → próximo `D10`.
 
 ## Estado
 
@@ -109,7 +111,10 @@ revisão curta da interface, vídeo definitivo e submissão até 11/10.
 - D10a (`docs/d10a-hardening-results.md`): RD7-01, 02, 03, 04 e 07
   corrigidos com testes que falham no D9 e passam agora; opcionais RD7-06, 09
   e 10. Nenhuma escrita em devnet. Programa, core, `zkvm/`, guest,
-  `JournalV1` e locks inalterados. Aguarda a revisão delta R-D10a.
+  `JournalV1` e locks inalterados.
+- R-D10a (`docs/r-d10a-review-results.md`): correções confirmadas com os
+  binários do D9, do D10a e um rebuild contra logs reais de 24 transações;
+  sem achado crítico, alto ou médio; condições C10-1 a C10-10 para o D10.
 
 ## Decisões humanas registradas
 
@@ -120,6 +125,7 @@ revisão curta da interface, vídeo definitivo e submissão até 11/10.
   com o prompt e o Plan Mode do D9) e D9 (`docs/decisions.md`).
 - "Decisões humanas para o D10a" (ratificadas com o prompt e o Plan Mode do
   D10a) e D10a.
+- R-D10a, "Decisões humanas para o D10" e "Vídeo de reserva".
 
 ## Ações proibidas (permanentes salvo novo objetivo)
 
@@ -157,8 +163,15 @@ revisão curta da interface, vídeo definitivo e submissão até 11/10.
   builds de `solana-program-test` derrubaram a sessão do editor duas vezes
   no D7.
 - F-14; ImageID não recertificado; spec v1 trivial.
-- RD7-01, 02, 03, 04, 05 e 07: corrigidos (05 no D9; os demais no D10a),
-  pendentes da revisão delta R-D10a. As erratas de
+- RD7-01, 02, 03, 04, 05 e 07: corrigidos (05 no D9; os demais no D10a)
+  e confirmados pela R-D10a.
+- RD10A-01 (baixo): o prover executa o shim da árvore de fontes sem
+  conferir hash; o worker confere hash `2a8f75b8…` e modo `0755` antes de
+  cada `compress` e exige a linha `docker_run` depois (C10-2).
+- RD10A-02 a 07 (info): ambiente ainda escolhe `RISC0_WORK_DIR`,
+  `VERICODE_REAL_DOCKER`, `DOCKER_HOST=unix://…`; log do shim forjável;
+  exit 1 depois de transação aterrissada; logs sintéticos nos testes; slice
+  sem checagem no `check` do escrow; "daemon local" nos READMEs. As erratas de
   `docs/manifest-schema.md:86` e de `docs/d7-cli-results.md:128` (esta no
   relatório do D10a) estão feitas.
 - RD7-06, 09 e 10: corrigidos no D10a (opcionais). **RD7-08** continua
@@ -167,7 +180,12 @@ revisão curta da interface, vídeo definitivo e submissão até 11/10.
 - A seção "Gravação" do roteiro usa os binários do D9, anteriores às
   correções; os negativos dela continuam os da CR2.
 - Jobs `8ab4ee8d` e `8bce67f2` (gravações do humano): `Funded`, 2 Test USDC
-  parados, reembolsáveis por qualquer um depois do prazo.
+  parados; reembolso previsto no D10 (W1, W2).
+- Vídeo de reserva: 17 clipes em `C:\Users\lucas\Videos\` que misturam
+  Jobs; uso só com legendas por Job. O vídeo definitivo deve ser uma tomada
+  contínua ("Vídeo de reserva" em `docs/decisions.md`).
+- Memória: swap do WSL aumentado para 8 GiB em 2026-10-06
+  (`C:\Users\lucas\.wslconfig`); RAM continua 7,6 GiB.
 - Memória do WSL: compressão a 208 MB livres no D10a. Uma compressão com 80
   MB livres e swap cheio derrubou a sessão do Claude Code (incidente do
   D10a).
@@ -179,6 +197,6 @@ revisão curta da interface, vídeo definitivo e submissão até 11/10.
 
 ## Próxima transição permitida
 
-`R-D10a`, conforme `docs/handoffs/d10a-to-r-d10a.md`: revisão delta curta,
-somente leitura, em sessão separada (Opus 5.5, max). Depois, o D10 (worker
-com prova local forçada), com o prompt que a R-D10a entregar.
+`D10`, conforme `docs/handoffs/r-d10a-to-d10.md`, em sessão nova (Opus
+5.5, xhigh, Plan Mode antes de criar `worker/` e antes da primeira escrita
+em devnet).
