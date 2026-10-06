@@ -83,8 +83,10 @@ adversariais com prefixo `R-`). O gate seguinte ao D4 é o `D7`, não "D5".
 | R-D4a | revisão delta somente leitura do D4a (APROVADO COM RESSALVAS, CD1 a CD9) | guia §11 |
 | D4b | deploy em devnet, smoke, finalização, Jobs PASS/FAIL/timeout e negativos no Explorer | D4 e parte de D7/D8 (em devnet) |
 | D7 | CLI e prover reproduzíveis no repositório; Job P (PASS) e T (timeout) em devnet pela CLI; invariante 9 em devnet; README de entrega e roteiro da demo; RD4A-07 (a)(e)(f) | D7, D8 (dupla liquidação em devnet), D9 (README e roteiro) |
-| R-D7 (próximo) | revisão adversarial final do MVP, somente leitura | guia §11 |
-| D10–D12 | worker de prova e telas Buyer, Submit e Result | D10–D12, se houver tempo |
+| R-D7 | revisão adversarial final do MVP, somente leitura (APROVADO COM RESSALVAS, CR1 a CR8) | guia §11 |
+| D9 (próximo) | demo em ambiente limpo (W1–W8 em devnet), congelamento dos claims, roteiro de gravação; vídeo gravado pelo humano | D9 |
+| D10a | endurecimento da CLI e do prover (RD7-01, 02, 03, 04, 07), com revisão delta curta | preparação de D10–D12 |
+| D10–D12 | worker de prova e telas Buyer, Submit e Result (CR8) | D10–D12 |
 
 Itens de produto e mercado do plano (inscrição, outreach, design partners,
 pitch, telas, vídeo) não são rastreados neste repositório.
@@ -101,8 +103,9 @@ projeto concluiu tecnicamente o **D3** e o caminho forte local dos **D5/D6**
 O **D7** também está concluído: CLI (`cli/`) e prover (`prover/`) no
 repositório, Job P liquidado por PASS e Job T por timeout em devnet pela
 CLI, dupla liquidação rejeitada em devnet (6007/6008), README de entrega e
-roteiro da demo (`docs/d7-cli-results.md`). O próximo gate é a revisão
-adversarial final **R-D7**.
+roteiro da demo (`docs/d7-cli-results.md`). A revisão adversarial final
+**R-D7** aprovou com ressalvas (CR1 a CR8, `docs/r-d7-review-results.md`).
+O próximo gate é o **D9**.
 
 | Dia | Situação | Evidência / lacuna |
 | --- | --- | --- |
@@ -115,7 +118,7 @@ adversarial final **R-D7**.
 | D7 | **concluído** | `cli/` e `prover/` reproduzíveis com `--locked` (sem crate novo); Job P: `create_job`+`fund`, prova `(21,42)` nova, `deliver`+`release` com CPI ao verificador (`4oWhwZfU…`); Job T: 6021 antes do prazo e `RefundedOnTimeout` (`3fiNWgTW…`); journal de outro Job → 6014 (`docs/d7-cli-results.md`) |
 | D8 | concluído em devnet (D4b + D7) | prova errada (6000/6003), journal de outro Job ou artefato (6014/6017), FAIL (refund), timeout antecipado (6021) e **dupla liquidação** (6007/6008, D7) |
 | D9 | roteiro pronto; execução pendente | `README.md` com comandos, versões, hashes, links e limitações; `docs/demo-script.md`; falta rodar a demo em ambiente limpo e gravar |
-| D10–D12 | não iniciado | worker e UI fina, se houver tempo |
+| D10–D12 | não iniciado; planejado depois do D10a | worker e UI fina (CR8) |
 
 ### Caminho crítico e risco de prazo
 
@@ -148,10 +151,15 @@ adversarial final **R-D7**.
        (`docs/d4b-devnet-results.md`);
      - D7 concluído: CLI e prover no repositório, Jobs P e T em devnet,
        invariante 9 em devnet, README e roteiro (`docs/d7-cli-results.md`);
-     - próximo: R-D7 (`docs/handoffs/d7-to-r-d7.md`);
-  6. D7 (com o D9) concluído: CLI reproduzível, README com versões, hashes, links e
-     limitações (M6/M7) e roteiro da demo;
-  7. D10–D12: worker e telas, se houver tempo.
+     - R-D7 concluído: **APROVADO COM RESSALVAS** para o D9 e o D10–D12
+       (`docs/r-d7-review-results.md`);
+  6. D9: demo em ambiente limpo, congelamento dos claims e roteiro de
+     gravação (`docs/handoffs/r-d7-to-d9.md`); vídeo de reserva gravado pelo
+     humano;
+  7. D10a: endurecimento da CLI e do prover (RD7-01, 02, 03, 04, 07) e
+     revisão delta curta;
+  8. D10–D12: worker e telas finas (CR8); revisão curta da interface; vídeo
+     definitivo e submissão até 11/10.
 - Wallets de devnet: o agente está autorizado a criar keypairs efêmeros de
   devnet/localnet (D2a.2), sob as restrições do princípio 9 de `AGENTS.md`.
 

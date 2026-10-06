@@ -1453,3 +1453,83 @@ Registre decisões relevantes do projeto neste formato.
     arquivo que exige Plan Mode.
 - **Próximo gate:** R-D7, revisão adversarial final do MVP, conforme
   `docs/handoffs/d7-to-r-d7.md`.
+
+## 2026-10-05 — R-D7: revisão adversarial final do MVP (APROVADO COM RESSALVAS para o D9 e o D10–D12)
+
+- **Data:** 2026-10-05
+- **Revisor:** Claude Code (Opus 5.5, esforço max), sessão separada e somente
+  leitura; HEAD revisado `c550a98` (sobre `0ec421b`, `deececa`, `a7c6e8a`).
+- **Resultado:** **APROVADO COM RESSALVAS**; nenhum achado crítico ou alto.
+  - RD7-01 (baixo): `--expect-error escrow:N` aceita falha do verificador com o
+    mesmo código (6000–6003); só o rótulo erra, nada move.
+  - RD7-02 (baixo): o shim do Docker não é allowlist de argv; o único chamador
+    (`risc0-groth16 3.0.2`) tem argv fixo; o README promete demais.
+  - RD7-03 (baixo): o prover usa `default_prover()`; `RISC0_PROVER`/`BONSAI_*`
+    mudam o caminho de prova (solidez intacta).
+  - RD7-04 (baixo): `--tamper-seal` e o casamento do `--expect-error` sem teste
+    em `cli/`; "testado offline" sem respaldo.
+  - RD7-05 (baixo): lacunas de reprodutibilidade no README e no roteiro, e
+    erratas (`manifest-schema.md:70`, `escrow-program.md:137`).
+  - RD7-06 a RD7-10 (info): hardlink e modo do `--log`; leituras sem
+    `minContextSlot`; negativo que vira liquidação (`UNEXPECTED`); mensagens
+    cosméticas; `--rpc-url`/proxy e `check` sem hash do verificador.
+- **RD4A:** 01, 04, 05, 07 e 08 fechados; 02 e 03 mitigados; 06 aceito.
+- **Condições:** CR1 a CR8 (`docs/r-d7-review-results.md`, seção 5).
+- **Evidência:**
+  - checagem do D7 reproduzida sem divergência a partir de um clone
+    (`ad14a995…`), `--locked --offline`: core 42/42 ×2, CLI 14/14, suíte 61/61
+    ×2, prover 4/4 + `check`/`verify`/`prove` novo;
+  - 14 transações de devnet conferidas;
+  - PoCs com RPC falso local, chaves, shim e prover;
+  - varredura de segredos no histórico;
+  - [`docs/r-d7-review-results.md`](r-d7-review-results.md).
+- **Risco aberto:** sem e-stop; rent preso; mint authority = deployer; RPC
+  público; memória do WSL; ImageID não recertificado; spec v1 trivial;
+  RD7-01 a 10.
+- **Registro:** feito por sessão com permissão de escrita a partir da resposta
+  da revisão, que não podia editar arquivos.
+- **Próximo gate:** D9, conforme `docs/handoffs/r-d7-to-d9.md`.
+
+## 2026-10-05 — Decisões humanas para o D9
+
+- **Data:** 2026-10-05
+- **Origem:** as decisões pendentes do R-D7 foram propostas pelo agente da
+  sessão de registro. O humano autorizou o registro ("autorizo") e as
+  ratifica ao enviar o prompt `docs/handoffs/r-d7-to-d9.md`.
+- **Decisões:**
+  1. **Lista fechada de escritas em devnet (CR5)**, nesta ordem:
+     - W1: Job T′, `job create --deadline-offset 1560`;
+     - W2: logo depois, `job refund-timeout --expect-error escrow:6021` (≥ 60
+       slots antes do prazo; CR2);
+     - W3: Job P′, `job create --deadline-offset 9000`;
+     - prova `(21,42)` de P′ (local, não é escrita);
+     - W4: negativo 6014 em P′ (`settle --deliver --expect-error
+       escrow:6014`) com a receipt do Job P do D7 (`d7/receipts/P`),
+       declarada como tal (CR6);
+     - W5: `settle --deliver --tamper-seal --expect-error verifier:6003` em
+       P′;
+     - W6: `settle --deliver` positivo de P′ → `Released`, com o verificador
+       invocado;
+     - W7: dupla liquidação em P′ (`--expect-error escrow:6007`);
+     - W8: `job refund-timeout --wait` em T′ → `RefundedOnTimeout`.
+
+     Nunca `escrow:6000` a `escrow:6003` (RD7-01). Sem airdrop nem
+     transferência de SOL.
+  2. **Ambiente limpo, opção (a) da CR4:** clone novo do HEAD, cópias novas
+     das homes isoladas (offline) e targets novos, `--locked --offline`;
+     nunca o perfil padrão. O relatório declara que "limpo" significa isso,
+     não uma máquina nova.
+  3. **Sem mudança de código no D9.** RD7-01, 02, 03, 04 e 07 vão para o
+     D10a, com testes e revisão delta curta, antes do worker e das telas
+     (CR8).
+  4. **O vídeo de reserva é gravado pelo humano** depois do D9, seguindo a
+     seção "Gravação" de `docs/demo-script.md`. O agente prepara os comandos
+     e as falas, mas não grava.
+- **Sequência depois do D9:** D10a (endurecimento da CLI e do prover) →
+  revisão delta curta → D10 (worker) → D11–D12 (telas finas) → revisão curta
+  da interface → vídeo definitivo e submissão até 11/10.
+- **Motivo:**
+  - um vídeo de reserva gravado antes de qualquer mudança de código garante
+    uma entrega mesmo que as fases seguintes falhem;
+  - os achados RD7-01/03/07 afetam exatamente o que o worker e as telas vão
+    usar, por isso são corrigidos antes delas.

@@ -1,16 +1,15 @@
-# Controle autônomo — D7 concluído (CLI e prover no repositório, fluxo E2E em devnet); próximo R-D7
+# Controle autônomo — R-D7 registrado (APROVADO COM RESSALVAS); próximo D9
 
 ## Objetivo atual
 
-R-D7, conforme `docs/handoffs/d7-to-r-d7.md`: revisão adversarial final do
-MVP, numa sessão separada e somente leitura. Cobre:
-- `cli/` e `prover/`;
-- o tratamento de chaves;
-- os claims do README e do roteiro;
-- a reprodutibilidade a partir de um clone.
+D9, conforme `docs/handoffs/r-d7-to-d9.md`:
+- demo em ambiente limpo, com as escritas W1 a W8 em devnet;
+- congelamento dos claims e erratas da CR1;
+- roteiro de gravação para o vídeo de reserva, gravado pelo humano.
 
-Depois: D9 (demo em ambiente limpo e vídeo) e, se houver tempo, D10–D12
-(worker e telas).
+Depois: D10a (RD7-01, 02, 03, 04, 07) com revisão delta curta, D10 (worker),
+D11–D12 (telas finas, CR8), revisão curta da interface, vídeo definitivo e
+submissão até 11/10.
 
 ## Marcos anteriores
 
@@ -28,12 +27,14 @@ Depois: D9 (demo em ambiente limpo e vídeo) e, se houver tempo, D10–D12
   - `a7c6e8a` (prover);
   - `deececa` (cli);
   - `0ec421b` (anchor tests-local);
-  - commit `docs: record D7 CLI, README and demo script`.
+  - `c550a98` (docs).
+- R-D7: **APROVADO COM RESSALVAS** para o D9 e o D10–D12 (CR1 a CR8);
+  registrado no commit `docs: record R-D7 final review`.
 
 ## Baseline (D7)
 
 - Raiz `/home/lucas/src/vericode`; branch `main`; HEAD de baseline = commit
-  de docs do D7.
+  `docs: record R-D7 final review`.
 - **Devnet:**
   - escrow `GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH`, 395.064 bytes
     `cdf6967f…`, upgrade authority **`none`**;
@@ -64,7 +65,7 @@ Depois: D9 (demo em ambiente limpo e vídeo) e, se houver tempo, D10–D12
 
 ## Gate atual
 
-`D7` (concluído) → próximo `R-D7`.
+`R-D7` (registrado) → próximo `D9`.
 
 ## Estado
 
@@ -77,13 +78,17 @@ Depois: D9 (demo em ambiente limpo e vídeo) e, se houver tempo, D10–D12
   mainnet.
 - A invariante 9 foi exercitada em devnet: 6007 em A e 6008 em B.
 - O escrow é imutável. Não há Router, e-stop nem admin.
+- R-D7: build e testes reproduzidos a partir de um clone, 14 transações
+  conferidas, nenhum segredo no histórico. Achados RD7-01 a 05 (baixos) e
+  06 a 10 (informativos); condições CR1 a CR8.
 
 ## Decisões humanas registradas
 
 - D2a.1, D2a.2, D2b, D2c, D2d, D2c.1, "Decisões humanas para o D2b.1",
   D2b.1, D2e, R-D2e, "Decisões humanas para o D4".
 - "Prazo de 11/10, congelamento do JournalV1 v1 e nomes de gate".
-- D4a, R-D4a, D4b e D7 (`docs/decisions.md`).
+- D4a, R-D4a, D4b, D7, R-D7 e "Decisões humanas para o D9"
+  (`docs/decisions.md`).
 
 ## Ações proibidas (permanentes salvo novo objetivo)
 
@@ -121,12 +126,22 @@ Depois: D9 (demo em ambiente limpo e vídeo) e, se houver tempo, D10–D12
   builds de `solana-program-test` derrubaram a sessão do editor duas vezes
   no D7.
 - F-14; ImageID não recertificado; spec v1 trivial.
-- Errata em `docs/manifest-schema.md` ("a implantar em devnet"); o arquivo
-  exige Plan Mode.
-- Mensagem cosmética da CLI ("too close to the deadline" num Job vencido).
+- RD7-01: `--expect-error escrow:N` aceita falha do verificador com o mesmo
+  N (6000–6003); na demo, só os negativos da CR2.
+- RD7-02: o shim do Docker não é allowlist de argv.
+- RD7-03: o prover obedece `RISC0_PROVER`/`BONSAI_*`; na demo, a CR3.
+- RD7-04: `--tamper-seal` e o casamento do `--expect-error` sem teste.
+- RD7-05: erratas de docs e reprodutibilidade (CR1, no D9), inclusive
+  `docs/manifest-schema.md:70`, que exige Plan Mode.
+- RD7-06 a 10: hardlink e modo do `--log`; leituras sem `minContextSlot`
+  ("already processed"); negativo que vira liquidação; mensagens
+  cosméticas; `--rpc-url`/proxy.
+- O `env.sh` herdado define `R`, `B`, `D` e `VC`; não reutilizar esses nomes
+  (incidente do R-D7).
 - **Calendário:** 2026-10-05; prazo de entrega 11/10.
 
 ## Próxima transição permitida
 
-`R-D7`, conforme `docs/handoffs/d7-to-r-d7.md`, em sessão nova (Opus 5.5,
-max), somente leitura.
+`D9`, conforme `docs/handoffs/r-d7-to-d9.md`, em sessão nova (Opus 5.5,
+xhigh, Plan Mode antes das escritas em devnet e da errata em
+`docs/manifest-schema.md`).
