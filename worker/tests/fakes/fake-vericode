@@ -1,0 +1,104 @@
+#!/usr/bin/python3 -IB
+"""TEST FAKE for worker/tests only. NOT the VeriCode CLI.
+
+It never reads a key file, never signs and never opens a network connection.
+It records its argv, its working directory and the exact environment it was
+started with (/proc/self/environ) in `calls.jsonl` next to itself, then replays
+the scripted answer that `<own name>.scenario.json` holds for the command:
+stdout lines, stderr, records for the `--log` file and the exit code. The
+worker refuses it outside the tests, because its SHA-256 is not the pinned one.
+"""
+import datetime
+import json
+import os
+import sys
+import time
+
+HERE = os.path.dirname(os.path.abspath(sys.argv[0]))
+NAME = os.path.basename(sys.argv[0])
+FLAGS = {"--deliver", "--wait", "--tamper-seal"}
+
+
+def environ():
+    with open("/proc/self/environ", "rb") as file:
+        items = [item for item in file.read().split(b"\0") if item]
+    return dict(item.decode().split("=", 1) for item in items)
+
+
+def fill(value, context):
+    if isinstance(value, str):
+        for key, text in context.items():
+            value = value.replace("{" + key + "}", text)
+        return value
+    if isinstance(value, list):
+        return [fill(item, context) for item in value]
+    if isinstance(value, dict):
+        return {key: fill(item, context) for key, item in value.items()}
+    return value
+
+
+def pick(key):
+    with open(os.path.join(HERE, NAME + ".scenario.json")) as file:
+        answers = json.load(file).get(key)
+    if not answers:
+        sys.stderr.write(f"fake: no scripted answer for {key!r}\n")
+        sys.exit(99)
+    state_path = os.path.join(HERE, NAME + ".state.json")
+    state = json.load(open(state_path)) if os.path.exists(state_path) else {}
+    index = state.get(key, 0)
+    state[key] = index + 1
+    with open(state_path, "w") as file:
+        json.dump(state, file)
+    return answers[min(index, len(answers) - 1)]
+
+
+def main():
+    args = sys.argv[1:]
+    words, values, flags = [], {}, []
+    index = 0
+    while index < len(args):
+        arg = args[index]
+        if arg in FLAGS:
+            flags.append(arg)
+            index += 1
+        elif arg.startswith("--"):
+            values[arg] = args[index + 1] if index + 1 < len(args) else ""
+            index += 2
+        else:
+            words.append(arg)
+            index += 1
+    with open(os.path.join(HERE, "calls.jsonl"), "a") as file:
+        file.write(json.dumps({"bin": NAME, "argv": args, "cwd": os.getcwd(), "env": environ()}) + "\n")
+    key = " ".join(words)
+    if key == "job create" and values.get("--executor") == "1":
+        key = "probe-buyer"
+    elif key == "job deliver" and values.get("--job-id") == "00":
+        key = "probe-executor"
+    elif "--expect-error" in values:
+        key = f"{key} {values['--expect-error']}"
+    answer = pick(key)
+    context = {
+        "now": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
+        "argv": " ".join(args),
+        "job_id": values.get("--job-id", ""),
+    }
+    time.sleep(answer.get("sleep", 0))
+    if not key.startswith("probe-"):  # a key probe prints exactly one pubkey line
+        print("fake=test-only", flush=True)
+    pause = answer.get("pause_after")
+    for line in fill(answer.get("stdout", []), context):
+        print(line, flush=True)
+        if pause and line.startswith(pause["prefix"]):
+            time.sleep(pause["seconds"])
+    if answer.get("stderr"):
+        sys.stderr.write(fill(answer["stderr"], context))
+        sys.stderr.flush()
+    if answer.get("log") and values.get("--log"):
+        fd = os.open(values["--log"], os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+        with os.fdopen(fd, "a") as file:
+            for entry in fill(answer["log"], context):
+                file.write(json.dumps(entry) + "\n")
+    sys.exit(answer.get("exit", 0))
+
+
+main()

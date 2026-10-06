@@ -1,0 +1,85 @@
+#!/usr/bin/python3 -IB
+"""TEST FAKE for worker/tests only. NOT the VeriCode prover.
+
+It never proves, never runs Docker and never opens a network connection. It
+records its argv, its working directory and the exact environment it was
+started with (/proc/self/environ) in `calls.jsonl` next to itself, then replays
+the scripted answer that `<own name>.scenario.json` holds for `check`, `prove`
+or `compress`: stdout lines, stderr, the `docker-shim.log` content and the exit
+code. The worker refuses it outside the tests, because its SHA-256 is not the
+pinned one.
+"""
+import datetime
+import json
+import os
+import sys
+import time
+
+HERE = os.path.dirname(os.path.abspath(sys.argv[0]))
+NAME = os.path.basename(sys.argv[0])
+
+
+def environ():
+    with open("/proc/self/environ", "rb") as file:
+        items = [item for item in file.read().split(b"\0") if item]
+    return dict(item.decode().split("=", 1) for item in items)
+
+
+def fill(value, context):
+    if isinstance(value, str):
+        for key, text in context.items():
+            value = value.replace("{" + key + "}", text)
+        return value
+    if isinstance(value, list):
+        return [fill(item, context) for item in value]
+    return value
+
+
+def pick(key):
+    with open(os.path.join(HERE, NAME + ".scenario.json")) as file:
+        answers = json.load(file).get(key)
+    if not answers:
+        sys.stderr.write(f"fake: no scripted answer for {key!r}\n")
+        sys.exit(99)
+    state_path = os.path.join(HERE, NAME + ".state.json")
+    state = json.load(open(state_path)) if os.path.exists(state_path) else {}
+    index = state.get(key, 0)
+    state[key] = index + 1
+    with open(state_path, "w") as file:
+        json.dump(state, file)
+    return answers[min(index, len(answers) - 1)]
+
+
+def main():
+    args = sys.argv[1:]
+    with open(os.path.join(HERE, "calls.jsonl"), "a") as file:
+        file.write(json.dumps({"bin": NAME, "argv": args, "cwd": os.getcwd(), "env": environ()}) + "\n")
+    key = args[0] if args else ""
+    answer = pick(key)
+    context = {"now": datetime.datetime.now().astimezone().isoformat(timespec="seconds")}
+    directory = None
+    if key == "prove" and len(args) == 5:
+        directory = args[4]
+        os.makedirs(directory, exist_ok=True)
+        context.update(job_id=args[1], input=args[2], output=args[3])
+    elif key == "compress" and len(args) == 2:
+        directory = args[1]
+    if directory is not None:
+        context["dir"] = os.path.realpath(directory)
+    time.sleep(answer.get("sleep", 0))
+    print("fake=test-only", flush=True)
+    if key == "prove" and directory is not None:
+        with open(os.path.join(directory, "composite.receipt"), "w") as file:
+            file.write("TEST FAKE receipt\n")
+    if key == "compress" and directory is not None and answer.get("shim_log") is not None:
+        with open(os.path.join(directory, "docker-shim.log"), "w") as file:
+            file.write(fill(answer["shim_log"], context))
+    for line in fill(answer.get("stdout", []), context):
+        print(line, flush=True)
+    if answer.get("stderr"):
+        sys.stderr.write(fill(answer["stderr"], context))
+        sys.stderr.flush()
+    sys.exit(answer.get("exit", 0))
+
+
+main()
