@@ -70,7 +70,9 @@ Também não:
 2. Keypairs de devnet do buyer e do executor fora do clone, modo `0600`. O
    buyer precisa de SOL de devnet e de Test USDC do mint admitido, enviado
    pela mint authority do projeto. O executor precisa de SOL para as taxas.
-3. `RISC0_PROVER=local`, sem `BONSAI_*` nem `RISC0_DEV_MODE` (RD7-03).
+3. `RISC0_PROVER=local`, sem `BONSAI_*` nem `RISC0_DEV_MODE` (RD7-03). Os
+   binários do D9 obedecem a essas variáveis. Desde o D10a, o prover recusa
+   um ambiente diferente antes de provar.
 4. Crie o Job do timeout no começo da gravação, com `--deadline-offset 1560`
    (o mínimo da CLI). No D9, 1.560 slots levaram **cerca de 6 min 20 s**
    (~0,24 s por slot), não os 10 min de uma estimativa a 0,4 s.
@@ -94,8 +96,12 @@ Também não:
 
 A cena 5b foi executada pela CLI em devnet no D9 (W5,
 [`HXgnGUhh…`](https://explorer.solana.com/tx/HXgnGUhhB4zRgD8Bubs6ULCqpuhoqBSuim3Vbx1kz7V3bK2FFJG3ND2jcTtRFf6QxD9i1bpwKW4z32yFYYEofVr?cluster=devnet)).
-A opção `--tamper-seal` ainda não tem teste unitário em `cli/` (RD7-04; o
-teste fica para o D10a).
+Desde o D10a, a opção `--tamper-seal` tem teste em
+`cli/tests/instructions.rs` (RD7-04): o seal difere só em `pi_c[10]` e é igual,
+byte a byte, à mutação da suíte. O casamento do `--expect-error` também tem
+teste, e a CLI do D10a não aceita mais `escrow:6000` a `6003` para uma falha
+do verificador (RD7-01). A seção "Gravação" usa os binários do D9, anteriores
+a essas correções; por isso os negativos da demo continuam os da CR2.
 
 Se o tempo for curto, corte nesta ordem:
 1. a cena 5b;

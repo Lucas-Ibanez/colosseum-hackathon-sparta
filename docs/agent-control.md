@@ -1,16 +1,13 @@
-# Controle autônomo — D9 concluído; próximo D10a
+# Controle autônomo — D10a concluído; próximo R-D10a
 
 ## Objetivo atual
 
-D10a, conforme `docs/handoffs/d9-to-d10a.md`: endurecimento da CLI e do
-prover (RD7-01, 02, 03, 04 e 07), com testes e sem tocar no programa nem nos
-locks existentes, seguido de uma revisão delta curta.
+R-D10a, conforme `docs/handoffs/d10a-to-r-d10a.md`: revisão delta curta,
+somente leitura e em sessão separada, do diff do D10a contra RD7-01, 02, 03,
+04 e 07 (e os opcionais RD7-06, 09, 10).
 
-Em paralelo, fora do agente: o humano grava o vídeo de reserva seguindo a
-seção "Gravação" de `docs/demo-script.md`.
-
-Depois: D10 (worker), D11–D12 (telas finas, CR8), revisão curta da
-interface, vídeo definitivo e submissão até 11/10.
+Depois: D10 (worker com prova local forçada), D11–D12 (telas finas, CR8),
+revisão curta da interface, vídeo definitivo e submissão até 11/10.
 
 ## Marcos anteriores
 
@@ -31,14 +28,17 @@ interface, vídeo definitivo e submissão até 11/10.
   - `c550a98` (docs).
 - R-D7 `9d3efa7`: **APROVADO COM RESSALVAS** para o D9 e o D10–D12 (CR1 a
   CR8).
-- D9: demo em ambiente limpo (W1–W8), claims congelados e roteiro de
-  gravação; commit `docs: record D9 clean-environment demo and freeze
-  claims`.
+- D9 `39a87f7`: demo em ambiente limpo (W1–W8), claims congelados e roteiro
+  de gravação.
+- D10a: endurecimento da CLI e do prover:
+  - `50dede0` (cli);
+  - `7fe9c3b` (prover);
+  - `docs: record D10a hardening`.
 
-## Baseline (D9)
+## Baseline (D10a)
 
 - Raiz `/home/lucas/src/vericode`; branch `main`; HEAD de baseline = commit
-  `docs: record D9 clean-environment demo and freeze claims`.
+  `docs: record D10a hardening`.
 - **Devnet:**
   - escrow `GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH`, 395.064 bytes
     `cdf6967f…`, upgrade authority **`none`**;
@@ -49,18 +49,25 @@ interface, vídeo definitivo e submissão até 11/10.
   - **P `Released`** (`3e4ca026…`) e **T `RefundedOnTimeout`**
     (`05f74934…`), do D7;
   - **P′ `Released`** (`91ea6fcd…`) e **T′ `RefundedOnTimeout`**
-    (`ec9afb74…`), do D9.
-- **Saldos no fim do D9:**
-  - SOL: deployer 2.805.214.240; buyer 121.288.800; executor 29.955.000
+    (`ec9afb74…`), do D9;
+  - das gravações do humano (2026-10-06, `rec-*`): `8ab4ee8d` e `8bce67f2`
+    (`Funded`, prazo vencido), `cd77e7bd` e `3e115ca8` (`Released`),
+    `104f9a21` (`RefundedOnTimeout`).
+- **Saldos no D10a** (slot 508.156.224, sem escrita do agente):
+  - SOL: deployer 2.805.194.240; buyer 103.351.800; executor 29.925.000
     lamports;
-  - Test USDC: ATA do buyer 999.996.000.000; ATA do executor 4.000.000.
+  - Test USDC: ATA do buyer 999.992.000.000; ATA do executor 6.000.000.
 - **Testes:**
   - `anchor/tests-local` 61/61 com o rebuild e com o dump de devnet:
     d4b_receipts 2, escrow 27, fixtures 2, layout 7, regressions 7,
     settlement 16;
-  - `cli` 14/14; `prover` 4/4; core 42/42 A/B; IDL `e8ce2c20…`;
-  - D9, no ambiente limpo (`d9/clone`, homes copiadas): core 42/42 ×2, CLI
-    14/14, suíte 61/61 com os `.so` de devnet, prover 4/4.
+  - `cli` 30/30 e `prover` 5/5 + `docker_shim` 2/2 (D10a); core 42/42 A/B;
+    IDL `e8ce2c20…`;
+  - D10a (homes copiadas de `d9/homes`, `--locked --offline`): core 42/42
+    ×2, CLI 30/30, suíte 61/61 com os `.so` de devnet, prover 5/5 + 2/2,
+    `check` com `prover=LocalProver env=ok`.
+- **Binários do D10a** (fora do clone): CLI `e6cd4e29…`, prover
+  `3f66e1c0…`. Os do D9 (`d9/targets`) continuam os da seção "Gravação".
 - **Locks:**
   - inalterados: raiz `191802b2…`; host `f5236689…`; guest `1116acef…`;
     `anchor/` `19a1db26…`; `anchor/tests-local` `be94760a…`;
@@ -71,11 +78,14 @@ interface, vídeo definitivo e submissão até 11/10.
   - `d7/`: homes, targets, receipts do P, jobs P/T e logs
     (`cli-tx.jsonl`, `timeline.log`);
   - `d9/`: clone, homes copiadas, targets, receipts do P′, jobs P′/T′,
-    `bin/env9.sh` (usado pela seção "Gravação") e logs.
+    `bin/env9.sh` (usado pela seção "Gravação") e logs;
+  - `rec-*`: gravações do humano;
+  - `d10a/`: árvore "antes", homes, targets, RPC falso e listener, receipts
+    `X` e `X-wrong-binary`, logs.
 
 ## Gate atual
 
-`D9` (concluído) → próximo `D10a`.
+`D10a` (concluído) → próximo `R-D10a`.
 
 ## Estado
 
@@ -96,6 +106,10 @@ interface, vídeo definitivo e submissão até 11/10.
   CR1 a CR7 cumpridas; a CR8 vale para o D10–D12.
 - **Frases permitidas congeladas** no `README.md` e em
   `docs/demo-script.md`; mudar exige decisão registrada.
+- D10a (`docs/d10a-hardening-results.md`): RD7-01, 02, 03, 04 e 07
+  corrigidos com testes que falham no D9 e passam agora; opcionais RD7-06, 09
+  e 10. Nenhuma escrita em devnet. Programa, core, `zkvm/`, guest,
+  `JournalV1` e locks inalterados. Aguarda a revisão delta R-D10a.
 
 ## Decisões humanas registradas
 
@@ -104,6 +118,8 @@ interface, vídeo definitivo e submissão até 11/10.
 - "Prazo de 11/10, congelamento do JournalV1 v1 e nomes de gate".
 - D4a, R-D4a, D4b, D7, R-D7, "Decisões humanas para o D9" (ratificadas
   com o prompt e o Plan Mode do D9) e D9 (`docs/decisions.md`).
+- "Decisões humanas para o D10a" (ratificadas com o prompt e o Plan Mode do
+  D10a) e D10a.
 
 ## Ações proibidas (permanentes salvo novo objetivo)
 
@@ -141,28 +157,28 @@ interface, vídeo definitivo e submissão até 11/10.
   builds de `solana-program-test` derrubaram a sessão do editor duas vezes
   no D7.
 - F-14; ImageID não recertificado; spec v1 trivial.
-- RD7-01: `--expect-error escrow:N` aceita falha do verificador com o mesmo
-  N (6000–6003); na demo, só os negativos da CR2.
-- RD7-02: o shim do Docker não é allowlist de argv.
-- RD7-03: o prover obedece `RISC0_PROVER`/`BONSAI_*`; na demo, a CR3.
-- RD7-04: `--tamper-seal` e o casamento do `--expect-error` sem teste.
-- RD7-05: corrigido no D9 (CR1). Resta a errata de
-  `docs/manifest-schema.md:86` ("terá a upgrade authority finalizada"), que
-  exige Plan Mode.
-- O comentário de `prover/docker-shim/docker` ainda promete recusar "any
-  other docker run" (código; D10a, com a RD7-02).
-- `docs/d7-cli-results.md:128` lista `--expect-error` entre os testes, mas só
-  o parse é testado (RD7-04).
-- Memória do WSL na compressão do D9: 117 MB livres e swap cheio no pico.
-- RD7-06 a 10: hardlink e modo do `--log`; leituras sem `minContextSlot`
-  ("already processed"); negativo que vira liquidação; mensagens
-  cosméticas; `--rpc-url`/proxy.
+- RD7-01, 02, 03, 04, 05 e 07: corrigidos (05 no D9; os demais no D10a),
+  pendentes da revisão delta R-D10a. As erratas de
+  `docs/manifest-schema.md:86` e de `docs/d7-cli-results.md:128` (esta no
+  relatório do D10a) estão feitas.
+- RD7-06, 09 e 10: corrigidos no D10a (opcionais). **RD7-08** continua
+  aberto: um negativo `escrow:6021` perto do prazo pode virar reembolso real
+  (a CLI reporta `UNEXPECTED`).
+- A seção "Gravação" do roteiro usa os binários do D9, anteriores às
+  correções; os negativos dela continuam os da CR2.
+- Jobs `8ab4ee8d` e `8bce67f2` (gravações do humano): `Funded`, 2 Test USDC
+  parados, reembolsáveis por qualquer um depois do prazo.
+- Memória do WSL: compressão a 208 MB livres no D10a. Uma compressão com 80
+  MB livres e swap cheio derrubou a sessão do Claude Code (incidente do
+  D10a).
+- Builds de árvores diferentes no mesmo `CARGO_TARGET_DIR` sobrescrevem os
+  binários de mesmo nome (incidente do D10a): usar targets separados.
 - O `env.sh` herdado define `R`, `B`, `D` e `VC`; não reutilizar esses nomes
   (incidente do R-D7).
-- **Calendário:** 2026-10-05; prazo de entrega 11/10.
+- **Calendário:** 2026-10-06; prazo de entrega 11/10.
 
 ## Próxima transição permitida
 
-`D10a`, conforme `docs/handoffs/d9-to-d10a.md`, em sessão nova (Opus 5.5,
-high; Plan Mode antes de mudar a CLI ou o prover), seguido de uma revisão
-delta curta em sessão separada e somente leitura.
+`R-D10a`, conforme `docs/handoffs/d10a-to-r-d10a.md`: revisão delta curta,
+somente leitura, em sessão separada (Opus 5.5, max). Depois, o D10 (worker
+com prova local forçada), com o prompt que a R-D10a entregar.

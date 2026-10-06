@@ -83,7 +83,8 @@ ou harness exige, juntos:
 1. novo `schema_version`;
 2. novo guest e novo ImageID, recertificados;
 3. nova admissão no programa (`ADMITTED_IMAGE_ID_*`, termos admitidos);
-4. como o escrow terá a upgrade authority finalizada, um novo program ID;
+4. como a upgrade authority do escrow já foi finalizada (D4b, `none`), um
+   novo program ID;
 5. atualização deste documento e registro em `docs/decisions.md`.
 
 ## Nomes históricos no código

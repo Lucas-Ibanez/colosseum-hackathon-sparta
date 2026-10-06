@@ -146,11 +146,14 @@ Cada operação confere cluster, programa, mint, termos, receipt e estado antes 
 - A mint authority do Test USDC é a chave de deployer do projeto.
 - O ImageID vem do guest determinístico do D1c2b e não foi recertificado desde então; o core só ganhou o módulo `escrow`, que o guest não usa.
 - O prover Groth16 exige Docker x86 e muita memória; no WSL de 7,6 GiB a compressão leva cerca de 2 minutos.
-- Pendências da CLI e do prover, com correção prevista no D10a ([`docs/r-d7-review-results.md`](docs/r-d7-review-results.md)):
-  - `--expect-error escrow:6000` a `6003` pode aceitar uma falha do verificador (RD7-01). Os negativos documentados usam só 6014, 6007/6008, 6021 e `verifier:6003`;
-  - o shim do Docker não é uma allowlist de argv (RD7-02);
-  - o prover obedece `RISC0_PROVER` e `BONSAI_*`; fixe `RISC0_PROVER=local` (RD7-03);
-  - `--tamper-seal` e o casamento do `--expect-error` não têm teste unitário (RD7-04).
+- Achados do R-D7 na CLI e no prover ([`docs/r-d7-review-results.md`](docs/r-d7-review-results.md)), corrigidos no D10a com testes ([`docs/d10a-hardening-results.md`](docs/d10a-hardening-results.md)) e sujeitos à revisão delta R-D10a:
+  - `--expect-error escrow:N` só casa quando o escrow é a falha mais interna (RD7-01);
+  - o shim do Docker é uma allowlist exata de argv, com a imagem por digest, sem rede e no daemon local (RD7-02);
+  - o prover usa só o prover local e recusa `RISC0_PROVER` diferente de `local`, `BONSAI_*` e `RISC0_DEV_MODE` (RD7-03);
+  - o casamento do `--expect-error` e o `--tamper-seal` têm testes (RD7-04);
+  - um "already processed" é resolvido pelo status da assinatura, e as leituras depois da transação usam `minContextSlot` (RD7-07).
+
+  Os binários do D9, usados na seção "Gravação" do roteiro, são anteriores a essas correções. Os negativos documentados continuam sendo 6014, 6007/6008, 6021 e `verifier:6003`. Continua aberto o RD7-08: um negativo `escrow:6021` enviado perto do prazo pode virar reembolso real, e a CLI então reporta `UNEXPECTED`.
 - Worker e interface ainda não existem.
 
 ## Estrutura

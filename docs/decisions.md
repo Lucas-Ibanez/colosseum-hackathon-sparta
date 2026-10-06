@@ -1604,3 +1604,100 @@ Registre decisões relevantes do projeto neste formato.
 - **Próximo gate:** D10a, endurecimento da CLI e do prover, conforme
   `docs/handoffs/d9-to-d10a.md`; o humano grava o vídeo de reserva seguindo
   a seção "Gravação" de `docs/demo-script.md`.
+
+## 2026-10-06 — Decisões humanas para o D10a
+
+- **Data:** 2026-10-06
+- **Origem:** propostas pelo agente da sessão de registro do D9 (decisões
+  pendentes de `docs/handoffs/d9-to-d10a.md`). O humano as ratificou ao
+  enviar a versão revisada desse prompt.
+- **Decisões:**
+  1. **Nenhuma escrita em devnet no D10a.** Os testes são offline e rodam
+     contra um RPC falso em `127.0.0.1`; em devnet, só leitura.
+  2. **Docker local autorizado** para um `prove` + `compress` local, com
+     `job_id` aleatório e sem devnet, para validar o shim novo contra o argv
+     real do `risc0-groth16 3.0.2`. Só a imagem já presente, por digest, sem
+     pull.
+  3. **Errata de `docs/manifest-schema.md:86`** ("como o escrow terá a
+     upgrade authority finalizada" → já finalizada no D4b), feita em Plan
+     Mode.
+  4. **`docs/d7-cli-results.md:128` não é editado**, porque é relatório
+     histórico. A errata fica em `docs/d10a-hardening-results.md`.
+- **Aprovado no Plan Mode do D10a** (2026-10-06, 12:55 -03:00), além do
+  prompt:
+  - o shim também fixa `--context default` nos comandos que falam com o
+    daemon e recusa um `DOCKER_HOST` que não seja `unix://`;
+  - as execuções binárias da CLI contra o RPC falso assinam com a chave
+    existente `d4/keys/executor.json`, só por caminho, porque keypair novo é
+    proibido. As transações têm blockhash falso e vão só para `127.0.0.1`;
+  - os opcionais RD7-06, RD7-09 e RD7-10 entram, com testes.
+
+## 2026-10-06 — D10a: endurecimento da CLI e do prover (RD7-01, 02, 03, 04 e 07)
+
+- **Data:** 2026-10-06 (12:42–14:01 -03:00)
+- **Commits:**
+  - `50dede0` (cli);
+  - `7fe9c3b` (prover);
+  - `docs: record D10a hardening`.
+- **Decisões aplicadas:** as de "Decisões humanas para o D10a", acima,
+  com o plano aprovado em Plan Mode às 12:55.
+- **Correções (código só em `cli/` e `prover/`, sem dependência, feature ou
+  lock novo):**
+  - **RD7-01:** `--expect-error PROGRAMA:N` só casa quando esse programa é a
+    falha mais interna (primeira linha `Program <id> failed: …`); para o
+    escrow, nenhum outro programa pode ter falhado. `escrow:6000–6003` sobre
+    falha do verificador é recusado na simulação e nada é enviado.
+  - **RD7-02:** o shim do Docker virou allowlist exata dos três argv
+    levantados no fonte pinado. O comando é remontado do zero, com
+    `--context default`, a imagem por digest, `--pull=never` e
+    `--network=none`, e um `DOCKER_HOST` que não seja `unix://` é recusado.
+  - **RD7-03:** o prover usa `LocalProver` direto e recusa `RISC0_PROVER` ≠
+    `local`, `BONSAI_*` e `RISC0_DEV_MODE` antes de qualquer trabalho.
+  - **RD7-04:** testes do casamento (inclusive a sobreposição) e do
+    `--tamper-seal` (`pi_c[10]`, igual à mutação da suíte).
+  - **RD7-07:** "already processed" é resolvido pelo status da assinatura,
+    e as leituras depois da transação usam `minContextSlot` = slot da
+    transação.
+  - **Opcionais:**
+    - RD7-06: hard link e modo do `--log`;
+    - RD7-09: "past the deadline" e `Expect::Verified`;
+    - RD7-10: `https://` ou loopback, sem proxy, e o hash do verificador no
+      `check`.
+- **Resultado (evidência):**
+  - antes × depois:
+    - lógica do D9: 7 falhas em `negative_runs`, as 2 do `docker_shim`, a
+      CLI do D9 contra o RPC falso e o prover do D9 com Bonsai, com 1
+      conexão ao listener;
+    - código novo: tudo verde;
+  - regressão: core 42/42 ×2, CLI 30/30, suíte 61/61 com os `.so` de devnet,
+    prover 5/5 + 2/2 e `check`;
+  - prova local `Composite` → `Groth16` pelo shim novo, com o argv real
+    `docker --context default run --pull=never --network=none …@sha256:7f173963…`;
+  - devnet só leitura: `check=ok`, com o verificador `34ae6e5c…`;
+  - relatório: [`docs/d10a-hardening-results.md`](d10a-hardening-results.md).
+- **Escritas do humano entre o D9 e o D10a** (gravações `rec-*`):
+  - 16 transações e 5 Jobs (`8ab4ee8d`, `8bce67f2`, `cd77e7bd`, `104f9a21`,
+    `3e115ca8`), conferidas por `getSignaturesForAddress` e pelos saldos;
+  - nenhuma outra escrita;
+  - os 5 `job_id` passam à lista de consumidos;
+  - `8ab4ee8d` e `8bce67f2` continuam `Funded`.
+- **Errata:**
+  - `docs/manifest-schema.md:86` (Plan Mode);
+  - `docs/d7-cli-results.md:128`, registrada no relatório do D10a.
+- **Incidentes registrados:**
+  - **Binário do prover sobrescrito.** O teste da árvore "antes", no mesmo
+    target, sobrescreveu o binário do prover. A primeira prova e compressão
+    rodaram com o binário do D9 e foram preservadas e repetidas com o
+    binário novo.
+  - **Desconexão da sessão.** A sessão do Claude Code caiu com 80 MB livres
+    e o swap cheio durante essa compressão; as filas destacadas
+    continuaram.
+- **Risco aberto:**
+  - RD7-08;
+  - a seção "Gravação" usa os binários do D9;
+  - 2 Jobs `Funded` das gravações;
+  - memória do WSL;
+  - sem e-stop; rent preso; mint authority = deployer; ImageID não
+    recertificado; spec v1 trivial.
+- **Próximo gate:** R-D10a, revisão delta curta, somente leitura, conforme
+  `docs/handoffs/d10a-to-r-d10a.md`.
