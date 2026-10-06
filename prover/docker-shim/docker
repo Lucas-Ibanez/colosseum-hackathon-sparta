@@ -1,34 +1,74 @@
 #!/bin/bash
-# VeriCode Docker shim (gate D7).
+# VeriCode Docker shim (gate D7; exact argv allowlist since D10a).
 #
-# `vericode-prover compress` puts this directory first on PATH, so the
-# `docker run ... risczero/risc0-groth16-prover:v2025-04-03.1` issued by
-# risc0-groth16 3.0.2 runs only the local image by digest, never pulls and has
-# no network. Any other `docker run` is refused. Other subcommands
-# (`--version`, `image inspect`) pass through unchanged.
+# `vericode-prover compress` puts this directory first on PATH. The callers of
+# `docker` in that process, and their argv, are exactly (surveyed in D10a):
+#   risc0-groth16 3.0.2, src/prove/docker.rs:
+#     --version
+#     run --rm -v <work dir>:/mnt risczero/risc0-groth16-prover:v2025-04-03.1
+#   vericode-prover, src/lib.rs:
+#     image inspect --format {{.Id}} <digest>
+# Only these three argv lists are accepted, and the real command is rebuilt
+# from scratch, never from the caller's arguments:
+#   docker --version
+#   docker --context default image inspect --format {{.Id}} <digest>
+#   docker --context default run --pull=never --network=none --rm -v <work dir>:/mnt <digest>
+# so the Groth16 container is the local image by digest, never pulled, without
+# network, on the local daemon. <work dir> must be an absolute, canonical path
+# to an existing directory other than /, without `:`, `,` or a newline.
+# Anything else (other subcommands, `container run`, global options such as
+# `--context`, extra flags, another image) is refused with exit 2, and so is a
+# DOCKER_HOST that is not a local unix socket. `--context default` makes the
+# CLI ignore DOCKER_CONTEXT and the configured current context.
+# VERICODE_REAL_DOCKER changes the real executable (default /usr/bin/docker);
+# VERICODE_DOCKER_SHIM_LOG receives the executed `run` and every refusal.
 set -u
 TAG=risczero/risc0-groth16-prover:v2025-04-03.1
 DIGEST=risczero/risc0-groth16-prover@sha256:7f173963196570b7a71816ed70565a4579264c5d2e3e0ecb028102538ad0e331
 REAL=${VERICODE_REAL_DOCKER:-/usr/bin/docker}
-if [ "${1:-}" = "run" ]; then
-  shift
-  args=(run --pull=never --network=none)
-  found=0
-  for a in "$@"; do
-    if [ "$a" = "$TAG" ]; then
-      args+=("$DIGEST")
-      found=1
-    else
-      args+=("$a")
-    fi
-  done
-  if [ "$found" -ne 1 ]; then
-    echo "vericode docker-shim: refusing a docker run without $TAG" >&2
-    exit 2
-  fi
+
+log() {
   if [ -n "${VERICODE_DOCKER_SHIM_LOG:-}" ]; then
-    echo "$(date -Iseconds) $REAL ${args[*]}" >> "$VERICODE_DOCKER_SHIM_LOG"
+    echo "$(date -Iseconds) $*" >> "$VERICODE_DOCKER_SHIM_LOG"
   fi
+}
+
+refuse() {
+  log "REFUSED ($1): docker $2"
+  echo "vericode docker-shim: refusing docker $2 ($1)" >&2
+  exit 2
+}
+
+case ${DOCKER_HOST:-} in
+  '' | unix://*) ;;
+  *) refuse "DOCKER_HOST is not a local unix socket" "$*" ;;
+esac
+
+if [ $# -eq 1 ] && [ "$1" = --version ]; then
+  exec "$REAL" --version
+fi
+
+if [ $# -eq 5 ] && [ "$1" = image ] && [ "$2" = inspect ] && [ "$3" = --format ] \
+  && [ "$4" = '{{.Id}}' ] && [ "$5" = "$DIGEST" ]; then
+  exec "$REAL" --context default image inspect --format '{{.Id}}' "$DIGEST"
+fi
+
+if [ $# -eq 5 ] && [ "$1" = run ] && [ "$2" = --rm ] && [ "$3" = -v ] && [ "$5" = "$TAG" ]; then
+  work=${4%:/mnt}
+  [ "$work:/mnt" = "$4" ] || refuse "the volume is not <dir>:/mnt" "$*"
+  case $work in
+    /*) ;;
+    *) refuse "the work dir is not absolute" "$*" ;;
+  esac
+  case $work in
+    *:* | *,* | *$'\n'*) refuse "the work dir contains : , or a newline" "$*" ;;
+  esac
+  [ "$work" != / ] || refuse "the work dir is /" "$*"
+  [ -d "$work" ] || refuse "the work dir is not an existing directory" "$*"
+  [ "$(realpath -e -- "$work")" = "$work" ] || refuse "the work dir is not canonical" "$*"
+  args=(--context default run --pull=never --network=none --rm -v "$work:/mnt" "$DIGEST")
+  log "$REAL ${args[*]}"
   exec "$REAL" "${args[@]}"
 fi
-exec "$REAL" "$@"
+
+refuse "not in the allowlist" "$*"

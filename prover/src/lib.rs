@@ -1,7 +1,10 @@
-//! VeriCode prover (gate D7).
+//! VeriCode prover (gate D7; local prover forced since D10a).
 //!
 //! Proves the admitted guest for one Job with the local RISC Zero prover and
-//! compresses the receipt to Groth16 for the devnet escrow. The guest is the
+//! compresses the receipt to Groth16 for the devnet escrow. The prover is
+//! always `LocalProver`, never `default_prover()`: `prove` and `compress`
+//! refuse `RISC0_PROVER` other than `local`, any `BONSAI_*` and any
+//! `RISC0_DEV_MODE` before any proving work. The guest is the
 //! preserved deterministic D1c2b build, versioned in
 //! `artifacts/vericode-guest.bin` and embedded at compile time; every
 //! operation first checks its SHA-256, size and ImageID and aborts on any
@@ -17,6 +20,7 @@
 use std::{
     env,
     error::Error,
+    ffi::OsString,
     fs,
     path::{Path, PathBuf},
     process::Command,
@@ -24,9 +28,9 @@ use std::{
 };
 
 use risc0_zkvm::{
-    compute_image_id, default_executor, default_prover,
+    compute_image_id, local_executor,
     sha::{Digestible, Sha256},
-    Digest, ExecutorEnv, Groth16ReceiptVerifierParameters, InnerReceipt, ProverOpts, Receipt,
+    Digest, ExecutorEnv, Groth16ReceiptVerifierParameters, InnerReceipt, LocalProver, Prover, ProverOpts, Receipt,
 };
 use vericode_core::{evaluate_restricted_artifact, ImageId, JobId, RestrictedArtifactV1};
 
@@ -99,6 +103,38 @@ pub fn admitted_guest() -> Result<Digest, AnyError> {
     Ok(image_id)
 }
 
+/// Refuses an environment that would make RISC Zero prove anywhere but
+/// here: `RISC0_PROVER` other than `local` (empty counts as unset), any
+/// `BONSAI_*` variable and any `RISC0_DEV_MODE`. The prover is `LocalProver`
+/// regardless; this turns a misconfigured environment into an error before
+/// any work instead of a silent override. Values of `BONSAI_*` are never
+/// printed.
+pub fn local_prover_env<I>(vars: I) -> Result<(), AnyError>
+where
+    I: IntoIterator<Item = (OsString, OsString)>,
+{
+    let mut problems = Vec::new();
+    for (name, value) in vars {
+        let name = name.to_string_lossy();
+        if name == "RISC0_PROVER" {
+            if !(value.is_empty() || value == "local") {
+                problems.push(format!("RISC0_PROVER={}", value.to_string_lossy()));
+            }
+        } else if name.starts_with("BONSAI_") || name == "RISC0_DEV_MODE" {
+            problems.push(format!("{name} is set"));
+        }
+    }
+    if problems.is_empty() {
+        return Ok(());
+    }
+    problems.sort();
+    Err(format!(
+        "refusing to prove: {}; this prover only proves locally (unset them, or set RISC0_PROVER=local)",
+        problems.join(", ")
+    )
+    .into())
+}
+
 fn image_id_bytes(image_id: &Digest) -> [u8; 32] {
     image_id.as_bytes().try_into().expect("32 bytes")
 }
@@ -150,7 +186,7 @@ pub fn execute(job_id: &[u8; 32], artifact: &[u8]) -> Result<Vec<u8>, AnyError> 
     let image_id = admitted_guest()?;
     let frame = frame(job_id, artifact, &image_id_bytes(&image_id));
     let env = ExecutorEnv::builder().write_slice(&frame).build()?;
-    Ok(default_executor().execute(env, GUEST)?.journal.bytes)
+    Ok(local_executor().execute(env, GUEST)?.journal.bytes)
 }
 
 fn reject_wrong_image(label: &str, receipt: &Receipt, image_id: Digest) -> Result<(), AnyError> {
@@ -169,17 +205,21 @@ fn print_guest(image_id: &Digest) {
     println!("guest.image_id={image_id}");
 }
 
-/// `check`: the embedded guest is the admitted build.
+/// `check`: the embedded guest is the admitted build and the environment
+/// lets this prover prove locally.
 pub fn check() -> Result<(), AnyError> {
     let image_id = admitted_guest()?;
     print_guest(&image_id);
     println!("guest.admitted=true");
     println!("groth16.selector={}", hex(&selector()));
+    local_prover_env(env::vars_os())?;
+    println!("prover=LocalProver env=ok");
     Ok(())
 }
 
 /// `prove`: Composite receipt of the admitted guest for one Job and artifact.
 pub fn prove(job_id_hex: &str, input: u32, claimed_output: u32, dir: &Path) -> Result<(), AnyError> {
+    local_prover_env(env::vars_os())?;
     let job_id = unhex32(job_id_hex)?;
     let artifact = check_inputs(&job_id, input, claimed_output)?;
     let image_id = admitted_guest()?;
@@ -193,7 +233,8 @@ pub fn prove(job_id_hex: &str, input: u32, claimed_output: u32, dir: &Path) -> R
 
     let started = Instant::now();
     let env = ExecutorEnv::builder().write_slice(&frame).build()?;
-    let receipt = default_prover().prove(env, GUEST)?.receipt;
+    println!("prove.prover=LocalProver");
+    let receipt = LocalProver::new("local").prove(env, GUEST)?.receipt;
     println!("prove.seconds={:.1}", started.elapsed().as_secs_f64());
     println!("prove.receipt_type={}", kind(&receipt.inner));
     if !matches!(receipt.inner, InnerReceipt::Composite(_)) {
@@ -225,17 +266,19 @@ fn verdict_name(journal: &[u8]) -> &'static str {
     }
 }
 
-/// Runs `docker` with `args` and returns whether it succeeded.
-fn docker_ok(args: &[&str]) -> bool {
-    Command::new("docker")
-        .args(args)
-        .output()
-        .map(|output| output.status.success())
-        .unwrap_or(false)
+/// Runs `docker` with `args`; on failure, returns its stderr.
+fn docker(args: &[&str]) -> Result<(), String> {
+    match Command::new("docker").args(args).output() {
+        Ok(output) if output.status.success() => Ok(()),
+        Ok(output) => Err(String::from_utf8_lossy(&output.stderr).trim().to_string()),
+        Err(error) => Err(error.to_string()),
+    }
 }
 
-/// Routes the `docker run` of `risc0-groth16` through the versioned shim:
-/// local image by digest, `--pull=never`, `--network=none`.
+/// Routes every `docker` call of this process through the versioned shim,
+/// an exact allowlist of the three argv lists used here (see
+/// `docker-shim/docker`): the `docker run` of `risc0-groth16` becomes the
+/// local image by digest with `--pull=never` and `--network=none`.
 fn use_docker_shim(dir: &Path) -> Result<PathBuf, AnyError> {
     let shim_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("docker-shim");
     if !shim_dir.join("docker").is_file() {
@@ -245,9 +288,10 @@ fn use_docker_shim(dir: &Path) -> Result<PathBuf, AnyError> {
     env::set_var("PATH", format!("{}:{path}", shim_dir.display()));
     let log = dir.join("docker-shim.log");
     env::set_var("VERICODE_DOCKER_SHIM_LOG", &log);
-    if !docker_ok(&["image", "inspect", "--format", "{{.Id}}", GROTH16_PROVER_IMAGE]) {
+    if let Err(stderr) = docker(&["image", "inspect", "--format", "{{.Id}}", GROTH16_PROVER_IMAGE]) {
         return Err(format!(
-            "local image {GROTH16_PROVER_IMAGE} not found; it is never pulled by the prover"
+            "docker image inspect {GROTH16_PROVER_IMAGE} failed ({stderr}); the image must already be \
+             present locally (it is never pulled by the prover) and the call must pass the shim"
         )
         .into());
     }
@@ -259,6 +303,7 @@ fn use_docker_shim(dir: &Path) -> Result<PathBuf, AnyError> {
 /// `compress`: Groth16 receipt of `<dir>/composite.receipt` and the vector
 /// files that the CLI submits.
 pub fn compress(dir: &Path) -> Result<(), AnyError> {
+    local_prover_env(env::vars_os())?;
     let image_id = admitted_guest()?;
     print_guest(&image_id);
     let dir = fs::canonicalize(dir)?;
@@ -282,7 +327,8 @@ pub fn compress(dir: &Path) -> Result<(), AnyError> {
     );
 
     let started = Instant::now();
-    let groth16 = default_prover().compress(&ProverOpts::groth16(), &composite)?;
+    println!("compress.prover=LocalProver");
+    let groth16 = LocalProver::new("local").compress(&ProverOpts::groth16(), &composite)?;
     println!("compress.seconds={:.1}", started.elapsed().as_secs_f64());
     println!("compress.receipt_type={}", kind(&groth16.inner));
     let inner = match &groth16.inner {
@@ -410,6 +456,34 @@ mod tests {
                 hash_restricted_artifact(&RestrictedArtifactV1::new(7, output)).unwrap()
             );
             assert_eq!(decoded.image_id(), ImageId::new(image));
+        }
+    }
+
+    fn vars(pairs: &[(&str, &str)]) -> Vec<(OsString, OsString)> {
+        pairs.iter().map(|(name, value)| (name.into(), value.into())).collect()
+    }
+
+    #[test]
+    fn only_a_local_prover_environment_is_accepted() {
+        for accepted in [
+            vars(&[]),
+            vars(&[("RISC0_PROVER", "local"), ("RISC0_EXECUTOR", "local"), ("PATH", "/usr/bin")]),
+            vars(&[("RISC0_PROVER", "")]),
+        ] {
+            assert!(local_prover_env(accepted.clone()).is_ok(), "{accepted:?}");
+        }
+        for refused in [
+            vars(&[("RISC0_PROVER", "bonsai")]),
+            vars(&[("RISC0_PROVER", "ipc")]),
+            vars(&[("RISC0_PROVER", "actor")]),
+            vars(&[("RISC0_PROVER", "LOCAL")]),
+            vars(&[("BONSAI_API_URL", "http://127.0.0.1:9")]),
+            vars(&[("RISC0_PROVER", "local"), ("BONSAI_API_KEY", "d10a-not-a-key")]),
+            vars(&[("RISC0_DEV_MODE", "0")]),
+        ] {
+            let error = local_prover_env(refused.clone()).unwrap_err().to_string();
+            assert!(error.contains("refusing to prove"), "{refused:?}: {error}");
+            assert!(!error.contains("d10a-not-a-key"), "a BONSAI_* value was printed: {error}");
         }
     }
 

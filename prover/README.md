@@ -1,17 +1,27 @@
 # `vericode-prover`
 
-Prover local do VeriCode (gate D7). Prova o guest admitido para um Job, com o
-prover local do RISC Zero `3.0.3`, e comprime a receipt para Groth16, no
-formato que `vericode job settle` (`cli/`) submete ao escrow em devnet.
+Prover local do VeriCode (gate D7, endurecido no D10a). Prova o guest
+admitido para um Job, com o prover local do RISC Zero `3.0.3`, e comprime a
+receipt para Groth16, no formato que `vericode job settle` (`cli/`) submete
+ao escrow em devnet.
 
 - O guest **não é recompilado**: o binário versionado em
   [`artifacts/vericode-guest.bin`](artifacts/README.md) é embutido no
   executável. Antes de cada operação, o prover confere o tamanho (180.300 B), o
   SHA-256 (`e09ba8cf…`) e o ImageID (`4da06f90…fb1a`, igual a
   `ADMITTED_IMAGE_ID_V1`). Se algum divergir, aborta.
-- Sem dev mode: a feature `disable-dev-mode` faz o `risc0-zkvm` recusar
-  `RISC0_DEV_MODE`, e o prover exige `Composite` e depois `Groth16`; nunca
-  aceita `Fake`.
+- **Só prova local (D10a, RD7-03).** O prover instancia o `LocalProver` do
+  RISC Zero diretamente, nunca `default_prover()`. `check`, `prove` e
+  `compress` recusam, antes de qualquer trabalho:
+  - `RISC0_PROVER` diferente de `local` (vazio conta como ausente);
+  - qualquer variável `BONSAI_*`, cujo valor nunca é impresso;
+  - qualquer `RISC0_DEV_MODE`.
+
+  Assim, nenhuma variável de ambiente desvia a prova para o Bonsai, para um
+  `r0vm` externo ou para o dev mode.
+- Sem dev mode: além dessa recusa, a feature `disable-dev-mode` faz o
+  `risc0-zkvm` rejeitar `RISC0_DEV_MODE`. O prover exige `Composite` e depois
+  `Groth16`, e nunca aceita `Fake`.
 - O frame de entrada é o de `zkvm/host`: `job_id ‖ artefato (12 B) ‖
   image_id`. O journal da receipt é comparado, byte a byte, com
   `evaluate_restricted_artifact` do `vericode-core`.
@@ -29,12 +39,13 @@ formato que `vericode job settle` (`cli/`) submete ao escrow em devnet.
 
 ## Comandos (a partir da raiz de um clone)
 
-O prover usa `default_prover()` do RISC Zero, que obedece `RISC0_PROVER` e
-`BONSAI_*` (achado RD7-03). Até o D10a forçar o prover local, fixe o ambiente
-como abaixo e confira com `env | grep -E '^(RISC0|BONSAI)'` antes de provar.
+Desde o D10a, o prover só prova localmente e recusa um ambiente que diga o
+contrário (ver acima). `check` imprime `prover=LocalProver env=ok`. Os
+binários do D9 (seção "Gravação" do roteiro) são anteriores a essa recusa:
+com eles, continue fixando o ambiente abaixo.
 
 ```bash
-export RISC0_PROVER=local RISC0_EXECUTOR=local   # nunca Bonsai
+export RISC0_PROVER=local                         # ou deixe sem definir
 unset RISC0_DEV_MODE BONSAI_API_KEY BONSAI_API_URL
 # opcional, para compilar offline: export RECURSION_SRC_PATH=/caminho/recursion_zkr.zip
 # opcional, para não usar /tmp: export TMPDIR=/caminho/tmp
@@ -44,7 +55,7 @@ cargo +1.89.0 test  --locked --release --manifest-path prover/Cargo.toml
 
 P=prover/target/release/vericode-prover
 RUN=~/vericode-run; mkdir -p $RUN          # receipts fora do clone
-$P check                                   # guest admitido: SHA-256, ImageID, selector
+$P check                                   # guest admitido (SHA-256, ImageID, selector) e ambiente local
 $P prove <job_id_hex> 21 42 $RUN/P     # Composite; journal == core
 $P compress $RUN/P                     # Groth16 via Docker local
 $P verify $RUN/P                       # reconfere a receipt e os vetores
@@ -67,30 +78,44 @@ teste e é recusado.
 | `image_id` | 32 B |
 | `journal` | 165 B, `JournalV1` |
 | `journal_digest` | 32 B, SHA-256 do journal |
-| `docker-shim.log` | a linha exata do `docker run` executado |
+| `docker-shim.log` | a linha exata do `docker run` executado e cada chamada recusada (`REFUSED`) |
 | `groth16-work/` | arquivos de trabalho do prover Groth16 (`RISC0_WORK_DIR`); com Docker rootful, `proof.json` pertence a `root` |
 
 ## Docker
 
 O `risc0-groth16 3.0.2` chama `docker run --rm -v <work>:/mnt
 risczero/risc0-groth16-prover:v2025-04-03.1`, por tag e com rede. Antes da
-compressão, o prover:
-1. confere que a imagem existe localmente pelo digest (`docker image
-   inspect`);
-2. põe [`docker-shim/`](docker-shim/docker) na frente do `PATH` do próprio
-   processo.
+compressão, o prover põe [`docker-shim/`](docker-shim/docker) na frente do
+`PATH` do próprio processo e confere, pelo shim, que a imagem existe
+localmente pelo digest (`docker image inspect`).
 
-O que o shim garante hoje (errata do D9, achado RD7-02 do R-D7):
-- num `docker run` que contém exatamente essa tag, troca a tag pelo digest e
-  põe `--pull=never --network=none` logo depois de `run`;
-- recusa um `docker run` sem a tag;
-- os **demais argumentos passam sem filtro**: o shim não é uma allowlist de
-  argv;
-- outros subcomandos (`image inspect`, `--version`) passam inalterados.
+Desde o D10a (achado RD7-02 do R-D7), o shim é uma **allowlist exata de
+argv**. Os chamadores de `docker` nesse processo foram levantados no fonte
+pinado:
+- `risc0-groth16 3.0.2`: `--version` e `run --rm -v <work>:/mnt <tag>`;
+- o próprio prover: `image inspect --format {{.Id}} <digest>`.
 
-O único chamador, `risc0-groth16 3.0.2`, usa o argv fixo `run --rm -v
-<work>:/mnt <tag>`, então hoje isso não tem impacto. O `docker-shim.log`
-registra a linha executada. A allowlist exata do argv fica para o D10a.
+O shim aceita só esses três argv e remonta o comando do zero:
+
+| argv recebido | comando executado |
+| --- | --- |
+| `--version` | `docker --version` |
+| `image inspect --format {{.Id}} <digest>` | `docker --context default image inspect --format {{.Id}} <digest>` |
+| `run --rm -v <work>:/mnt <tag>` | `docker --context default run --pull=never --network=none --rm -v <work>:/mnt <digest>` |
+
+- `<work>` tem de ser um caminho absoluto, canônico, de um diretório
+  existente, diferente de `/` e sem `:`, `,` ou quebra de linha. O prover
+  passa `<dir>/groth16-work`, ou `RISC0_WORK_DIR`, se definido.
+- **Qualquer outro argv é recusado** (exit 2 e linha `REFUSED` no log). Isso
+  inclui outro subcomando, `container run`, opções globais como
+  `--context`, flags a mais, outra imagem e a tag fora da posição.
+- **Daemon local.** `--context default` faz o Docker ignorar `DOCKER_CONTEXT`
+  e o contexto atual da configuração. O shim recusa um `DOCKER_HOST` que não
+  seja um socket `unix://` local.
+
+O container Groth16 roda, portanto, só a imagem local por digest, sem pull e
+sem rede, no daemon local. O teste `tests/docker_shim.rs` cobre os casos S1 a
+S7 do R-D7 e os casos novos, com um `docker` falso que só registra argv.
 `VERICODE_REAL_DOCKER` muda o executável real (padrão `/usr/bin/docker`).
 
 ## O que a receipt prova e o que não prova
