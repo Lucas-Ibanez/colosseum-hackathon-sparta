@@ -19,7 +19,7 @@ use vericode_cli::{
     escrow::{self, JobView, Status, ADMITTED_IMAGE_ID_V1, ADMITTED_MINT, LANDING_MARGIN_SLOTS},
     explorer_address, hex, keys,
     receipt::Receipt,
-    rpc::{Rpc, DEFAULT_RPC_URL},
+    rpc::{Account, Rpc, DEFAULT_RPC_URL},
     sha256,
     tx::{self, Expect},
     unhex32,
@@ -142,6 +142,10 @@ impl Prechecks {
         }
     }
 
+    fn add(&mut self, problem: Option<String>) {
+        self.problems.extend(problem);
+    }
+
     fn finish(self) -> Result<()> {
         if self.problems.is_empty() {
             println!("precheck=ok");
@@ -209,9 +213,11 @@ fn check_mint(rpc: &Rpc) -> Result<()> {
     Ok(())
 }
 
-fn read_job(rpc: &Rpc, job_id: &[u8; 32]) -> Result<Option<JobView>> {
+/// The Job of `job_id` from its account, checked to be an escrow account
+/// that holds this `job_id`.
+fn job_from(job_id: &[u8; 32], account: Option<Account>) -> Result<Option<JobView>> {
     let address = escrow::job_pda(job_id);
-    let Some(account) = rpc.account(&address)? else {
+    let Some(account) = account else {
         return Ok(None);
     };
     if account.owner != escrow::PROGRAM_ID {
@@ -224,8 +230,41 @@ fn read_job(rpc: &Rpc, job_id: &[u8; 32]) -> Result<Option<JobView>> {
     Ok(Some(job))
 }
 
+fn read_job(rpc: &Rpc, job_id: &[u8; 32]) -> Result<Option<JobView>> {
+    job_from(job_id, rpc.account(&escrow::job_pda(job_id))?)
+}
+
+fn no_job(job_id: &[u8; 32]) -> String {
+    format!("no Job {} for job_id {}", escrow::job_pda(job_id), hex(job_id))
+}
+
 fn require_job(rpc: &Rpc, job_id: &[u8; 32]) -> Result<JobView> {
-    read_job(rpc, job_id)?.ok_or_else(|| format!("no Job {} for job_id {}", escrow::job_pda(job_id), hex(job_id)))
+    read_job(rpc, job_id)?.ok_or_else(|| no_job(job_id))
+}
+
+/// The Job and the amounts of `tokens`, read together after a transaction:
+/// one `getMultipleAccounts` at the transaction slot or later
+/// (`minContextSlot`), so a lagging RPC node never shows the state from
+/// before the transaction (RD7-07).
+fn read_after(rpc: &Rpc, slot: u64, job_id: &[u8; 32], tokens: &[Pubkey]) -> Result<(JobView, Vec<Option<u64>>)> {
+    let mut keys = vec![escrow::job_pda(job_id)];
+    keys.extend_from_slice(tokens);
+    let (read_slot, accounts) = rpc.accounts(&keys, Some(slot))?;
+    if read_slot < slot {
+        return Err(format!("RPC answered at slot {read_slot}, before the transaction slot {slot}"));
+    }
+    if accounts.len() != keys.len() {
+        return Err(format!("RPC returned {} accounts for {} keys", accounts.len(), keys.len()));
+    }
+    println!("after.read_slot={read_slot} transaction_slot={slot}");
+    let mut accounts = accounts.into_iter();
+    let job = job_from(job_id, accounts.next().flatten())?.ok_or_else(|| no_job(job_id))?;
+    let amounts = tokens
+        .iter()
+        .zip(accounts)
+        .map(|(key, account)| Ok(token_from(key, account)?.map(|token| token.amount)))
+        .collect::<Result<Vec<_>>>()?;
+    Ok((job, amounts))
 }
 
 /// Problems of a Job account against the admitted v1 terms.
@@ -244,12 +283,16 @@ fn term_problems(job: &JobView) -> Vec<String> {
     problems
 }
 
-fn token_account(rpc: &Rpc, key: &Pubkey) -> Result<Option<escrow::TokenAccountView>> {
-    match rpc.account(key)? {
+fn token_from(key: &Pubkey, account: Option<Account>) -> Result<Option<escrow::TokenAccountView>> {
+    match account {
         None => Ok(None),
         Some(account) if account.owner == escrow::TOKEN_PROGRAM_ID => Ok(Some(escrow::decode_token_account(&account.data)?)),
         Some(account) => Err(format!("{key} is owned by {}, not the SPL Token program", account.owner)),
     }
+}
+
+fn token_account(rpc: &Rpc, key: &Pubkey) -> Result<Option<escrow::TokenAccountView>> {
+    token_from(key, rpc.account(key)?)
 }
 
 fn token_amount(rpc: &Rpc, key: &Pubkey) -> Result<Option<u64>> {
@@ -292,18 +335,29 @@ fn check(rpc: &Rpc) -> Result<()> {
         return Err("Groth16 verifier is not an executable upgradeable program".into());
     }
     let verifier_data = escrow::decode_program_account(&verifier.data)?;
-    let header = rpc
-        .account_slice(&verifier_data, 0, escrow::PROGRAM_DATA_HEADER_LEN)?
-        .ok_or("verifier ProgramData not found")?;
-    let (_, authority) = escrow::decode_program_data_header(&header.data)?;
+    if verifier_data != escrow::VERIFIER_PROGRAM_DATA_ID {
+        return Err("verifier ProgramData address differs from ENdLkqHp…".into());
+    }
+    let verifier_account = rpc.account(&verifier_data)?.ok_or("verifier ProgramData not found")?;
+    if verifier_account.data.len() < escrow::PROGRAM_DATA_HEADER_LEN {
+        return Err("verifier ProgramData is shorter than its header".into());
+    }
+    let (_, authority) = escrow::decode_program_data_header(&verifier_account.data[..escrow::PROGRAM_DATA_HEADER_LEN])?;
     if authority.is_some() {
         return Err("Groth16 verifier upgrade authority is not none".into());
     }
+    let verifier_program = &verifier_account.data[escrow::PROGRAM_DATA_HEADER_LEN..];
+    let verifier_digest = hex(&sha256(verifier_program));
     println!(
-        "check.verifier={} program_data={verifier_data} upgrade_authority=none",
-        escrow::VERIFIER_ID
+        "check.verifier={} program_data={verifier_data} upgrade_authority=none bytes={} sha256={verifier_digest}",
+        escrow::VERIFIER_ID,
+        verifier_program.len()
     );
-    rpc.record(json!({"kind": "check", "escrow_sha256": digest, "verifier": escrow::VERIFIER_ID.to_string()}));
+    if verifier_program.len() != escrow::VERIFIER_PROGRAM_LEN || verifier_digest != escrow::VERIFIER_PROGRAM_SHA256 {
+        return Err(format!("deployed verifier bytes are not {}", escrow::VERIFIER_PROGRAM_SHA256));
+    }
+    rpc.record(json!({"kind": "check", "escrow_sha256": digest, "verifier": escrow::VERIFIER_ID.to_string(),
+                      "verifier_sha256": verifier_digest}));
     println!("check=ok");
     Ok(())
 }
@@ -383,8 +437,8 @@ fn job_create(rpc: &Rpc, mut args: Args) -> Result<()> {
         escrow::fund_ix(&buyer.pubkey(), job_id, amount),
     ];
     let outcome = tx::run(rpc, "create+fund", &instructions, &buyer, &[], Expect::Success, &[])?;
-    let created = require_job(rpc, &job_id)?;
-    let vault_amount = token_amount(rpc, &vault)?;
+    let (created, amounts) = read_after(rpc, outcome.slot, &job_id, &[vault])?;
+    let vault_amount = amounts[0];
     let expected = created.status == Status::Funded
         && created.buyer == buyer.pubkey()
         && created.executor == executor
@@ -436,15 +490,12 @@ fn job_deliver(rpc: &Rpc, mut args: Args) -> Result<()> {
     }
     prechecks.require(job.executor == executor.pubkey(), "signer is not the Job executor (6027)");
     prechecks.require(job.status == Status::Funded, format!("Job is {}, not Funded", job.status.name()));
-    prechecks.require(
-        slot + LANDING_MARGIN_SLOTS <= job.deadline_slot,
-        format!("slot {slot} is too close to the deadline {}", job.deadline_slot),
-    );
+    prechecks.add(escrow::deadline_margin_problem(slot, job.deadline_slot, "a delivery"));
     prechecks.finish()?;
     println!("deliver.artifact_hash={}", hex(&artifact_hash));
     let instruction = escrow::deliver_ix(&executor.pubkey(), job_id, artifact_hash);
-    tx::run(rpc, "deliver", &[instruction], &executor, &[], Expect::Success, &[])?;
-    let delivered = require_job(rpc, &job_id)?;
+    let outcome = tx::run(rpc, "deliver", &[instruction], &executor, &[], Expect::Success, &[])?;
+    let (delivered, _) = read_after(rpc, outcome.slot, &job_id, &[])?;
     print_job(&delivered);
     if delivered.status != (Status::Delivered { artifact_hash }) {
         return Err("Job is not Delivered with the committed artifact".into());
@@ -541,10 +592,7 @@ fn job_settle(rpc: &Rpc, mut args: Args) -> Result<()> {
     if deliver {
         prechecks.require(payer.pubkey() == job.executor, "signer is not the Job executor (6027)");
         prechecks.require(job.status == Status::Funded, format!("Job is {}, not Funded", job.status.name()));
-        prechecks.require(
-            slot + LANDING_MARGIN_SLOTS <= job.deadline_slot,
-            format!("slot {slot} is too close to the deadline {} to deliver", job.deadline_slot),
-        );
+        prechecks.add(escrow::deadline_margin_problem(slot, job.deadline_slot, "a delivery"));
     } else {
         match job.status {
             Status::Delivered { artifact_hash } => prechecks.require(
@@ -559,10 +607,7 @@ fn job_settle(rpc: &Rpc, mut args: Args) -> Result<()> {
         }
     }
     if verdict == Verdict::Pass {
-        prechecks.require(
-            slot + LANDING_MARGIN_SLOTS <= job.deadline_slot,
-            format!("slot {slot} is too close to the deadline {} for a release", job.deadline_slot),
-        );
+        prechecks.add(escrow::deadline_margin_problem(slot, job.deadline_slot, "a release"));
     }
     let before = destination(rpc, &party, &payer.pubkey(), &mut instructions, &mut prechecks)?;
     if deliver {
@@ -570,7 +615,7 @@ fn job_settle(rpc: &Rpc, mut args: Args) -> Result<()> {
     }
     let mut seal = receipt.seal();
     if tamper {
-        seal.pi_c[10] ^= 0x01;
+        seal = seal.tampered();
         println!("settle.tampered=pi_c[10]^=1");
     }
     let recipient = escrow::ata(&party);
@@ -584,22 +629,23 @@ fn job_settle(rpc: &Rpc, mut args: Args) -> Result<()> {
     prechecks.finish()?;
 
     let watch = if expect.is_failure() { watched(&job) } else { Vec::new() };
+    // A positive settlement must invoke the Groth16 verifier: `Verified`
+    // refuses to send a simulation without it and never reports PASS for a
+    // landed transaction without it.
+    let expect = if expect.is_failure() { expect } else { Expect::Verified };
     let outcome = tx::run(rpc, &label, &instructions, &payer, &[], expect, &watch)?;
     if expect.is_failure() {
         return Ok(());
     }
-    if !outcome.verifier_invoked {
-        return Err("settlement landed without invoking the Groth16 verifier".into());
-    }
-    let settled = require_job(rpc, &job_id)?;
+    let vault_address = escrow::vault_pda(&escrow::job_pda(&job_id));
+    let (settled, amounts) = read_after(rpc, outcome.slot, &job_id, &[vault_address, recipient])?;
     print_job(&settled);
     let artifact_hash = receipt.artifact_hash();
     let expected_status = match verdict {
         Verdict::Pass => Status::Released { artifact_hash },
         Verdict::Fail => Status::RefundedOnFail { artifact_hash },
     };
-    let vault = token_amount(rpc, &escrow::vault_pda(&escrow::job_pda(&job_id)))?;
-    let after = token_amount(rpc, &recipient)?;
+    let (vault, after) = (amounts[0], amounts[1]);
     println!("settle.vault_amount={}", vault.unwrap_or(0));
     println!("settle.recipient_amount_before={} after={}", before.unwrap_or(0), after.unwrap_or(0));
     if settled.status != expected_status || vault != Some(0) || after != Some(before.unwrap_or(0) + job.amount) {
@@ -647,14 +693,14 @@ fn job_refund_timeout(rpc: &Rpc, mut args: Args) -> Result<()> {
     prechecks.finish()?;
 
     let watch = if expect.is_failure() { watched(&job) } else { Vec::new() };
-    tx::run(rpc, "refund_on_timeout", &instructions, &payer, &[], expect, &watch)?;
+    let outcome = tx::run(rpc, "refund_on_timeout", &instructions, &payer, &[], expect, &watch)?;
     if expect.is_failure() {
         return Ok(());
     }
-    let refunded = require_job(rpc, &job_id)?;
+    let vault_address = escrow::vault_pda(&escrow::job_pda(&job_id));
+    let (refunded, amounts) = read_after(rpc, outcome.slot, &job_id, &[vault_address, buyer_token])?;
     print_job(&refunded);
-    let vault = token_amount(rpc, &escrow::vault_pda(&escrow::job_pda(&job_id)))?;
-    let after = token_amount(rpc, &buyer_token)?;
+    let (vault, after) = (amounts[0], amounts[1]);
     println!("refund.vault_amount={}", vault.unwrap_or(0));
     println!("refund.buyer_amount_before={} after={}", before.unwrap_or(0), after.unwrap_or(0));
     if refunded.status != Status::RefundedOnTimeout || vault != Some(0) || after != Some(before.unwrap_or(0) + job.amount) {

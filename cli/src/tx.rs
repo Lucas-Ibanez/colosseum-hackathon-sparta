@@ -2,8 +2,11 @@
 //!
 //! Positive transactions are sent only after a successful simulation.
 //! Negative transactions (`--expect-error`) are sent with `skipPreflight`
-//! only after the simulation shows the expected program error, and must land
-//! with that error and leave every watched account byte for byte unchanged.
+//! only after the simulation shows the expected program error as the
+//! innermost failure, and must land with that error and leave every watched
+//! account byte for byte unchanged. An "already processed" answer to the send
+//! is resolved by the signature status, like any other send; the outcome is
+//! always that of the landed transaction (`getTransaction`).
 
 use std::{str::FromStr, thread::sleep, time::Duration};
 
@@ -18,7 +21,7 @@ use solana_transaction::Transaction;
 use crate::{
     escrow::{MAX_TRANSACTION_SIZE, PROGRAM_ID, SYSTEM_PROGRAM_ID, TOKEN_PROGRAM_ID, VERIFIER_ID},
     explorer_tx,
-    rpc::Rpc,
+    rpc::{Rpc, Sent},
 };
 
 const POLL: Duration = Duration::from_secs(2);
@@ -28,7 +31,11 @@ const REBROADCAST_EVERY_POLLS: u32 = 3;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Expect {
     Success,
-    /// `Custom(code)` returned by `program`.
+    /// Success that invokes the Groth16 verifier (positive settlements): a
+    /// simulation without the verifier is never sent, and a landed
+    /// transaction without it is `UNEXPECTED`.
+    Verified,
+    /// `Custom(code)` returned by `program` as the innermost failure.
     Failure { program: Pubkey, code: u32 },
 }
 
@@ -103,12 +110,52 @@ fn logs_of(value: &Value) -> Vec<String> {
         .unwrap_or_default()
 }
 
-fn expected_failure(expect: &Expect, err: &Value, logs: &[String]) -> bool {
+/// The program of a runtime line `Program <id> failed: …`. Program output is
+/// always prefixed (`Program log: …`, `Program data: …`), so it never parses
+/// as a failure line.
+fn failing_program(line: &str) -> Option<Pubkey> {
+    let (id, rest) = line.strip_prefix("Program ")?.split_once(' ')?;
+    if rest.starts_with("failed: ") {
+        id.parse().ok()
+    } else {
+        None
+    }
+}
+
+/// The innermost failure: the first `Program <id> failed: …` line. A failing
+/// CPI logs its own line before the line of each caller.
+pub fn innermost_failure(logs: &[String]) -> Option<&str> {
+    logs.iter().map(String::as_str).find(|line| failing_program(line).is_some())
+}
+
+/// Whether `err` and `logs`, of a simulation or of a landed transaction, are
+/// the outcome `expect` names.
+///
+/// A failure matches only when the error is `Custom(code)` and the innermost
+/// failing program is `program`, with that code. For the escrow, no other
+/// program may have failed at all: when the verifier rejects a proof, the
+/// escrow logs the same code after it, and the verifier codes 6000–6003
+/// overlap escrow codes, so such a failure is never an escrow rejection
+/// (RD7-01).
+pub fn expected_failure(expect: &Expect, err: &Value, logs: &[String]) -> bool {
     match expect {
         Expect::Success => err.is_null(),
+        Expect::Verified => err.is_null() && invoked(logs, &VERIFIER_ID),
         Expect::Failure { program, code } => {
-            custom_code(err) == Some(*code) && logs.iter().any(|line| *line == failed_line(program, *code))
+            let expected = failed_line(program, *code);
+            custom_code(err) == Some(*code)
+                && innermost_failure(logs) == Some(expected.as_str())
+                && (*program != PROGRAM_ID || logs.iter().filter_map(|log| failing_program(log)).all(|id| id == PROGRAM_ID))
         }
+    }
+}
+
+/// Why a successful result still misses `expect`, for the messages.
+fn verifier_note(expect: &Expect, err: &Value) -> &'static str {
+    if *expect == Expect::Verified && err.is_null() {
+        " (the Groth16 verifier was not invoked)"
+    } else {
+        ""
     }
 }
 
@@ -161,21 +208,35 @@ pub fn run(
     );
     if !expected_failure(&expect, &sim_err, &sim_logs) {
         print_failure_logs(label, &sim_logs);
+        if let Some(line) = innermost_failure(&sim_logs) {
+            println!("[{label}] innermost failure `{line}`");
+        }
         entry["outcome"] = json!("SIMULATION_UNEXPECTED_NOT_SENT");
         rpc.record(entry);
-        return Err(format!("[{label}] simulation did not match {expect:?}; nothing was sent"));
+        return Err(format!(
+            "[{label}] simulation did not match {expect:?}{}; nothing was sent",
+            verifier_note(&expect, &sim_err)
+        ));
     }
     if let Expect::Failure { program, code } = expect {
-        println!("[{label}] simulation shows `{}`", failed_line(&program, code));
+        println!("[{label}] simulation shows `{}` as the innermost failure", failed_line(&program, code));
     }
 
     let before = if watch.is_empty() { None } else { Some(rpc.accounts(watch, None)?) };
     let skip_preflight = expect.is_failure();
-    let sent = rpc.send(&bytes, skip_preflight)?;
-    if sent != signature {
-        return Err(format!("[{label}] RPC returned signature {sent}, expected {signature}"));
+    match rpc.send(&bytes, skip_preflight)? {
+        Sent::Signature(sent) if sent != signature => {
+            return Err(format!("[{label}] RPC returned signature {sent}, expected {signature}"));
+        }
+        Sent::Signature(_) => println!("[{label}] sent signature={signature} skip_preflight={skip_preflight}"),
+        // A retried send whose first attempt reached the node: the same
+        // signed bytes are already there. Not an error and not a success:
+        // the status loop and `getTransaction` decide, as for any send.
+        Sent::AlreadyProcessed => {
+            entry["send"] = json!("ALREADY_PROCESSED");
+            println!("[{label}] sendTransaction answered \"already processed\"; resolving signature={signature} by its status");
+        }
     }
-    println!("[{label}] sent signature={signature} skip_preflight={skip_preflight}");
 
     let mut polls = 0_u32;
     loop {
@@ -197,7 +258,9 @@ pub fn run(
             return Err(format!("[{label}] {signature} did not land before its blockhash expired"));
         }
         if polls % REBROADCAST_EVERY_POLLS == 0 {
-            // Same signed bytes: a duplicate can never execute twice.
+            // Same signed bytes: a duplicate can never execute twice. Any
+            // answer, "already processed" included, is ignored: the status
+            // decides.
             let _ = rpc.send(&bytes, true);
         }
     }
@@ -258,10 +321,16 @@ pub fn run(
     }
     if !err.is_null() {
         print_failure_logs(label, &logs);
+        if let Some(line) = innermost_failure(&logs) {
+            println!("[{label}] innermost failure `{line}`");
+        }
     }
     println!("[{label}] explorer={}", explorer_tx(&signature));
     if !passed {
-        return Err(format!("[{label}] landed transaction did not match {expect:?}"));
+        return Err(format!(
+            "[{label}] landed transaction did not match {expect:?}{}",
+            verifier_note(&expect, &err)
+        ));
     }
     Ok(Outcome {
         signature,

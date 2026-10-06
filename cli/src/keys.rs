@@ -1,7 +1,11 @@
 //! Keypair files: devnet keys only, passed by path, never read from inside a
 //! Git work tree and never printed.
 
-use std::{fs, os::unix::fs::PermissionsExt, path::Path};
+use std::{
+    fs,
+    os::unix::fs::{MetadataExt, PermissionsExt},
+    path::Path,
+};
 
 use solana_keypair::{read_keypair_file, Keypair};
 use solana_signer::Signer;
@@ -13,19 +17,26 @@ pub fn inside_git_work_tree(path: &Path) -> bool {
 
 /// Loads the keypair of `role` from `path`.
 ///
-/// Refuses files inside a Git work tree (such as this repository) and files
-/// readable or writable by group or others. A read error never shows the
-/// file content.
+/// Refuses files with more than one hard link (another name could sit inside
+/// a work tree), files inside a Git work tree (such as this repository) and
+/// files readable or writable by group or others. A read error never shows
+/// the file content.
 pub fn load(path: &Path, role: &str) -> Result<Keypair, String> {
     let canonical = fs::canonicalize(path).map_err(|_| format!("{role} keypair: cannot resolve the path"))?;
+    let metadata = fs::metadata(&canonical).map_err(|_| format!("{role} keypair: cannot read the file metadata"))?;
+    if !metadata.is_file() {
+        return Err(format!("{role} keypair: not a regular file"));
+    }
+    if metadata.nlink() != 1 {
+        return Err(format!(
+            "{role} keypair: refusing a file with {} hard links; keep a single name outside any clone",
+            metadata.nlink()
+        ));
+    }
     if inside_git_work_tree(&canonical) {
         return Err(format!(
             "{role} keypair: refusing a file inside a Git work tree; keep devnet keys outside the clone"
         ));
-    }
-    let metadata = fs::metadata(&canonical).map_err(|_| format!("{role} keypair: cannot read the file metadata"))?;
-    if !metadata.is_file() {
-        return Err(format!("{role} keypair: not a regular file"));
     }
     check_mode(metadata.permissions().mode(), role)?;
     read_keypair_file(&canonical).map_err(|_| format!("{role} keypair: not a readable keypair file (content not shown)"))

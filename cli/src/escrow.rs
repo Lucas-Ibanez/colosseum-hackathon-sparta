@@ -22,6 +22,11 @@ pub const PROGRAM_SHA256: &str = "cdf6967f3abc63d0385e36909fe61b36f639203e267920
 pub const PROGRAM_LEN: usize = 395_064;
 /// RISC Zero Groth16 verifier of `risc0-solana v3.0.0`; immutable on devnet.
 pub const VERIFIER_ID: Pubkey = Pubkey::from_str_const("THq1qFYQoh7zgcjXoMXduDBqiZRCPeg3PvvMbrVQUge");
+pub const VERIFIER_PROGRAM_DATA_ID: Pubkey = Pubkey::from_str_const("ENdLkqHpzKcrQy4XzFUhkN7H3C3Mz1cugjJBpiNEDxpn");
+/// SHA-256 and length of the verifier program bytes on devnet (D4a dump; the
+/// `.so` the suite loads from devnet).
+pub const VERIFIER_PROGRAM_SHA256: &str = "34ae6e5c9d63dfe67c48fa04cad04e9752ad9f1cfbc8b4d66e99941df7666cd1";
+pub const VERIFIER_PROGRAM_LEN: usize = 199_256;
 /// The only mint a Job admits: devnet Test USDC (6 decimals, no freeze authority).
 pub const ADMITTED_MINT: Pubkey = Pubkey::from_str_const("9TE2VPFmgrNxT22yS3sEZyRcMxLgJkwzgAoquWRXwV2F");
 pub const MINT_DECIMALS: u8 = 6;
@@ -59,6 +64,19 @@ pub const MAX_TRANSACTION_SIZE: usize = 1_232;
 pub const MIN_DEADLINE_WINDOW_SLOTS: u64 = vericode_core::escrow::MIN_DEADLINE_WINDOW_SLOTS;
 pub const MAX_DEADLINE_WINDOW_SLOTS: u64 = vericode_core::escrow::MAX_DEADLINE_WINDOW_SLOTS;
 pub const LANDING_MARGIN_SLOTS: u64 = 60;
+
+/// Why `slot` leaves no room to land `action`, which the program accepts only
+/// up to `deadline_slot` inclusive; `None` when at least
+/// `LANDING_MARGIN_SLOTS` remain.
+pub fn deadline_margin_problem(slot: u64, deadline_slot: u64, action: &str) -> Option<String> {
+    if slot.saturating_add(LANDING_MARGIN_SLOTS) <= deadline_slot {
+        None
+    } else if slot > deadline_slot {
+        Some(format!("slot {slot} is past the deadline {deadline_slot}; the program no longer accepts {action}"))
+    } else {
+        Some(format!("slot {slot} is too close to the deadline {deadline_slot} for {action}"))
+    }
+}
 
 /// Anchor discriminators (`sha256("global:<name>")[..8]`, IDL `e8ce2c20…`).
 pub const CREATE_JOB_DISCRIMINATOR: [u8; 8] = [0xb2, 0x82, 0xd9, 0x6e, 0x64, 0x1b, 0x52, 0x77];
@@ -138,6 +156,15 @@ impl Groth16Seal {
             pi_b: raw[64..192].try_into().expect("128 bytes"),
             pi_c: raw[192..256].try_into().expect("64 bytes"),
         }
+    }
+
+    /// The same seal with one bit of `pi_c` flipped (`pi_c[10] ^= 1`), the
+    /// mutation of the suite (`d4b_receipts.rs`). Only for `--tamper-seal`
+    /// negative runs: the verifier must reject it.
+    pub fn tampered(&self) -> Self {
+        let mut seal = *self;
+        seal.pi_c[10] ^= 0x01;
+        seal
     }
 
     fn encode(&self, out: &mut Vec<u8>) {

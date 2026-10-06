@@ -1,7 +1,7 @@
 # `vericode` — cliente de devnet do escrow VeriCode
 
-Cliente de linha de comando (gate D7) que cria, financia, entrega, liquida e
-reembolsa Jobs do programa `vericode_escrow`, implantado e **imutável** em
+Cliente de linha de comando (gate D7, endurecido no D10a) que cria, financia,
+entrega, liquida e reembolsa Jobs do programa `vericode_escrow`, implantado e **imutável** em
 Solana devnet. Ele usa as receipts Groth16 de [`vericode-prover`](../prover/README.md).
 
 A CLI não decide nada econômico: toda regra é imposta pelo programa (e, nele,
@@ -31,14 +31,27 @@ O workspace e o lock são próprios (`cli/Cargo.lock`, semeado de
 `anchor/tests-local/Cargo.lock`, sem fonte git). As dependências de teste são
 as da suíte do programa: os testes comparam, byte a byte, cada instrução da
 CLI com os builders de `anchor/tests-local/tests/common/mod.rs`, e os
-decoders com Anchor e `spl_token`. Os testes não usam rede nem keypair.
+decoders com Anchor e `spl_token`. Desde o D10a, também cobrem:
+- o casamento do `--expect-error` (`tests/negative_runs.rs`);
+- o `--tamper-seal` (`tests/instructions.rs`);
+- o envio, contra um RPC falso em 127.0.0.1 dentro do próprio teste
+  (`tests/fake_rpc/`);
+- as guardas de `tests/guards.rs`.
+
+Os testes não usam devnet nem arquivo de keypair: assinam com keypairs em
+memória.
 
 ## Comandos
 
-Opções globais: `--rpc-url URL` (padrão `https://api.devnet.solana.com`) e
-`--log ARQUIVO.jsonl` (cada transação, com simulação, logs, CU e fee;
-criado com modo `0600`). A CLI recusa qualquer cluster cujo genesis não seja
-o de devnet (`EtWTRABZ…`).
+Opções globais:
+- `--rpc-url URL`: padrão `https://api.devnet.solana.com`. Só `https://`; um
+  `http://` puro só é aceito em 127.0.0.1, `localhost` ou `[::1]`, para
+  servidores de teste locais. Variáveis de proxy são ignoradas.
+- `--log ARQUIVO.jsonl`: registra cada transação, com simulação, logs, CU e
+  fee. O arquivo fica com modo `0600`, seja novo ou já existente.
+
+A CLI recusa qualquer cluster cujo genesis não seja o de devnet
+(`EtWTRABZ…`).
 
 ```bash
 V=cli/target/release/vericode
@@ -69,28 +82,37 @@ $V job show --job-id <JOB_ID_HEX>           # Job, vault, ATAs e saldos (só lei
 `--expect-error PROGRAMA:CÓDIGO` (`escrow`, `verifier`, `token` ou `system`)
 envia de propósito uma transação que o programa deve rejeitar:
 1. as conferências da CLI que falhariam viram `precheck.expected_rejection=…`;
-2. a simulação precisa mostrar `Program <id> failed: custom program error:
-   0x…` com `Custom(CÓDIGO)`, senão nada é enviado;
+2. a simulação precisa mostrar `Custom(CÓDIGO)` e, como **falha mais
+   interna** (a primeira linha `Program <id> failed: …`), `Program <id>
+   failed: custom program error: 0x…` do programa indicado. Para `escrow`,
+   nenhum outro programa pode ter falhado. Se não for assim, nada é enviado;
 3. a transação vai com `skipPreflight`, aterrissa com erro, e Job, vault e as
    duas ATAs têm de estar byte a byte iguais antes e depois.
 
 `--tamper-seal` (só com `--expect-error`) inverte um bit de `pi_c`, para ver
 o verificador rejeitar a prova (`verifier:6003`).
 
-Limites conhecidos do modo negativo (R-D7; correção prevista no D10a):
-- **RD7-01:** quando a CPI ao verificador falha, o log também traz `Program
-  GZqb… failed` com o mesmo código. Os códigos 6000 a 6003 do verificador
-  coincidem com os do escrow, então `escrow:6000` a `escrow:6003` podem
-  passar com uma falha que foi do verificador. Use só `escrow:6014`,
-  `escrow:6007`/`6008`, `escrow:6021` e `verifier:6003`.
-- **RD7-04:** os testes de `cli/` cobrem só o parse de `--expect-error`; o
-  casamento com a transação e o `--tamper-seal` não têm teste unitário. Em
-  devnet, o D9 exercitou os dois pela CLI: `escrow:6021`, `escrow:6014`,
-  `--tamper-seal` com `verifier:6003` e `escrow:6007`
+Achados do R-D7 no modo negativo:
+- **RD7-01 (corrigido no D10a):**
+  - quando a CPI ao verificador falha, o log traz a linha do verificador e,
+    depois, `Program GZqb… failed` com o mesmo código;
+  - como os códigos 6000 a 6003 do verificador coincidem com os do escrow,
+    até o D10a `escrow:6000` a `escrow:6003` podiam passar com uma falha do
+    verificador;
+  - hoje a CLI recusa esse caso já na simulação, e nada é enviado. Só
+    `verifier:N` casa com ele.
+
+  Os negativos documentados continuam sendo `escrow:6014`,
+  `escrow:6007`/`6008`, `escrow:6021` e `verifier:6003`. O binário do D9,
+  usado na seção "Gravação" do roteiro, ainda tem o comportamento antigo.
+- **RD7-04 (fechado no D10a):** o casamento, inclusive a sobreposição
+  6000–6003, e o `--tamper-seal` têm testes. O seal adulterado difere só em
+  `pi_c[10]` e é igual, byte a byte, à mutação da suíte. Em devnet, o D9
+  exercitou os dois pela CLI
   ([`docs/d9-demo-results.md`](../docs/d9-demo-results.md)).
-- **RD7-08:** um negativo `escrow:6021` enviado perto do prazo pode virar
-  reembolso real; a CLI então reporta `UNEXPECTED` (exit 1). Envie-o com pelo
-  menos 60 slots de folga.
+- **RD7-08 (aberto, informativo):** um negativo `escrow:6021` enviado perto
+  do prazo pode virar reembolso real. A CLI então reporta `UNEXPECTED` (exit
+  1). Envie-o com pelo menos 60 slots de folga.
 
 ```bash
 # journal de outro Job → 6014, antes da CPI (diga de qual Job é a receipt)
@@ -106,15 +128,18 @@ $V job refund-timeout --job-id <T> --payer-keypair … --expect-error escrow:602
 ## Conferências antes de cada operação
 
 - cluster devnet (genesis); escrow executável, com ProgramData `B7s9JJVy…` e
-  upgrade authority `none`;
+  upgrade authority `none`. O `check` também confere os bytes do escrow
+  (`cdf6967f…`) e, desde o D10a, os do verificador: ProgramData `ENdLkqHp…`,
+  199.256 B, `34ae6e5c…`, authority `none`;
 - mint `9TE2V…`: SPL Token clássico, 82 bytes, inicializado, **6 decimais e
   sem freeze authority** (o programa não confere decimais; a CLI confere);
 - termos da v1 recalculados pelo `vericode-core` e, num Job existente, campos
   iguais a eles;
 - `job_id` novo de 32 bytes do gerador aleatório do sistema operacional
   (`getrandom`), diferente de `0x11…`, com PDA livre;
-- prazo com margem; saldo de Test USDC e de SOL (rent do Job e do vault +
-  taxa) suficientes, senão a CLI informa a pubkey e o valor;
+- prazo com margem de 60 slots, com mensagem própria para um Job já vencido
+  ("past the deadline"); saldo de Test USDC e de SOL (rent do Job e do vault
+  + taxa) suficientes, senão a CLI informa a pubkey e o valor;
 - receipt: journal de exatamente 165 bytes decodificado pelo core, `job_id`
   igual ao Job, spec/harness/ImageID iguais aos termos, `journal_digest` =
   SHA-256(journal), selector `73c457ba`, `pi_a` negado pela CLI (o prover
@@ -126,19 +151,37 @@ $V job refund-timeout --job-id <T> --payer-keypair … --expect-error escrow:602
 
 ## Envio
 
-`getLatestBlockhash` → `simulateTransaction` (com verificação de assinatura) →
-`sendTransaction` → reenvio da mesma transação a cada ~6 s →
-`getSignatureStatuses` até `confirmed` ou expirar o blockhash →
-`getTransaction` (slot, CU, fee, logs). O RPC público limita rajadas (HTTP
-429): as chamadas são espaçadas em pelo menos 250 ms e repetidas com backoff.
-Sem compute budget nem priority fee.
+1. `getLatestBlockhash`;
+2. `simulateTransaction`, com verificação de assinatura;
+3. `sendTransaction`;
+4. reenvio da mesma transação a cada ~6 s;
+5. `getSignatureStatuses` até `confirmed` ou até o blockhash expirar;
+6. `getTransaction` (slot, CU, fee, logs).
+
+O RPC público limita rajadas (HTTP 429): as chamadas são espaçadas em pelo
+menos 250 ms e repetidas com backoff. Sem compute budget nem priority fee.
+
+Desde o D10a (RD7-07 e RD7-09):
+- **"Already processed".** Se o `sendTransaction` responder "already
+  processed" (por exemplo, num retry depois de um timeout cuja primeira
+  tentativa chegou ao nó), a CLI segue pelo status da própria assinatura. O
+  resultado vem sempre do `getTransaction`: nunca vira erro falso nem sucesso
+  falso. A assinatura devolvida pelo RPC continua conferida com a local.
+- **Leituras depois da transação.** Job, vault e conta de destino são lidos
+  juntos, num único `getMultipleAccounts` com `minContextSlot` igual ao slot
+  da transação. Um nó atrasado não mostra o estado anterior.
+- **Liquidação positiva.** A transação precisa invocar o verificador
+  Groth16: uma simulação sem ele não é enviada, e uma transação aterrissada
+  sem ele sai como `UNEXPECTED`, nunca como `PASS`.
 
 ## Chaves
 
 - Só keypairs de **devnet**, passados por caminho (`--buyer-keypair`,
   `--executor-keypair`, `--payer-keypair`).
-- A CLI recusa arquivos dentro de qualquer work tree Git (este repositório
-  incluído) e arquivos com permissão para grupo ou outros (use `0600`).
+- A CLI recusa:
+  - arquivos dentro de qualquer work tree Git, este repositório incluído;
+  - arquivos com mais de um hard link (D10a);
+  - arquivos com permissão para grupo ou outros (use `0600`).
 - Ela nunca imprime conteúdo de chave; só pubkeys. Erros de leitura não
   mostram o arquivo.
 

@@ -157,6 +157,36 @@ fn seal_encoding_is_the_suite_encoding() {
 }
 
 #[test]
+fn tampered_seal_flips_only_pi_c_10_and_keeps_the_suite_bytes() {
+    let pass = suite_fixture("pass");
+    let executor_token = ata_address(&EXECUTOR, &ADMITTED_MINT);
+    let seal = cli_seal(&pass);
+    let tampered = seal.tampered();
+    assert_eq!((tampered.selector, tampered.pi_a, tampered.pi_b), (seal.selector, seal.pi_a, seal.pi_b));
+    let changed: Vec<usize> = (0..64).filter(|&index| tampered.pi_c[index] != seal.pi_c[index]).collect();
+    assert_eq!(changed, vec![10]);
+    assert_eq!(tampered.pi_c[10], seal.pi_c[10] ^ 0x01);
+
+    // The mutation of the suite (`d4b_receipts.rs`), byte for byte.
+    let mut suite = groth16_seal(&pass);
+    suite.pi_c[10] ^= 0x01;
+    let ours = cli::release_ix(DEVNET_JOB, &executor_token, &pass.journal, &tampered);
+    assert_eq!(
+        ours,
+        release_ix(DEVNET_JOB, &ADMITTED_MINT, &executor_token, pass.journal.clone(), suite)
+    );
+
+    // Against the honest instruction: same program and accounts, one data
+    // byte at discriminator (8) + journal length (4) + journal (165) +
+    // selector (4) + pi_a (64) + pi_b (128) + 10.
+    let honest = cli::release_ix(DEVNET_JOB, &executor_token, &pass.journal, &seal);
+    assert_eq!((ours.program_id, &ours.accounts), (honest.program_id, &honest.accounts));
+    let differing: Vec<usize> = (0..ours.data.len()).filter(|&index| ours.data[index] != honest.data[index]).collect();
+    assert_eq!(differing, vec![383]);
+    assert_eq!(383, 8 + 4 + pass.journal.len() + 4 + 64 + 128 + 10);
+}
+
+#[test]
 fn ata_create_idempotent_has_the_create_accounts_and_tag_1() {
     let ix = cli::create_ata_idempotent_ix(&BUYER, &EXECUTOR);
     assert_eq!(ix.program_id, ATA_PROGRAM_ID);

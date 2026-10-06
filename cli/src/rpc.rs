@@ -2,14 +2,16 @@
 //!
 //! The public devnet endpoint rate-limits bursts (HTTP 429), so every call
 //! is paced and retried with exponential backoff. Only the configured URL is
-//! contacted; the client refuses any cluster other than devnet by genesis
-//! hash (see `main.rs`).
+//! contacted, directly (proxy variables are ignored), over `https://` or,
+//! for local test servers, plain `http://` on the loopback interface; the
+//! client refuses any cluster other than devnet by genesis hash (see
+//! `main.rs`).
 
 use std::{
     cell::{Cell, RefCell},
-    fs::{File, OpenOptions},
+    fs::{File, OpenOptions, Permissions},
     io::Write,
-    os::unix::fs::OpenOptionsExt,
+    os::unix::fs::{OpenOptionsExt, PermissionsExt},
     path::Path,
     thread::sleep,
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
@@ -42,6 +44,38 @@ pub struct Rpc {
     log: Option<RefCell<File>>,
 }
 
+/// Answer of `sendTransaction`.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum Sent {
+    /// The signature the node returned.
+    Signature(String),
+    /// The node already has these signed bytes (`AlreadyProcessed`), for
+    /// example when a send is retried after a timeout. Only the signature
+    /// status can tell whether and how the transaction landed.
+    AlreadyProcessed,
+}
+
+/// Whether a JSON-RPC error of `sendTransaction` is the preflight error
+/// `AlreadyProcessed` ("This transaction has already been processed").
+fn already_processed(error: &Value) -> bool {
+    error["data"]["err"] == json!("AlreadyProcessed")
+        || error["message"].as_str().is_some_and(|message| message.contains("already been processed"))
+}
+
+/// Accepts `https://` URLs, and plain `http://` only on the loopback
+/// interface (127.0.0.1, localhost or [::1]), for local test servers.
+pub fn check_url(url: &str) -> Result<(), String> {
+    let parsed = reqwest::Url::parse(url).map_err(|error| format!("--rpc-url {url:?}: {error}"))?;
+    let loopback = matches!(parsed.host_str(), Some("127.0.0.1" | "localhost" | "[::1]"));
+    match parsed.scheme() {
+        "https" => Ok(()),
+        "http" if loopback => Ok(()),
+        _ => Err(format!(
+            "--rpc-url {url:?}: only https:// is accepted (plain http:// only on 127.0.0.1, localhost or [::1])"
+        )),
+    }
+}
+
 fn now_unix() -> u64 {
     SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |elapsed| elapsed.as_secs())
 }
@@ -64,23 +98,28 @@ fn parse_account(value: &Value) -> Result<Option<Account>, String> {
 }
 
 impl Rpc {
-    /// `log`: optional JSON Lines file (created `0600`) for every recorded
-    /// exchange.
+    /// `log`: optional JSON Lines file for every recorded exchange, set to
+    /// mode `0600` whether it is new or already exists.
     pub fn new(url: &str, log: Option<&Path>) -> Result<Self, String> {
+        check_url(url)?;
         let client = reqwest::blocking::Client::builder()
             .timeout(Duration::from_secs(60))
             .user_agent(concat!("vericode-cli/", env!("CARGO_PKG_VERSION")))
+            .no_proxy()
             .build()
             .map_err(|error| error.to_string())?;
         let log = match log {
-            Some(path) => Some(RefCell::new(
-                OpenOptions::new()
+            Some(path) => {
+                let file = OpenOptions::new()
                     .create(true)
                     .append(true)
                     .mode(0o600)
                     .open(path)
-                    .map_err(|error| format!("log {}: {error}", path.display()))?,
-            )),
+                    .map_err(|error| format!("log {}: {error}", path.display()))?;
+                file.set_permissions(Permissions::from_mode(0o600))
+                    .map_err(|error| format!("log {}: {error}", path.display()))?;
+                Some(RefCell::new(file))
+            }
             None => None,
         };
         Ok(Self {
@@ -116,6 +155,13 @@ impl Rpc {
     /// Calls `method` and returns its `result`, retrying rate limits, server
     /// errors, timeouts and transient JSON-RPC errors.
     pub fn call(&self, method: &str, params: Value) -> Result<Value, String> {
+        self.call_raw(method, params)?
+            .map_err(|error| format!("rpc {method}: {error}"))
+    }
+
+    /// Like `call`, but a JSON-RPC error that waiting does not clear is
+    /// returned as `Ok(Err(error object))`, for the caller to inspect.
+    fn call_raw(&self, method: &str, params: Value) -> Result<Result<Value, Value>, String> {
         let body = json!({"jsonrpc": "2.0", "id": 1, "method": method, "params": params});
         let mut delay = Duration::from_secs(1);
         let mut reason = String::new();
@@ -131,11 +177,11 @@ impl Rpc {
                         Some(error) => {
                             let code = error["code"].as_i64().unwrap_or(0);
                             if !TRANSIENT_RPC_CODES.contains(&code) {
-                                return Err(format!("rpc {method}: {error}"));
+                                return Ok(Err(error.clone()));
                             }
                             reason = format!("rpc error {code}");
                         }
-                        None => return Ok(value["result"].clone()),
+                        None => return Ok(Ok(value["result"].clone())),
                     }
                 }
                 Err(error) => reason = error.to_string(),
@@ -235,15 +281,20 @@ impl Rpc {
             .clone())
     }
 
-    pub fn send(&self, transaction: &[u8], skip_preflight: bool) -> Result<String, String> {
-        self.call(
+    pub fn send(&self, transaction: &[u8], skip_preflight: bool) -> Result<Sent, String> {
+        let answer = self.call_raw(
             "sendTransaction",
             json!([STANDARD.encode(transaction), {"encoding": "base64", "skipPreflight": skip_preflight,
                    "preflightCommitment": "processed"}]),
-        )?
-        .as_str()
-        .map(str::to_string)
-        .ok_or_else(|| "sendTransaction".into())
+        )?;
+        match answer {
+            Ok(result) => result
+                .as_str()
+                .map(|signature| Sent::Signature(signature.to_string()))
+                .ok_or_else(|| "sendTransaction".into()),
+            Err(error) if already_processed(&error) => Ok(Sent::AlreadyProcessed),
+            Err(error) => Err(format!("rpc sendTransaction: {error}")),
+        }
     }
 
     pub fn signature_status(&self, signature: &str, history: bool) -> Result<Value, String> {
