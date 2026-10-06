@@ -1407,7 +1407,9 @@ Registre decisões relevantes do projeto neste formato.
     - `--expect-error` para negativos, com simulação, `skipPreflight` e
       contas iguais antes e depois;
     - `check` (só leitura, com hash do ProgramData) como extra;
-    - `--tamper-seal` para a demo, testado só offline.
+    - `--tamper-seal` para a demo. Errata do D9 (RD7-04): o texto original
+      dizia "testado só offline", mas não há teste dele em `cli/`; o teste
+      unitário fica para o D10a.
   - Prover:
     - guest embutido com `include_bytes!`;
     - shim Docker versionado, que o prover põe no `PATH` do próprio processo;
@@ -1533,3 +1535,72 @@ Registre decisões relevantes do projeto neste formato.
     uma entrega mesmo que as fases seguintes falhem;
   - os achados RD7-01/03/07 afetam exatamente o que o worker e as telas vão
     usar, por isso são corrigidos antes delas.
+- **Ratificação:** o humano enviou o prompt do D9 com estas quatro decisões
+  e aprovou em Plan Mode (2026-10-05, 22:56 -03:00) os comandos exatos de
+  W1–W8 e a errata de `docs/manifest-schema.md:70`.
+
+## 2026-10-05 — D9: demo em ambiente limpo, congelamento dos claims e roteiro de gravação
+
+- **Data:** 2026-10-05 (22:41–23:55 -03:00)
+- **Decisões aplicadas:** as quatro de "Decisões humanas para o D9", acima.
+  - Lista fechada W1–W8, com os comandos exatos aprovados em Plan Mode.
+  - CR4 opção (a): clone novo do HEAD `9d3efa7`, homes copiadas das homes
+    isoladas, targets novos, `--locked --offline`. "Limpo" **não** significa
+    uma máquina nova.
+  - Nenhuma mudança de código.
+  - O vídeo é gravado pelo humano.
+- **Escolhas do agente, no plano aprovado:**
+  - pagadores: buyer em W1, W3 e W8; executor em W4–W6 (`--deliver`);
+    deployer nos negativos sem `deliver` (W2, W7), como no D7;
+  - `.so` da suíte lidos de devnet por `getAccountInfo` (só leitura), com os
+    hashes `cdf6967f…`/`34ae6e5c…`;
+  - scripts próprios com nomes `N9_*`/`n9_*`, sem carregar o `env.sh`
+    herdado;
+  - na gravação, a "receipt de outro Job" da cena 5a é a do Job P′ do D9,
+    declarada (CR6).
+- **Claims congelados (CR1):** lista de 8 frases permitidas e a lista "Não
+  dizer", em `README.md` ("Frases permitidas (congeladas no D9)") e em
+  `docs/demo-script.md`. Mudar a lista exige nova decisão registrada aqui. O
+  claim continua o do CD7.
+- **Erratas (CR1):**
+  - RD7-05 (a)–(d): rede do primeiro build, requisitos (Agave `2.3.9`,
+    imagem por digest), origem da receipt da cena 5a,
+    `manifest-schema.md:70` (Plan Mode) e `escrow-program.md:137`;
+  - RD7-04: "testado offline", inclusive na entrada D7 acima;
+  - RD7-02: o que o shim garante;
+  - RD7-03: ambiente do prover.
+- **Resultado (evidência):**
+  - ambiente limpo: core 42/42 ×2, CLI 14/14, suíte 61/61 com os `.so` de
+    devnet, prover 4/4 e `check`;
+  - devnet:
+    - T′ criado; 6021 antes do prazo; `RefundedOnTimeout`
+      ([`33ezPvow…`](https://explorer.solana.com/tx/33ezPvow48vSFHYS43i76pDJwkpyKTnDCN3Tdr1p7he8mbHjEpXvsBkt2MrMHKPUNW6AbqWE7oRJ7MriRZNxrjkh?cluster=devnet));
+    - P′ criado; prova `(21,42)` nova (Composite 9,9 s → Groth16 106 s,
+      Docker por digest com `--network=none`);
+    - 6014 com a receipt do Job P do D7;
+    - **seal adulterado rejeitado pelo verificador (`verifier:6003`) pela
+      CLI**;
+    - `Released` com o verificador invocado (99.541 CU,
+      [`5tjezXYh…`](https://explorer.solana.com/tx/5tjezXYhN361HHUiZcMcJQFXwViWc4cSUfdreHfokdXuB89LrLDt6WPE8KRLhHwNE7rx5nGAgxjdfod6r7pPvDs1?cluster=devnet));
+    - 6007 na dupla liquidação;
+  - os quatro negativos com estado igual; saldos fechados por lamport;
+  - `getTransaction` independente das 8 assinaturas;
+  - relatório: [`docs/d9-demo-results.md`](d9-demo-results.md).
+- **Incidente registrado:**
+  - a home `zkvm` copiada não tinha o proxy `rustdoc`;
+  - por isso os testes do prover deram exit 101 no passo de doc-tests, com
+    4/4 nos testes unitários;
+  - os proxies foram completados e o teste repetido (4/4, exit 0).
+- **Risco aberto:**
+  - sem e-stop;
+  - rent preso (8 Jobs);
+  - mint authority = deployer;
+  - memória do WSL: 117 MB livres no pico da compressão;
+  - RD7-01, 02, 03, 04 e 07;
+  - errata pendente em `docs/manifest-schema.md:86`, que exige Plan Mode;
+  - comentário do shim (código);
+  - `docs/d7-cli-results.md:128`;
+  - ImageID não recertificado; spec v1 trivial.
+- **Próximo gate:** D10a, endurecimento da CLI e do prover, conforme
+  `docs/handoffs/d9-to-d10a.md`; o humano grava o vídeo de reserva seguindo
+  a seção "Gravação" de `docs/demo-script.md`.

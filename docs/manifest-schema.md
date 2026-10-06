@@ -67,7 +67,7 @@ relógio, RPC ou I/O externo e não conferem autoridade de pagamento.
 | Vínculo | Valor | Onde é imposto |
 | --- | --- | --- |
 | Guest admitido | `ADMITTED_IMAGE_ID_V1 = 4da06f90da75ec8980c943ce017d69c48370fddbf3aa27689d375d78fac0fb1a` (ELF D1c2b preservado) | `create_job` só admite esse ImageID; a CPI de verificação usa o `image_id` do Job |
-| Programa consumidor | `vericode_escrow`, program ID `GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH` (a implantar em devnet depois da R-D4a) | `release` e `refund_on_fail` decodificam exatamente estes 165 bytes |
+| Programa consumidor | `vericode_escrow`, program ID `GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH`, implantado em devnet e finalizado no D4b (upgrade authority `none`) | `release` e `refund_on_fail` decodificam exatamente estes 165 bytes |
 | Digest verificado | `SHA-256` dos mesmos 165 bytes decodificados | CPI ao verificador Groth16 `THq1qFYQ…` com `(seal, job.image_id, digest)` (D4a) |
 | Spec e harness | os valores v1 da tabela acima, calculados on-chain pelo core | `create_job` (6028/6029) e `validate_against` na liquidação |
 

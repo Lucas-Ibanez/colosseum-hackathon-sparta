@@ -43,7 +43,7 @@ evidência nem um escopo proibido.
 | `zk-guest/` | `zkvm/methods/guest` | guest real; dois builds determinísticos; ImageID `4da06f90…fb1a` (antes do D2a) |
 | `zk-host/` | `zkvm/host`; `prover/` (D7) | receipts locais reais PASS/FAIL `Composite` (D1c2b); compressão Groth16 por harness fora do clone (D2d, D4a); desde o D7, `vericode-prover` no repositório prova o guest admitido versionado (`prover/artifacts`, `e09ba8cf…`) e comprime para Groth16 pelo Docker local por digest |
 | `anchor-program/` | `anchor/programs/vericode-escrow` (workspace `anchor/`, testes em `anchor/tests-local`) | D2c/D2b.1/D2e/D4a: `create_job` (termos da v1, mint Test USDC admitido, janela de prazo), `fund`, `deliver`, `release`/`refund_on_fail` com CPI direta ao verificador Groth16 de `risc0-solana v3.0.0` (sem Router desde o D4a), `refund_on_timeout`; destino = ATA canônica; testado em processo com o verificador real (rebuild e bytes de devnet); **implantado e finalizado em devnet** (D4b: `GZqbL2Tb…`, authority `none`) |
-| CLI (guia §3 e §10: "CLI como fonte de verdade") | `cli/` (D7) | `vericode`: `check`, `job create/deliver/settle/refund-timeout/show` em devnet; instruções iguais byte a byte aos builders da suíte; Jobs P e T liquidados em devnet |
+| CLI (guia §3 e §10: "CLI como fonte de verdade") | `cli/` (D7) | `vericode`: `check`, `job create/deliver/settle/refund-timeout/show` em devnet; instruções iguais byte a byte aos builders da suíte; Jobs P e T liquidados em devnet (D7); Jobs P′ e T′ e quatro negativos em ambiente limpo (D9) |
 | `worker-api/` | inexistente | não iniciado |
 | `frontend/` | inexistente | não iniciado |
 
@@ -84,8 +84,8 @@ adversariais com prefixo `R-`). O gate seguinte ao D4 é o `D7`, não "D5".
 | D4b | deploy em devnet, smoke, finalização, Jobs PASS/FAIL/timeout e negativos no Explorer | D4 e parte de D7/D8 (em devnet) |
 | D7 | CLI e prover reproduzíveis no repositório; Job P (PASS) e T (timeout) em devnet pela CLI; invariante 9 em devnet; README de entrega e roteiro da demo; RD4A-07 (a)(e)(f) | D7, D8 (dupla liquidação em devnet), D9 (README e roteiro) |
 | R-D7 | revisão adversarial final do MVP, somente leitura (APROVADO COM RESSALVAS, CR1 a CR8) | guia §11 |
-| D9 (próximo) | demo em ambiente limpo (W1–W8 em devnet), congelamento dos claims, roteiro de gravação; vídeo gravado pelo humano | D9 |
-| D10a | endurecimento da CLI e do prover (RD7-01, 02, 03, 04, 07), com revisão delta curta | preparação de D10–D12 |
+| D9 | demo em ambiente limpo (W1–W8 em devnet), congelamento dos claims, erratas da CR1, roteiro de gravação; vídeo gravado pelo humano | D9 |
+| D10a (próximo) | endurecimento da CLI e do prover (RD7-01, 02, 03, 04, 07), com revisão delta curta | preparação de D10–D12 |
 | D10–D12 | worker de prova e telas Buyer, Submit e Result (CR8) | D10–D12 |
 
 Itens de produto e mercado do plano (inscrição, outreach, design partners,
@@ -105,7 +105,16 @@ repositório, Job P liquidado por PASS e Job T por timeout em devnet pela
 CLI, dupla liquidação rejeitada em devnet (6007/6008), README de entrega e
 roteiro da demo (`docs/d7-cli-results.md`). A revisão adversarial final
 **R-D7** aprovou com ressalvas (CR1 a CR8, `docs/r-d7-review-results.md`).
-O próximo gate é o **D9**.
+
+O **D9** também está concluído (`docs/d9-demo-results.md`):
+- o fluxo rodou pela CLI e pelo prover num ambiente limpo (clone e targets
+  novos, toolchains isoladas copiadas): P′ `Released` com o verificador
+  invocado e T′ `RefundedOnTimeout`;
+- negativos 6021, 6014, `verifier:6003` (seal adulterado, pela CLI) e 6007;
+- claims congelados e erratas da CR1;
+- seção "Gravação" pronta para o humano.
+
+O próximo gate é o **D10a**.
 
 | Dia | Situação | Evidência / lacuna |
 | --- | --- | --- |
@@ -117,7 +126,8 @@ O próximo gate é o **D9**.
 | D5/D6 | concluído localmente (D2d, D2e, D4a) | receipts Groth16 PASS/FAIL reais verificadas pelo Verifier Router em `solana-program-test` (D2d) e por CPI a partir do `vericode_escrow` (D2e via Router; D4a direto ao verificador, também com os bytes de devnet), com prova errada rejeitada antes do happy path; **em devnet desde o D4b**: liquidações PASS/FAIL verificadas por CPI ao verificador imutável e seals errados rejeitados (6000/6003) |
 | D7 | **concluído** | `cli/` e `prover/` reproduzíveis com `--locked` (sem crate novo); Job P: `create_job`+`fund`, prova `(21,42)` nova, `deliver`+`release` com CPI ao verificador (`4oWhwZfU…`); Job T: 6021 antes do prazo e `RefundedOnTimeout` (`3fiNWgTW…`); journal de outro Job → 6014 (`docs/d7-cli-results.md`) |
 | D8 | concluído em devnet (D4b + D7) | prova errada (6000/6003), journal de outro Job ou artefato (6014/6017), FAIL (refund), timeout antecipado (6021) e **dupla liquidação** (6007/6008, D7) |
-| D9 | roteiro pronto; execução pendente | `README.md` com comandos, versões, hashes, links e limitações; `docs/demo-script.md`; falta rodar a demo em ambiente limpo e gravar |
+| D9 | **concluído** (técnico); vídeo de reserva a gravar pelo humano | demo em ambiente limpo pela CLI (CR4 (a), não máquina nova): core 42/42 ×2, CLI 14/14, suíte 61/61, prover 4/4; P′ `Released` (`5tjezXYh…`, 99.541 CU no verificador), T′ `RefundedOnTimeout` (`33ezPvow…`), negativos 6021/6014/`verifier:6003`/6007; frases permitidas congeladas no `README.md` e no roteiro; seção "Gravação" em `docs/demo-script.md` (`docs/d9-demo-results.md`) |
+| D10a | próximo | endurecimento da CLI e do prover (`docs/handoffs/d9-to-d10a.md`) |
 | D10–D12 | não iniciado; planejado depois do D10a | worker e UI fina (CR8) |
 
 ### Caminho crítico e risco de prazo
@@ -153,9 +163,9 @@ O próximo gate é o **D9**.
        invariante 9 em devnet, README e roteiro (`docs/d7-cli-results.md`);
      - R-D7 concluído: **APROVADO COM RESSALVAS** para o D9 e o D10–D12
        (`docs/r-d7-review-results.md`);
-  6. D9: demo em ambiente limpo, congelamento dos claims e roteiro de
-     gravação (`docs/handoffs/r-d7-to-d9.md`); vídeo de reserva gravado pelo
-     humano;
+  6. D9 concluído: demo em ambiente limpo, claims congelados e roteiro de
+     gravação (`docs/d9-demo-results.md`); vídeo de reserva gravado pelo
+     humano, pela seção "Gravação" de `docs/demo-script.md`;
   7. D10a: endurecimento da CLI e do prover (RD7-01, 02, 03, 04, 07) e
      revisão delta curta;
   8. D10–D12: worker e telas finas (CR8); revisão curta da interface; vídeo

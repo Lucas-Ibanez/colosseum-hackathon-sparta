@@ -22,11 +22,16 @@ formato que `vericode job settle` (`cli/`) submete ao escrow em devnet.
 | --- | --- |
 | Rust | `1.89.0` (`cargo +1.89.0 …`), com compilador C/C++ para os crates `risc0-circuit-*-sys` |
 | Lock | `prover/Cargo.lock` (workspace próprio; semeado do lock `ec0dd8d6…` do harness do D4a; nenhuma fonte git). Os locks de `zkvm/` não são usados nem alterados |
-| Docker (só `compress`) | x86_64, com a imagem `risczero/risc0-groth16-prover@sha256:7f173963196570b7a71816ed70565a4579264c5d2e3e0ecb028102538ad0e331` já presente localmente. O prover **nunca faz pull** |
+| Docker (só `compress`) | x86_64, com a imagem `risczero/risc0-groth16-prover@sha256:7f173963196570b7a71816ed70565a4579264c5d2e3e0ecb028102538ad0e331` (5,21 GB) já presente localmente. O prover **nunca faz pull**: baixe a imagem antes, uma vez, por esse digest |
+| Rede no primeiro build | rustup (toolchain `1.89.0`), crates.io e `recursion_zkr.zip` (linha abaixo). Com esses três já presentes, `--offline` funciona |
 | Memória | a compressão Groth16 chegou a cerca de 6,3–7,6 GiB (com swap) num WSL de 7,6 GiB. Rode **uma prova por vez** e sem builds em paralelo; exit 137 = falta de memória |
 | `recursion_zkr.zip` | o build script de `risc0-circuit-recursion 4.0.2` baixa esse arquivo do S3 da RISC Zero e confere o SHA-256 `744b999f0a35b3c86753311c7efb2a0054be21727095cf105af6ee7d3f4d8849`. Para compilar offline, aponte `RECURSION_SRC_PATH` para uma cópia local com esse hash |
 
 ## Comandos (a partir da raiz de um clone)
+
+O prover usa `default_prover()` do RISC Zero, que obedece `RISC0_PROVER` e
+`BONSAI_*` (achado RD7-03). Até o D10a forçar o prover local, fixe o ambiente
+como abaixo e confira com `env | grep -E '^(RISC0|BONSAI)'` antes de provar.
 
 ```bash
 export RISC0_PROVER=local RISC0_EXECUTOR=local   # nunca Bonsai
@@ -75,9 +80,18 @@ compressão, o prover:
 2. põe [`docker-shim/`](docker-shim/docker) na frente do `PATH` do próprio
    processo.
 
-O shim troca a tag pelo digest e acrescenta `--pull=never --network=none`.
-Qualquer outro `docker run` é recusado. `VERICODE_REAL_DOCKER` muda o
-executável real (padrão `/usr/bin/docker`).
+O que o shim garante hoje (errata do D9, achado RD7-02 do R-D7):
+- num `docker run` que contém exatamente essa tag, troca a tag pelo digest e
+  põe `--pull=never --network=none` logo depois de `run`;
+- recusa um `docker run` sem a tag;
+- os **demais argumentos passam sem filtro**: o shim não é uma allowlist de
+  argv;
+- outros subcomandos (`image inspect`, `--version`) passam inalterados.
+
+O único chamador, `risc0-groth16 3.0.2`, usa o argv fixo `run --rm -v
+<work>:/mnt <tag>`, então hoje isso não tem impacto. O `docker-shim.log`
+registra a linha executada. A allowlist exata do argv fica para o D10a.
+`VERICODE_REAL_DOCKER` muda o executável real (padrão `/usr/bin/docker`).
 
 ## O que a receipt prova e o que não prova
 

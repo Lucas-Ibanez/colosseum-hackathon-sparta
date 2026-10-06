@@ -77,9 +77,26 @@ envia de propósito uma transação que o programa deve rejeitar:
 `--tamper-seal` (só com `--expect-error`) inverte um bit de `pi_c`, para ver
 o verificador rejeitar a prova (`verifier:6003`).
 
+Limites conhecidos do modo negativo (R-D7; correção prevista no D10a):
+- **RD7-01:** quando a CPI ao verificador falha, o log também traz `Program
+  GZqb… failed` com o mesmo código. Os códigos 6000 a 6003 do verificador
+  coincidem com os do escrow, então `escrow:6000` a `escrow:6003` podem
+  passar com uma falha que foi do verificador. Use só `escrow:6014`,
+  `escrow:6007`/`6008`, `escrow:6021` e `verifier:6003`.
+- **RD7-04:** os testes de `cli/` cobrem só o parse de `--expect-error`; o
+  casamento com a transação e o `--tamper-seal` não têm teste unitário. Em
+  devnet, o D9 exercitou os dois pela CLI: `escrow:6021`, `escrow:6014`,
+  `--tamper-seal` com `verifier:6003` e `escrow:6007`
+  ([`docs/d9-demo-results.md`](../docs/d9-demo-results.md)).
+- **RD7-08:** um negativo `escrow:6021` enviado perto do prazo pode virar
+  reembolso real; a CLI então reporta `UNEXPECTED` (exit 1). Envie-o com pelo
+  menos 60 slots de folga.
+
 ```bash
-# journal de outro Job → 6014, antes da CPI
+# journal de outro Job → 6014, antes da CPI (diga de qual Job é a receipt)
 $V job settle --job-id <P> --receipt $RUN/A --deliver --executor-keypair … --expect-error escrow:6014
+# seal adulterado → o verificador rejeita dentro da mesma transação
+$V job settle --job-id <P> --receipt $RUN/P --deliver --executor-keypair … --tamper-seal --expect-error verifier:6003
 # dupla liquidação (invariante 9) → 6007 / 6008
 $V job settle --job-id <A> --receipt $RUN/A --payer-keypair … --expect-error escrow:6007
 # reembolso antes do prazo → 6021

@@ -12,6 +12,9 @@ Não há Verifier Router no caminho e nada disso existe em mainnet.
 
 | Caso em devnet | Resultado | Transação |
 | --- | --- | --- |
+| PASS, Job P′ (D9, ambiente limpo, CLI e prover deste repositório) | `deliver`+`release`: prova verificada (99.541 CU no verificador) e 1 Test USDC ao executor | [`5tjezXYh…`](https://explorer.solana.com/tx/5tjezXYhN361HHUiZcMcJQFXwViWc4cSUfdreHfokdXuB89LrLDt6WPE8KRLhHwNE7rx5nGAgxjdfod6r7pPvDs1?cluster=devnet) |
+| Timeout, Job T′ (D9) | reembolso ao comprador depois do prazo | [`33ezPvow…`](https://explorer.solana.com/tx/33ezPvow48vSFHYS43i76pDJwkpyKTnDCN3Tdr1p7he8mbHjEpXvsBkt2MrMHKPUNW6AbqWE7oRJ7MriRZNxrjkh?cluster=devnet) |
+| Negativos do D9 | reembolso antes do prazo (6021), receipt do Job P do D7 em P′ (6014), seal adulterado rejeitado pelo verificador (6003) e dupla liquidação (6007); nada move | [`3BKnczeK…`](https://explorer.solana.com/tx/3BKnczeKPQd15iCkYfPbnEvDbYayRfbVV9Zokqn3xLyVehJuZSNffgDy1paFTxof8tpYfaN92N789LzB2w4DQTd6?cluster=devnet), [`8Kk5UkX5…`](https://explorer.solana.com/tx/8Kk5UkX5XW8tssPMxNSCEBt71jiv4RriHLDtYqRzb1f1U5WLZfgQmotQTD1ZqecEbyqMmhWSjQqWpXxCJUubJLg?cluster=devnet), [`HXgnGUhh…`](https://explorer.solana.com/tx/HXgnGUhhB4zRgD8Bubs6ULCqpuhoqBSuim3Vbx1kz7V3bK2FFJG3ND2jcTtRFf6QxD9i1bpwKW4z32yFYYEofVr?cluster=devnet), [`5T9XE5Y3…`](https://explorer.solana.com/tx/5T9XE5Y3DzqKffoeFFzEhgqxsuzqMstpxtMCQikrZPe1RyP1KWvRmPNs9CFuke1yBgtwg5vVnGZVpwHWZr31Dfrs?cluster=devnet) |
 | PASS, Job P (D7, CLI e prover deste repositório) | `deliver`+`release`: prova verificada (99.541 CU no verificador) e 1 Test USDC ao executor | [`4oWhwZfU…`](https://explorer.solana.com/tx/4oWhwZfUzZhVhrTydrhdBx1TJxWVH2mdWdKwiUhtHtMnhmeJg3MprEshvp592hYMgsaiwwhyvsDHek1egS9zKM1L?cluster=devnet) |
 | PASS, Job A (D4b) | `release` ao executor | [`4yWq28Gw…`](https://explorer.solana.com/tx/4yWq28GwkT9uLbG8haXbQYQyMqNWd6Qc29hWrez9cT4tGu36mS1fY8w6ocu75d5JxfQSLzTKKbMPc131fbL7chhR?cluster=devnet) |
 | FAIL, Job B (D4b) | `refund_on_fail` ao comprador | [`2osG9m8J…`](https://explorer.solana.com/tx/2osG9m8JcE1CpAKt8JribtJCw8ffrdhBh6hYm5xKeLPptM9YLsugouMRH2KnmRXAymwAMvBABUmuZY6tkwHoVbP4?cluster=devnet) |
@@ -21,9 +24,24 @@ Não há Verifier Router no caminho e nada disso existe em mainnet.
 | Dupla liquidação (D7) | `release` de novo no Job A → 6007; `refund_on_fail` de novo no Job B → 6008 | [`61de4rBk…`](https://explorer.solana.com/tx/61de4rBkBSN7UjqFrMed8a4KncQvRiBG4rNHJtqVA46B74tMUBoZ6stXVKx3RH2gMydCbRM4Ki9G7EXemgsqY7na?cluster=devnet), [`5vZ6TGRo…`](https://explorer.solana.com/tx/5vZ6TGRoF8hnNMCARsw9AdUkrQSQccavrNVxJLuXbiu1VH3rZ8wM1wfuk2DGpFGq1g4YqdHeysBFKdmi4Zag3pjG?cluster=devnet) |
 | Reembolso antes do prazo (D7) | rejeitado (6021), nada move | [`8DmQFdjE…`](https://explorer.solana.com/tx/8DmQFdjEjRsVHTfU1DmgjA6GmXZs52G1fdcuCaKmkSV9qXR6eEKh8MiGpKAKv6xa7LDdNPzK7AS9fbP9DgiyX1S?cluster=devnet) |
 
-A lista completa, com CU, tamanhos e saldos, está em [`docs/d4b-devnet-results.md`](docs/d4b-devnet-results.md) e [`docs/d7-cli-results.md`](docs/d7-cli-results.md).
+A lista completa, com CU, tamanhos e saldos, está em [`docs/d4b-devnet-results.md`](docs/d4b-devnet-results.md), [`docs/d7-cli-results.md`](docs/d7-cli-results.md) e [`docs/d9-demo-results.md`](docs/d9-demo-results.md).
 
 **O que a prova não diz.** Ela atesta que o guest admitido executou a regra fixa sobre o artefato que o executor comprometeu ao entregar. Não prova que um código está correto: a regra v1 é trivial (`saída = 2 × entrada`) e serve só para demonstrar o fluxo.
+
+## Frases permitidas (congeladas no D9)
+
+README, roteiro, vídeo, worker e telas usam só estas frases, ou paráfrases que não digam mais do que elas. Mudar a lista exige decisão registrada em [`docs/decisions.md`](docs/decisions.md).
+
+1. **Claim:** "A receipt Groth16 do VeriCode é verificada em devnet por CPI ao verificador Groth16 imutável de risc0-solana v3.0.0, na mesma instrução que libera ou devolve o Test USDC do Job." Sempre com o link de uma transação da tabela acima.
+2. **Afirmação:** "Um avaliador determinístico previamente comprometido executou sobre o artefato entregue no Job e produziu o veredito publicado. O programa só move o Test USDC depois de conferir o vínculo entre journal, Job e entrega e de verificar a prova."
+3. **Limite:** "A prova atesta a execução da regra fixa sobre este artefato, não a qualidade de um software. A regra v1 é trivial (saída = 2 × entrada) e serve para demonstrar o fluxo."
+4. **Sem administrador:** "O escrow e o verificador são imutáveis (upgrade authority `none`). Ninguém, nem o projeto, muda as regras ou decide o pagamento; também não existe e-stop."
+5. **Rede:** "Só devnet e Test USDC; nada disso existe em mainnet."
+6. **Negativos:** "Em devnet, uma prova adulterada, um journal de outro Job, um reembolso antes do prazo e uma segunda liquidação foram rejeitados sem mover fundos." Sempre com os links.
+7. **Reprodução:** "O fluxo foi reproduzido pela CLI e pelo prover deste repositório num ambiente limpo: clone e targets novos, com toolchains isoladas copiadas, não uma máquina nova." (D9)
+8. **Prova:** "A prova é gerada localmente e comprimida para Groth16 num container Docker local, sem rede."
+
+**Não dizer:** "o código está correto"; "trustless" ou "ninguém precisa confiar em ninguém"; "qualquer repositório"; "Verifier Router" como caminho atual; "mainnet" ou "dinheiro real"; "ZK on-chain" sem a frase 1; "auditado"; "privado"; "máquina nova". Também não apresentar uma execução anterior como ao vivo, nem mostrar uma receipt sem dizer de qual Job ela é.
 
 ## Escopo do MVP
 
@@ -49,9 +67,15 @@ O MVP não verifica repositórios arbitrários nem patches gerais.
 
 ## Reproduzir a partir de um clone
 
-Requisitos: Linux x86_64, Rust `1.89.0` via rustup, compilador C/C++, Docker (só para o Groth16) e uns 8 GiB de RAM (rode um build pesado ou uma prova por vez).
+Requisitos:
+- Linux x86_64, Rust `1.89.0` via rustup e compilador C/C++;
+- uns 8 GiB de RAM: rode um build pesado ou uma prova por vez;
+- Docker, só para o Groth16, com a imagem `risczero/risc0-groth16-prover@sha256:7f173963…` (5,21 GB) já baixada por digest. O prover nunca faz pull;
+- a CLI do Agave `2.3.9` (`solana`), só para baixar os programas na seção 1.
 
-### 1. Testes locais (sem rede, exceto o crates.io no primeiro build)
+**Rede no primeiro build:** rustup (toolchain `1.89.0`), crates.io e, no build do prover, o `recursion_zkr.zip` do S3 da RISC Zero (SHA-256 `744b999f…`), a menos que `RECURSION_SRC_PATH` aponte para uma cópia local ([`prover/README.md`](prover/README.md)). Com isso presente, os builds e testes rodam com `--offline`.
+
+### 1. Testes locais
 
 ```bash
 cargo +1.89.0 test --locked                                             # core, 42 testes
@@ -76,6 +100,8 @@ Para reconstruir o escrow em vez de baixá-lo: `cargo-build-sbf --manifest-path 
 cargo +1.89.0 build --locked --release --manifest-path cli/Cargo.toml
 V=cli/target/release/vericode
 $V check        # escrow cdf6967f… com authority none, verificador imutável, mint
+$V job show --job-id 91ea6fcdd2d0c29942246c664d893634b7c66f6cb2babbe436734a74bef5418e   # P′ (D9): Released
+$V job show --job-id ec9afb74ceb080e09cb3d605d94883ff5ea90cc638c3f086f5e5c6d4cfed5c48   # T′ (D9): RefundedOnTimeout
 $V job show --job-id 3e4ca0269e4af134738120703ccbfd751ef0d51fa6dcd2d99525d0d3f24c9c57   # P: Released
 $V job show --job-id 05f7493483cba42146cada07822160d2fbec4e67d854fafa32f70ef0bb01d758   # T: RefundedOnTimeout
 $V job show --job-id 3f0dd1c833714e193744c5b95879662c1d8b440cdd3c6467a1585ecc60baec8a   # A: Released
@@ -120,6 +146,11 @@ Cada operação confere cluster, programa, mint, termos, receipt e estado antes 
 - A mint authority do Test USDC é a chave de deployer do projeto.
 - O ImageID vem do guest determinístico do D1c2b e não foi recertificado desde então; o core só ganhou o módulo `escrow`, que o guest não usa.
 - O prover Groth16 exige Docker x86 e muita memória; no WSL de 7,6 GiB a compressão leva cerca de 2 minutos.
+- Pendências da CLI e do prover, com correção prevista no D10a ([`docs/r-d7-review-results.md`](docs/r-d7-review-results.md)):
+  - `--expect-error escrow:6000` a `6003` pode aceitar uma falha do verificador (RD7-01). Os negativos documentados usam só 6014, 6007/6008, 6021 e `verifier:6003`;
+  - o shim do Docker não é uma allowlist de argv (RD7-02);
+  - o prover obedece `RISC0_PROVER` e `BONSAI_*`; fixe `RISC0_PROVER=local` (RD7-03);
+  - `--tamper-seal` e o casamento do `--expect-error` não têm teste unitário (RD7-04).
 - Worker e interface ainda não existem.
 
 ## Estrutura

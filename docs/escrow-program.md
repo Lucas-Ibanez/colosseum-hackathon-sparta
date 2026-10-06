@@ -134,9 +134,9 @@ verificador não foi chamado.
   rodada com o dump dão os mesmos resultados.
 - **Sem e-stop:** sem Router, não existe freio contra um bug de soundness do
   verificador Groth16 de `risc0-zkvm 3.0`. O fonte upstream recomenda o
-  Router por isso. Como o escrow também será finalizado, um bug desse tipo
-  exigiria um novo program ID. Isso é aceito para o MVP em devnet com Test
-  USDC (decisão humana D4a).
+  Router por isso. Como o escrow também foi finalizado (D4b, upgrade
+  authority `none`), um bug desse tipo exigiria um novo program ID. Isso é
+  aceito para o MVP em devnet com Test USDC (decisão humana D4a).
 - **Sem dono de Router:** o R-D2e R-06 (e-stop como alavanca de liveness) e
   a confiança no `add_verifier` deixam de existir.
 - **Upgrade authority do escrow:** finalizada em devnet no D4b, depois do
