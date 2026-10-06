@@ -12,6 +12,9 @@ Não há Verifier Router no caminho e nada disso existe em mainnet.
 
 | Caso em devnet | Resultado | Transação |
 | --- | --- | --- |
+| PASS, Job `bc334093…` (D10, pelo worker local sobre a CLI e o prover deste repositório) | `deliver`+`release`: prova verificada (99.541 CU no verificador) e 1 Test USDC ao executor | [`ByGF4BFP…`](https://explorer.solana.com/tx/ByGF4BFPD8zkyqc6bg3Hd2FnQ1bF9gjo1EWp4fyVQkcGWfcj53gi99kWPLgyherzmvYp8knoqAzgjLLyhgpLnVR?cluster=devnet) |
+| Timeout, Jobs `8ab4ee8d…` e `8bce67f2…` das gravações (D10, pelo worker) | reembolso ao comprador depois do prazo | [`57UYbVX9…`](https://explorer.solana.com/tx/57UYbVX9gEXdp7dproD5mEyxj5UzxuQZdjwhQZe96XKTfCKbrWSxrfhKTmqrTdnAby8PGyJVSa1gDZsdk7P9Xd9v?cluster=devnet), [`625JvmR8…`](https://explorer.solana.com/tx/625JvmR85QE6LbRZaE49kf3Y2cSFVnbKGaynVBbb8eeqM1Dj6r8UVUZiUbDoA4g5egJfqYUW175pG6d4NHYZWc3y?cluster=devnet) |
+| Negativos do D10 (pelo worker) | reembolso antes do prazo (6021), seal adulterado rejeitado pelo verificador (6003) e dupla liquidação (6007); nada move | [`3PJfg2jU…`](https://explorer.solana.com/tx/3PJfg2jUmmDVc5RuN31DgF3pJwcYnog8GUCYy9vvyB56n1drScwiY8dTTsXwZWsX59DCuRDn33YhwViff3shxv4L?cluster=devnet), [`4cKK83JB…`](https://explorer.solana.com/tx/4cKK83JBYxRVfrAT5t6visKQdEWim5NANMe3eMH4bHsDmPumzq3WZb83F4eWiuYC694uivPqhsip3D8ySxJBmX2u?cluster=devnet), [`5ug6Pggx…`](https://explorer.solana.com/tx/5ug6PggxL9qZdgwkCu1Vt3oEYSFiBKXLdCi9bE6W1bewLjfa2yKpYjf8BeHzEjtvdkYDNLHZY4cjjBvkqtF9Bn5w?cluster=devnet) |
 | PASS, Job P′ (D9, ambiente limpo, CLI e prover deste repositório) | `deliver`+`release`: prova verificada (99.541 CU no verificador) e 1 Test USDC ao executor | [`5tjezXYh…`](https://explorer.solana.com/tx/5tjezXYhN361HHUiZcMcJQFXwViWc4cSUfdreHfokdXuB89LrLDt6WPE8KRLhHwNE7rx5nGAgxjdfod6r7pPvDs1?cluster=devnet) |
 | Timeout, Job T′ (D9) | reembolso ao comprador depois do prazo | [`33ezPvow…`](https://explorer.solana.com/tx/33ezPvow48vSFHYS43i76pDJwkpyKTnDCN3Tdr1p7he8mbHjEpXvsBkt2MrMHKPUNW6AbqWE7oRJ7MriRZNxrjkh?cluster=devnet) |
 | Negativos do D9 | reembolso antes do prazo (6021), receipt do Job P do D7 em P′ (6014), seal adulterado rejeitado pelo verificador (6003) e dupla liquidação (6007); nada move | [`3BKnczeK…`](https://explorer.solana.com/tx/3BKnczeKPQd15iCkYfPbnEvDbYayRfbVV9Zokqn3xLyVehJuZSNffgDy1paFTxof8tpYfaN92N789LzB2w4DQTd6?cluster=devnet), [`8Kk5UkX5…`](https://explorer.solana.com/tx/8Kk5UkX5XW8tssPMxNSCEBt71jiv4RriHLDtYqRzb1f1U5WLZfgQmotQTD1ZqecEbyqMmhWSjQqWpXxCJUubJLg?cluster=devnet), [`HXgnGUhh…`](https://explorer.solana.com/tx/HXgnGUhhB4zRgD8Bubs6ULCqpuhoqBSuim3Vbx1kz7V3bK2FFJG3ND2jcTtRFf6QxD9i1bpwKW4z32yFYYEofVr?cluster=devnet), [`5T9XE5Y3…`](https://explorer.solana.com/tx/5T9XE5Y3DzqKffoeFFzEhgqxsuzqMstpxtMCQikrZPe1RyP1KWvRmPNs9CFuke1yBgtwg5vVnGZVpwHWZr31Dfrs?cluster=devnet) |
@@ -24,7 +27,7 @@ Não há Verifier Router no caminho e nada disso existe em mainnet.
 | Dupla liquidação (D7) | `release` de novo no Job A → 6007; `refund_on_fail` de novo no Job B → 6008 | [`61de4rBk…`](https://explorer.solana.com/tx/61de4rBkBSN7UjqFrMed8a4KncQvRiBG4rNHJtqVA46B74tMUBoZ6stXVKx3RH2gMydCbRM4Ki9G7EXemgsqY7na?cluster=devnet), [`5vZ6TGRo…`](https://explorer.solana.com/tx/5vZ6TGRoF8hnNMCARsw9AdUkrQSQccavrNVxJLuXbiu1VH3rZ8wM1wfuk2DGpFGq1g4YqdHeysBFKdmi4Zag3pjG?cluster=devnet) |
 | Reembolso antes do prazo (D7) | rejeitado (6021), nada move | [`8DmQFdjE…`](https://explorer.solana.com/tx/8DmQFdjEjRsVHTfU1DmgjA6GmXZs52G1fdcuCaKmkSV9qXR6eEKh8MiGpKAKv6xa7LDdNPzK7AS9fbP9DgiyX1S?cluster=devnet) |
 
-A lista completa, com CU, tamanhos e saldos, está em [`docs/d4b-devnet-results.md`](docs/d4b-devnet-results.md), [`docs/d7-cli-results.md`](docs/d7-cli-results.md) e [`docs/d9-demo-results.md`](docs/d9-demo-results.md).
+A lista completa, com CU, tamanhos e saldos, está em [`docs/d4b-devnet-results.md`](docs/d4b-devnet-results.md), [`docs/d7-cli-results.md`](docs/d7-cli-results.md), [`docs/d9-demo-results.md`](docs/d9-demo-results.md) e [`docs/d10-worker-results.md`](docs/d10-worker-results.md).
 
 **O que a prova não diz.** Ela atesta que o guest admitido executou a regra fixa sobre o artefato que o executor comprometeu ao entregar. Não prova que um código está correto: a regra v1 é trivial (`saída = 2 × entrada`) e serve só para demonstrar o fluxo.
 
@@ -146,7 +149,7 @@ Cada operação confere cluster, programa, mint, termos, receipt e estado antes 
 - A mint authority do Test USDC é a chave de deployer do projeto.
 - O ImageID vem do guest determinístico do D1c2b e não foi recertificado desde então; o core só ganhou o módulo `escrow`, que o guest não usa.
 - O prover Groth16 exige Docker x86 e muita memória; no WSL de 7,6 GiB a compressão leva cerca de 2 minutos.
-- Achados do R-D7 na CLI e no prover ([`docs/r-d7-review-results.md`](docs/r-d7-review-results.md)), corrigidos no D10a com testes ([`docs/d10a-hardening-results.md`](docs/d10a-hardening-results.md)) e sujeitos à revisão delta R-D10a:
+- Achados do R-D7 na CLI e no prover ([`docs/r-d7-review-results.md`](docs/r-d7-review-results.md)), corrigidos no D10a com testes ([`docs/d10a-hardening-results.md`](docs/d10a-hardening-results.md)) e confirmados pela revisão delta R-D10a ([`docs/r-d10a-review-results.md`](docs/r-d10a-review-results.md)):
   - `--expect-error escrow:N` só casa quando o escrow é a falha mais interna (RD7-01);
   - o shim do Docker é uma allowlist exata de argv, com a imagem por digest, sem rede e no daemon local (RD7-02);
   - o prover usa só o prover local e recusa `RISC0_PROVER` diferente de `local`, `BONSAI_*` e `RISC0_DEV_MODE` (RD7-03);
@@ -154,7 +157,8 @@ Cada operação confere cluster, programa, mint, termos, receipt e estado antes 
   - um "already processed" é resolvido pelo status da assinatura, e as leituras depois da transação usam `minContextSlot` (RD7-07).
 
   Os binários do D9, usados na seção "Gravação" do roteiro, são anteriores a essas correções. Os negativos documentados continuam sendo 6014, 6007/6008, 6021 e `verifier:6003`. Continua aberto o RD7-08: um negativo `escrow:6021` enviado perto do prazo pode virar reembolso real, e a CLI então reporta `UNEXPECTED`.
-- Worker e interface ainda não existem.
+- **Worker local, sem carteira no navegador (D10, decisão P3).** O worker ([`worker/`](worker/README.md)) roda só em `127.0.0.1` e só chama os binários do D10a. Ele guarda, por caminho, as chaves de devnet do projeto (buyer e executor; nunca a do deployer), e o mesmo operador local opera os dois papéis. A prova (`Proving`) é uma etapa local do executor, fora da cadeia. A interface (D11–D12) ainda não existe.
+- A frase 8 vale para receipts cuja compressão registrou a linha `docker_run` do shim (`--context default run --pull=never --network=none … @sha256:7f173963…`; condição C10-2 do R-D10a). O worker recusa as demais.
 
 ## Estrutura
 
@@ -163,6 +167,7 @@ Cada operação confere cluster, programa, mint, termos, receipt e estado antes 
 - `anchor/`: programa de escrow e testes em processo (`anchor/tests-local`).
 - `prover/`: prover local do guest admitido (Composite → Groth16).
 - `cli/`: cliente de devnet (`vericode`).
+- `worker/`: worker local HTTP em `127.0.0.1` sobre a CLI e o prover (D10), base das telas.
 - `docs/`: contexto do produto, decisões, evidências e relatórios de cada gate. Comece por [`docs/project-context.md`](docs/project-context.md).
 
 ## Evidências

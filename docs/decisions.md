@@ -1790,6 +1790,9 @@ Registre decisões relevantes do projeto neste formato.
   6. **P6 — ordem até 11/10:** D10 (até 07/10) → D11–D12 telas (08–09/10) →
      revisão curta da interface (09/10) → vídeo definitivo numa tomada
      contínua (10/10) → submissão (11/10).
+- **Ratificação:** o humano enviou o prompt do D10 com estas seis decisões e
+  aprovou em Plan Mode (2026-10-06, 19:18 -03:00) as rotas, o argv fixo de cada
+  ação, o modelo de estados, os testes e os comandos HTTP exatos de W1–W7.
 
 ## 2026-10-06 — Vídeo de reserva (gravações do humano)
 
@@ -1818,3 +1821,61 @@ Registre decisões relevantes do projeto neste formato.
     de cada trecho;
   - **o vídeo definitivo deve ser uma tomada contínua, com os mesmos Jobs
     do início ao fim**.
+
+## 2026-10-06 — D10: worker local com prova local forçada; W1–W7 pela API
+
+- **Data:** 2026-10-06 (18:57–20:05 -03:00)
+- **Commits:**
+  - `6eba814` (worker);
+  - `docs: record D10 worker`.
+- **Decisões aplicadas:** as de "Decisões humanas para o D10" (P1–P6), com o
+  plano aprovado em Plan Mode às 19:18, e as condições C10-1 a C10-10 do
+  R-D10a.
+- **Escolhas do agente, no plano aprovado:**
+  - token exigido em toda rota `/api/*`, inclusive GET; GETs nunca executam
+    processo nem recebem 409 (a interface consulta o estado durante
+    `Proving`); `POST …/show` e `POST /api/check` leem sob o lock;
+  - sondas de chave pela própria CLI, sem rede (`job create --executor 1`,
+    `job deliver --job-id 00`), para conferir as pubkeys de buyer e executor
+    e recusar a do deployer sem que o worker abra arquivo de chave;
+  - pagadores: buyer em create e reembolsos (inclusive 6021); executor nos
+    settles (inclusive 6007, porque a chave do deployer não entra no worker);
+  - rota opcional `escrow-6014` implementada e testada offline, sem escrita
+    no D10;
+  - offset do create limitado a [1.560, 9.000] e valor fixo de 1.000.000;
+  - `compress` só com MemAvailable ≥ 2,5 GiB; porta 8710;
+  - leituras diretas de devnet só de leitura por `d10/bin/w10_rpc.py` (saldo
+    do deployer, `getSignaturesForAddress`, `getTransaction`);
+  - token impresso só no terminal do operador, capturado em
+    `d10/logs/worker-terminal.log` (`0600`).
+- **Resultado (evidência):**
+  - `worker/` (Python 3.12, só biblioteca padrão): `unittest` 23/23, com
+    executáveis falsos rotulados;
+  - partida real: hashes `e6cd4e29…`/`3f66e1c0…`/`2a8f75b8…`, sondas com as
+    pubkeys de buyer e executor, `check=ok` com o verificador `34ae6e5c…`,
+    `prover=LocalProver env=ok`;
+  - devnet, pela API: W1/W2 `RefundedOnTimeout` dos Jobs das gravações
+    (`57UYbVX9…`, `625JvmR8…`); W3 Job `bc334093…`; W4 6021 pelo escrow;
+    prova `(21,42)` `Composite` → `Groth16` com a linha `docker_run` do C10-2;
+    W6 6003 pelo **verificador**; **W5 `Released` com o verificador invocado
+    (99.541 CU, `ByGF4BFP…`)**; W7 6007 pelo escrow;
+  - negativos com estado igual e `rejection` só a partir da saída da CLI;
+    saldos fecham por lamport e por unidade; `getTransaction` independente das
+    7 assinaturas; nenhuma outra escrita;
+  - nenhum caminho nem conteúdo de chave em resposta, log ou arquivo do worker;
+  - relatório: [`docs/d10-worker-results.md`](d10-worker-results.md).
+- **Desvios registrados:** linha-marca dos falsos quebrou a sonda na primeira
+  execução dos testes (corrigido no falso); um `pkill` do agente encerrou o
+  registrador de memória depois do `compress`.
+- **Risco aberto:**
+  - P3: chaves de devnet do projeto num worker local, mesmo operador para os
+    dois papéis;
+  - `http.server` só em loopback; token na captura do terminal;
+  - memória: 167 MB disponíveis e 4,2 GB de swap no pico do `compress`;
+  - `escrow-6014` sem execução em devnet;
+  - RD10A-01 a 07 e RD7-08 continuam no código da CLI e do prover (mitigados
+    no worker por C10-2, C10-3, C10-5 e C10-8);
+  - sem e-stop; rent preso (14 Jobs); mint authority = deployer; ImageID não
+    recertificado; spec v1 trivial.
+- **Próximo gate:** D11–D12, telas finas servidas pelo worker, conforme
+  `docs/handoffs/d10-to-d11.md`.

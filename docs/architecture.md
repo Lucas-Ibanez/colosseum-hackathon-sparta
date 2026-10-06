@@ -130,6 +130,27 @@ revisão R-D4a. Detalhes em
 | `anchor/tests-local` | host | próprio | suíte em processo, com o verificador real |
 | `prover/` | host | próprio | receipts `Composite` → `Groth16` do guest admitido |
 | `cli/` | host | próprio | cliente de devnet |
+| `worker/` (D10) | host | nenhum (Python 3.12, só biblioteca padrão) | worker local HTTP sobre a CLI e o prover |
+
+## Estado D10 (`worker-api`)
+
+O módulo `worker-api/` do guia é `worker/` (`vericode_worker.py`), decisões P1–P3 e
+condições C10-1 a C10-10 do R-D10a:
+- servidor HTTP só em `127.0.0.1`, com `Host` conferido, token por execução em header
+  próprio em toda rota `/api/*` e nenhum cabeçalho CORS;
+- cada ação é uma lista de argv fixa de `vericode` ou `vericode-prover` (só os binários
+  do D10a, com hash conferido), sem shell, com ambiente construído do zero, uma por vez;
+- as chaves do buyer e do executor ficam em arquivos que só a CLI abre, por caminho; a
+  do deployer nunca entra; nenhuma resposta ou log tem caminho ou conteúdo de chave;
+- o estado vem do `job show` e do `--log` da CLI; toda escrita termina com `job show`;
+- a receipt só é usada com o shim conferido antes do `compress` e com exatamente uma
+  linha `docker_run` desta execução depois (C10-2);
+- `Proving` é etapa local do executor; `Submitted` e `Failed` são estados do worker;
+  nenhuma transição econômica fora do programa.
+
+Em devnet, as escritas W1–W7 do D10 foram dirigidas pela API do worker
+(`docs/d10-worker-results.md`). Não há carteira no navegador (P3): as telas do D11–D12
+chamam o worker.
 
 ## Fluxo
 
@@ -148,7 +169,8 @@ vericode job settle      -> deliver + release (PASS) ou refund_on_fail (FAIL),
 vericode job refund-timeout -> refund_on_timeout depois do prazo
 ```
 
-Worker e UI ainda não existem (D10–D12).
+Desde o D10, o worker local executa esses mesmos comandos por argv fixo, atrás de uma
+API em `127.0.0.1` (`worker/README.md`). A UI ainda não existe (D11–D12).
 
 ## Componentes e responsabilidades
 
@@ -160,6 +182,7 @@ Worker e UI ainda não existem (D10–D12).
 | CLI (`cli/`) | Montar, conferir, simular, enviar e confirmar as instruções do escrow em devnet | Decidir veredito, escolher destino ou guardar chaves dentro do clone |
 | Programa Anchor (`anchor/programs/vericode-escrow`) | Manter Job/escrow, custodiar no vault PDA e liquidar somente pelo core após validações do Job | Reexecutar regra de negócio, aceitar admin bypass ou confiar apenas no host |
 | Verificador Groth16 (`risc0-solana v3.0.0`) | Verificar receipt Groth16 por CPI direta do escrow (D4a em `solana-program-test`; em devnet desde o D4b) | Ser chamado de "Verifier Router" ou ter o claim estendido a mainnet |
+| Worker local (`worker/`, D10) | Orquestrar CLI e prover por argv fixo, uma operação por vez, e expor estado reconciliado com a cadeia | Decidir pagamento, repetir escrita sozinho, aceitar caminho/flag do cliente ou devolver caminho ou conteúdo de chave |
 | Front-end | Criar e consultar Jobs e apresentar estados/transações | Decidir verdict ou custodiar segredos do usuário |
 
 ## Fronteiras

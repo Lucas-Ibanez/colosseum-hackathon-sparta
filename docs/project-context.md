@@ -44,8 +44,8 @@ evidência nem um escopo proibido.
 | `zk-host/` | `zkvm/host`; `prover/` (D7) | receipts locais reais PASS/FAIL `Composite` (D1c2b); compressão Groth16 por harness fora do clone (D2d, D4a); desde o D7, `vericode-prover` no repositório prova o guest admitido versionado (`prover/artifacts`, `e09ba8cf…`) e comprime para Groth16 pelo Docker local por digest; desde o D10a, só com `LocalProver` (recusa `RISC0_PROVER` ≠ `local`, `BONSAI_*`, `RISC0_DEV_MODE`) e por um shim que é allowlist exata de argv |
 | `anchor-program/` | `anchor/programs/vericode-escrow` (workspace `anchor/`, testes em `anchor/tests-local`) | D2c/D2b.1/D2e/D4a: `create_job` (termos da v1, mint Test USDC admitido, janela de prazo), `fund`, `deliver`, `release`/`refund_on_fail` com CPI direta ao verificador Groth16 de `risc0-solana v3.0.0` (sem Router desde o D4a), `refund_on_timeout`; destino = ATA canônica; testado em processo com o verificador real (rebuild e bytes de devnet); **implantado e finalizado em devnet** (D4b: `GZqbL2Tb…`, authority `none`) |
 | CLI (guia §3 e §10: "CLI como fonte de verdade") | `cli/` (D7) | `vericode`: `check`, `job create/deliver/settle/refund-timeout/show` em devnet; instruções iguais byte a byte aos builders da suíte; Jobs P e T liquidados em devnet (D7); Jobs P′ e T′ e quatro negativos em ambiente limpo (D9); endurecida no D10a (falha mais interna no `--expect-error`, "already processed", leituras com `minContextSlot`), com testes contra RPC falso local |
-| `worker-api/` | inexistente | não iniciado |
-| `frontend/` | inexistente | não iniciado |
+| `worker-api/` | `worker/` (D10) | `vericode_worker.py` (Python 3.12, só biblioteca padrão): HTTP só em `127.0.0.1`, `Host` conferido, token por execução em toda rota, sem CORS; só os binários do D10a por argv fixo, ambiente do zero, uma operação por vez; estado do `job show` e do `--log`; shim conferido e linha `docker_run` exigida (C10-2); 23 testes `unittest`; W1–W7 em devnet pela API |
+| `frontend/` | inexistente | não iniciado (D11–D12, servido pelo worker) |
 
 Os nomes do guia descrevem responsabilidades; não renomear diretórios
 existentes sem decisão registrada.
@@ -87,8 +87,8 @@ adversariais com prefixo `R-`). O gate seguinte ao D4 é o `D7`, não "D5".
 | D9 | demo em ambiente limpo (W1–W8 em devnet), congelamento dos claims, erratas da CR1, roteiro de gravação; vídeo gravado pelo humano | D9 |
 | D10a | endurecimento da CLI e do prover (RD7-01, 02, 03, 04, 07 e os opcionais 06, 09, 10), com testes que falham no D9 | preparação de D10–D12 |
 | R-D10a | revisão delta curta do D10a, somente leitura (APROVADO COM RESSALVAS, C10-1 a C10-10) | guia §11 |
-| D10 (próximo) | worker local em Python (stdlib), em `127.0.0.1`, sobre os binários do D10a; escritas W1–W7 pela API | D10 |
-| D11–D12 | telas finas Buyer, Submit e Result servidas pelo worker (sem carteira no navegador) | D11–D12 |
+| D10 | worker local em Python (stdlib), em `127.0.0.1`, sobre os binários do D10a; escritas W1–W7 pela API | D10 |
+| D11–D12 (próximo) | telas finas Buyer, Submit e Result servidas pelo worker (sem carteira no navegador) | D11–D12 |
 
 Itens de produto e mercado do plano (inscrição, outreach, design partners,
 pitch, telas, vídeo) não são rastreados neste repositório.
@@ -126,8 +126,21 @@ O **D10a** também está concluído (`docs/d10a-hardening-results.md`):
   inalterados.
 
 A revisão delta **R-D10a** aprovou com ressalvas (condições C10-1 a C10-10,
-`docs/r-d10a-review-results.md`). O próximo gate é o **D10** (worker
-local), conforme `docs/handoffs/r-d10a-to-d10.md`.
+`docs/r-d10a-review-results.md`).
+
+O **D10** também está concluído (`docs/d10-worker-results.md`):
+- worker local em `worker/` (Python, só biblioteca padrão), em `127.0.0.1`,
+  que só chama os binários do D10a, com as condições C10-1 a C10-10 no código
+  e em 23 testes `unittest`;
+- W1–W7 em devnet pela API: os dois Jobs das gravações reembolsados; Job
+  `bc334093…` criado, provado localmente (com a linha `docker_run` do C10-2)
+  e `Released` com o verificador invocado; negativos 6021 (escrow), 6003
+  (verificador) e 6007 (escrow); saldos fecham;
+- sem carteira no navegador (P3); nenhuma chave nem caminho de chave saiu do
+  worker.
+
+O próximo gate é o **D11–D12** (telas finas servidas pelo worker), conforme
+`docs/handoffs/d10-to-d11.md`.
 
 | Dia | Situação | Evidência / lacuna |
 | --- | --- | --- |
@@ -140,8 +153,9 @@ local), conforme `docs/handoffs/r-d10a-to-d10.md`.
 | D7 | **concluído** | `cli/` e `prover/` reproduzíveis com `--locked` (sem crate novo); Job P: `create_job`+`fund`, prova `(21,42)` nova, `deliver`+`release` com CPI ao verificador (`4oWhwZfU…`); Job T: 6021 antes do prazo e `RefundedOnTimeout` (`3fiNWgTW…`); journal de outro Job → 6014 (`docs/d7-cli-results.md`) |
 | D8 | concluído em devnet (D4b + D7) | prova errada (6000/6003), journal de outro Job ou artefato (6014/6017), FAIL (refund), timeout antecipado (6021) e **dupla liquidação** (6007/6008, D7) |
 | D9 | **concluído** (técnico); vídeo de reserva a gravar pelo humano | demo em ambiente limpo pela CLI (CR4 (a), não máquina nova): core 42/42 ×2, CLI 14/14, suíte 61/61, prover 4/4; P′ `Released` (`5tjezXYh…`, 99.541 CU no verificador), T′ `RefundedOnTimeout` (`33ezPvow…`), negativos 6021/6014/`verifier:6003`/6007; frases permitidas congeladas no `README.md` e no roteiro; seção "Gravação" em `docs/demo-script.md` (`docs/d9-demo-results.md`) |
-| D10a | **concluído**; revisão delta R-D10a pendente | antes × depois: lógica do D9 com 7 falhas em `negative_runs` e 2 no `docker_shim`; CLI do D9 aceitava `escrow:6003` sobre falha do verificador e dava erro falso com "already processed"/nó atrasado; prover do D9 chamava o Bonsai. Depois: core 42/42 ×2, CLI 30/30, suíte 61/61, prover 5/5 + 2/2; `Groth16` pelo shim novo; `check=ok` com o verificador `34ae6e5c…` (`docs/d10a-hardening-results.md`) |
-| D10–D12 | não iniciado; D10 liberado pela R-D10a | worker local (D10, até 07/10) e telas finas (D11–D12, 08–09/10); sem carteira no navegador (divergência registrada) |
+| D10a | **concluído**; R-D10a: APROVADO COM RESSALVAS (C10-1 a C10-10) | antes × depois: lógica do D9 com 7 falhas em `negative_runs` e 2 no `docker_shim`; CLI do D9 aceitava `escrow:6003` sobre falha do verificador e dava erro falso com "already processed"/nó atrasado; prover do D9 chamava o Bonsai. Depois: core 42/42 ×2, CLI 30/30, suíte 61/61, prover 5/5 + 2/2; `Groth16` pelo shim novo; `check=ok` com o verificador `34ae6e5c…` (`docs/d10a-hardening-results.md`) |
+| D10 | **concluído** (2026-10-06) | worker local em `worker/` (23/23 testes); partida com os binários do D10a, sondas de chave e `check` duplo; W1/W2 `RefundedOnTimeout` dos Jobs das gravações (`57UYbVX9…`, `625JvmR8…`); Job `bc334093…`: 6021 (escrow), prova `Composite` → `Groth16` com a linha `docker_run`, 6003 (verificador), **`Released` com o verificador invocado, 99.541 CU** (`ByGF4BFP…`), 6007 (escrow); tudo pela API (`docs/d10-worker-results.md`) |
+| D11–D12 | não iniciado | telas finas (08–09/10) servidas pelo worker; sem carteira no navegador (divergência registrada, P3) |
 
 ### Caminho crítico e risco de prazo
 
@@ -183,9 +197,11 @@ local), conforme `docs/handoffs/r-d10a-to-d10.md`.
      07; opcionais 06, 09, 10), `docs/d10a-hardening-results.md`; R-D10a
      concluído: **APROVADO COM RESSALVAS** para o D10
      (`docs/r-d10a-review-results.md`);
-  8. D10: worker local (`docs/handoffs/r-d10a-to-d10.md`), até 07/10;
-  9. D11–D12: telas finas (08–09/10); revisão curta da interface (09/10);
-     vídeo definitivo numa tomada contínua (10/10); submissão (11/10).
+  8. D10 concluído: worker local e W1–W7 pela API
+     (`docs/d10-worker-results.md`);
+  9. D11–D12: telas finas (08–09/10), conforme `docs/handoffs/d10-to-d11.md`;
+     revisão curta da interface (09/10); vídeo definitivo numa tomada
+     contínua (10/10); submissão (11/10).
 - Wallets de devnet: o agente está autorizado a criar keypairs efêmeros de
   devnet/localnet (D2a.2), sob as restrições do princípio 9 de `AGENTS.md`.
 

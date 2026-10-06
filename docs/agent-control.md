@@ -1,13 +1,13 @@
-# Controle autônomo — R-D10a registrado (APROVADO COM RESSALVAS); próximo D10
+# Controle autônomo — D10 concluído (worker local); próximo D11–D12
 
 ## Objetivo atual
 
-D10, conforme `docs/handoffs/r-d10a-to-d10.md`: worker local em Python
-(stdlib), em `127.0.0.1`, que só chama os binários do D10a, sob as condições
-C10-1 a C10-10 do R-D10a, com as escritas W1 a W7 em devnet pela própria API.
+D11–D12, conforme `docs/handoffs/d10-to-d11.md`: telas finas Buyer, Submit e
+Result em HTML/JS estático servido pelo worker do D10, sem carteira no
+navegador (P3), só com frases congeladas.
 
-Depois: D11–D12 (telas finas), revisão curta da interface, vídeo definitivo
-numa tomada contínua e submissão até 11/10.
+Depois: revisão curta da interface (claims e chaves), vídeo definitivo numa
+tomada contínua e submissão até 11/10.
 
 ## Marcos anteriores
 
@@ -34,13 +34,15 @@ numa tomada contínua e submissão até 11/10.
   - `50dede0` (cli);
   - `7fe9c3b` (prover);
   - `2a2e3c5` (docs).
-- R-D10a: **APROVADO COM RESSALVAS** para o D10 (C10-1 a C10-10);
-  registrado no commit `docs: record R-D10a review`.
+- R-D10a `544b685`: **APROVADO COM RESSALVAS** para o D10 (C10-1 a C10-10).
+- D10: worker local e W1–W7 pela API:
+  - `6eba814` (worker);
+  - `docs: record D10 worker`.
 
-## Baseline (D10a)
+## Baseline (D10)
 
 - Raiz `/home/lucas/src/vericode`; branch `main`; HEAD de baseline = commit
-  `docs: record R-D10a review`.
+  `docs: record D10 worker`.
 - **Devnet:**
   - escrow `GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH`, 395.064 bytes
     `cdf6967f…`, upgrade authority **`none`**;
@@ -53,12 +55,18 @@ numa tomada contínua e submissão até 11/10.
   - **P′ `Released`** (`91ea6fcd…`) e **T′ `RefundedOnTimeout`**
     (`ec9afb74…`), do D9;
   - das gravações do humano (2026-10-06, `rec-*`): `8ab4ee8d` e `8bce67f2`
-    (`Funded`, prazo vencido), `cd77e7bd` e `3e115ca8` (`Released`),
-    `104f9a21` (`RefundedOnTimeout`).
-- **Saldos no D10a** (slot 508.156.224, sem escrita do agente):
-  - SOL: deployer 2.805.194.240; buyer 103.351.800; executor 29.925.000
+    (`RefundedOnTimeout` desde o W1/W2 do D10), `cd77e7bd` e `3e115ca8`
+    (`Released`), `104f9a21` (`RefundedOnTimeout`);
+  - **do D10: `bc334093…` `Released`** (W3–W7, pela API do worker).
+- **Saldos no fim do D10** (slot 508.249.020):
+  - SOL: deployer 2.805.194.240; buyer 99.750.400; executor 29.910.000
     lamports;
-  - Test USDC: ATA do buyer 999.992.000.000; ATA do executor 6.000.000.
+  - Test USDC: ATA do buyer 999.993.000.000; ATA do executor 7.000.000.
+- **Worker (D10):** `worker/vericode_worker.py`, `unittest` 23/23;
+  configuração `d10/worker.json` (`0600`), dados em `d10/data` (3 Jobs, 10
+  operações, receipt de `bc334093…`), porta 8710; iniciado por
+  `env -i HOME=… PATH=/usr/bin:/bin python3 -B worker/vericode_worker.py
+  --config …/d10/worker.json` (o token sai só no terminal do operador).
 - **Testes:**
   - `anchor/tests-local` 61/61 com o rebuild e com o dump de devnet:
     d4b_receipts 2, escrow 27, fixtures 2, layout 7, regressions 7,
@@ -83,11 +91,14 @@ numa tomada contínua e submissão até 11/10.
     `bin/env9.sh` (usado pela seção "Gravação") e logs;
   - `rec-*`: gravações do humano;
   - `d10a/`: árvore "antes", homes, targets, RPC falso e listener, receipts
-    `X` e `X-wrong-binary`, logs.
+    `X` e `X-wrong-binary`, logs;
+  - `d10/`: configuração do worker, `bin/` (`w10_api.sh`, `w10_rpc.py`,
+    `w10_sum.py`, `w10_secret.py`), `data/` do worker e logs (W1–W7,
+    saldos, memória, conferências).
 
 ## Gate atual
 
-`R-D10a` (registrado) → próximo `D10`.
+`D10` (concluído) → próximo `D11–D12`.
 
 ## Estado
 
@@ -115,6 +126,13 @@ numa tomada contínua e submissão até 11/10.
 - R-D10a (`docs/r-d10a-review-results.md`): correções confirmadas com os
   binários do D9, do D10a e um rebuild contra logs reais de 24 transações;
   sem achado crítico, alto ou médio; condições C10-1 a C10-10 para o D10.
+- D10 (`docs/d10-worker-results.md`): worker local em `127.0.0.1` (Python,
+  só biblioteca padrão) sobre os binários do D10a, com C10-1 a C10-10 no
+  código e em 23 testes; W1–W7 em devnet pela API: reembolso dos dois Jobs das
+  gravações, Job `bc334093…` `Released` com o verificador invocado (99.541
+  CU), negativos 6021 (escrow), 6003 (verificador) e 6007 (escrow) com o
+  programa identificado só pela saída da CLI. Saldos fecham; nenhuma chave
+  nem caminho de chave saiu do worker.
 
 ## Decisões humanas registradas
 
@@ -125,7 +143,8 @@ numa tomada contínua e submissão até 11/10.
   com o prompt e o Plan Mode do D9) e D9 (`docs/decisions.md`).
 - "Decisões humanas para o D10a" (ratificadas com o prompt e o Plan Mode do
   D10a) e D10a.
-- R-D10a, "Decisões humanas para o D10" e "Vídeo de reserva".
+- R-D10a, "Decisões humanas para o D10" (ratificadas com o prompt e o Plan
+  Mode do D10, 19:18), "Vídeo de reserva" e D10.
 
 ## Ações proibidas (permanentes salvo novo objetivo)
 
@@ -166,8 +185,9 @@ numa tomada contínua e submissão até 11/10.
 - RD7-01, 02, 03, 04, 05 e 07: corrigidos (05 no D9; os demais no D10a)
   e confirmados pela R-D10a.
 - RD10A-01 (baixo): o prover executa o shim da árvore de fontes sem
-  conferir hash; o worker confere hash `2a8f75b8…` e modo `0755` antes de
-  cada `compress` e exige a linha `docker_run` depois (C10-2).
+  conferir hash; desde o D10, o worker confere hash `2a8f75b8…` e modo
+  `0755` antes de cada `compress` e exige a linha `docker_run` depois (C10-2).
+  Fora do worker, a CLI e o prover continuam como no D10a.
 - RD10A-02 a 07 (info): ambiente ainda escolhe `RISC0_WORK_DIR`,
   `VERICODE_REAL_DOCKER`, `DOCKER_HOST=unix://…`; log do shim forjável;
   exit 1 depois de transação aterrissada; logs sintéticos nos testes; slice
@@ -175,12 +195,23 @@ numa tomada contínua e submissão até 11/10.
   `docs/manifest-schema.md:86` e de `docs/d7-cli-results.md:128` (esta no
   relatório do D10a) estão feitas.
 - RD7-06, 09 e 10: corrigidos no D10a (opcionais). **RD7-08** continua
-  aberto: um negativo `escrow:6021` perto do prazo pode virar reembolso real
-  (a CLI reporta `UNEXPECTED`).
+  aberto na CLI: um negativo `escrow:6021` perto do prazo pode virar
+  reembolso real (a CLI reporta `UNEXPECTED`). O worker só envia o 6021 com
+  `deadline_slot − slot ≥ 300` num `job show` imediatamente anterior (C10-8).
 - A seção "Gravação" do roteiro usa os binários do D9, anteriores às
   correções; os negativos dela continuam os da CR2.
-- Jobs `8ab4ee8d` e `8bce67f2` (gravações do humano): `Funded`, 2 Test USDC
-  parados; reembolso previsto no D10 (W1, W2).
+- Jobs `8ab4ee8d` e `8bce67f2` (gravações do humano): reembolsados no D10
+  (W1, W2).
+- **Worker (D10):**
+  - P3: chaves de devnet do projeto num worker local, por caminho; o mesmo
+    operador opera buyer e executor; sem carteira no navegador;
+  - `http.server` não é endurecido para rede: só em `127.0.0.1`, com C10-6;
+  - o token da execução fica na captura do terminal do operador (`0600`);
+  - a rota `escrow-6014` foi testada só offline;
+  - se o `compress` estourar o tempo, um container já iniciado termina
+    sozinho (`--rm`) e a receipt não é usada.
+- Memória no `compress` do D10: 167 MB disponíveis e 4,2 GB de swap no pico,
+  sem exit 137.
 - Vídeo de reserva: 17 clipes em `C:\Users\lucas\Videos\` que misturam
   Jobs; uso só com legendas por Job. O vídeo definitivo deve ser uma tomada
   contínua ("Vídeo de reserva" em `docs/decisions.md`).
@@ -197,6 +228,6 @@ numa tomada contínua e submissão até 11/10.
 
 ## Próxima transição permitida
 
-`D10`, conforme `docs/handoffs/r-d10a-to-d10.md`, em sessão nova (Opus
-5.5, xhigh, Plan Mode antes de criar `worker/` e antes da primeira escrita
+`D11–D12`, conforme `docs/handoffs/d10-to-d11.md`, em sessão nova (Opus
+5.5, xhigh, Plan Mode antes de alterar `worker/` e antes da primeira escrita
 em devnet).
