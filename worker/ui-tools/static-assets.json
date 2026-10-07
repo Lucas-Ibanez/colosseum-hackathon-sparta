@@ -1,0 +1,220 @@
+{
+  "_comment": "Tabela fixa de cópias para worker/static/ (decisão D11a). source: brand/... relativo à raiz do repositório; lucide-static/... relativo a worker/ui-tools/node_modules/. sha256 fixado por sync-assets.mjs --pin; o teste worker/tests/test_static.py confere destino, tabela e origem.",
+  "files": [
+    {
+      "dest": "fonts/manrope-wght-latin-ext.woff2",
+      "source": "brand/fonts/manrope-wght-latin-ext.woff2",
+      "sha256": "3911b66d9f2e005a4b989223405d0e5032619c668597ba467cc76a23c8fffcfb"
+    },
+    {
+      "dest": "fonts/manrope-wght-latin.woff2",
+      "source": "brand/fonts/manrope-wght-latin.woff2",
+      "sha256": "a30ddcd349703aff7464c34bef3fffdff405ee50c113440d7c8693c02d210972"
+    },
+    {
+      "dest": "fonts/ibm-plex-mono-400-latin-ext.woff2",
+      "source": "brand/fonts/ibm-plex-mono-400-latin-ext.woff2",
+      "sha256": "6bc0f226a5b7884a8170e3f62c63d7675609d4631bdc5931b5cdab81821f00eb"
+    },
+    {
+      "dest": "fonts/ibm-plex-mono-400-latin.woff2",
+      "source": "brand/fonts/ibm-plex-mono-400-latin.woff2",
+      "sha256": "08949f728dc52d528e69b1667d15c89a5686a4ee9a296ff90983985f99c380f7"
+    },
+    {
+      "dest": "fonts/ibm-plex-mono-500-latin-ext.woff2",
+      "source": "brand/fonts/ibm-plex-mono-500-latin-ext.woff2",
+      "sha256": "6bb06407c97584b0867a959e05e8874693bfeb8c317de190811c51598f2d99ea"
+    },
+    {
+      "dest": "fonts/ibm-plex-mono-500-latin.woff2",
+      "source": "brand/fonts/ibm-plex-mono-500-latin.woff2",
+      "sha256": "01d285447409c8a588692162439a038b8cbd7871309ee20267b0d2d91c6e8e22"
+    },
+    {
+      "dest": "fonts/fonts.css",
+      "source": "brand/fonts/fonts.css",
+      "sha256": "583615664050f79310ca07d33b6ebd6efbfbd18a54492207962c226c7ce23819"
+    },
+    {
+      "dest": "fonts/OFL-Manrope.txt",
+      "source": "brand/fonts/OFL-Manrope.txt",
+      "sha256": "d6a309fcfb963d329a93baf9df66fa5f3c23a4be2b5f67edf24d6cafecde12ac"
+    },
+    {
+      "dest": "fonts/OFL-IBMPlexMono.txt",
+      "source": "brand/fonts/OFL-IBMPlexMono.txt",
+      "sha256": "d741e57d5f865e294df801f96b7b5161a88b211df65887e4358d271c9fc5fb4f"
+    },
+    {
+      "dest": "brand/hive-horizontal-branco.svg",
+      "source": "brand/logo/hive-horizontal-branco.svg",
+      "sha256": "a0277c114b28fb1f4e3929c179b3a16a159435ac55a8ecf6dcee508d5f254908"
+    },
+    {
+      "dest": "icons/blocks.svg",
+      "source": "lucide-static/icons/blocks.svg",
+      "sha256": "df2afccf7b08b6d2a952173d235a8597bb88b90f204cf380b7f842b841e35db0"
+    },
+    {
+      "dest": "icons/check.svg",
+      "source": "lucide-static/icons/check.svg",
+      "sha256": "97a72209deb061b1bae237dd92b49a88ffd61e8139a3bd15cd7c093162dee2b0"
+    },
+    {
+      "dest": "icons/chevron-down.svg",
+      "source": "lucide-static/icons/chevron-down.svg",
+      "sha256": "d111e8509fb4d81802439a108572497c3d5ec26b8106be64c454f72a99be02b1"
+    },
+    {
+      "dest": "icons/chevron-up.svg",
+      "source": "lucide-static/icons/chevron-up.svg",
+      "sha256": "550b39314f39f4cc919458dc11fb2023417360ee6e0b017389f3ce24e8e90e04"
+    },
+    {
+      "dest": "icons/circle-check.svg",
+      "source": "lucide-static/icons/circle-check.svg",
+      "sha256": "785e1bb4600b471ce47e8bf38700f9ded1cbd70801e241c8ac576e5df3a5dd5a"
+    },
+    {
+      "dest": "icons/circle-dashed.svg",
+      "source": "lucide-static/icons/circle-dashed.svg",
+      "sha256": "18297631d336db95e5fb30d36930a1a3aa822ff9c2a6032c4d68f223428f1751"
+    },
+    {
+      "dest": "icons/circle-x.svg",
+      "source": "lucide-static/icons/circle-x.svg",
+      "sha256": "858ff63df686285305e9bacd60e547ca7bf98d35d946a879c3c3c1ad50bdb3ab"
+    },
+    {
+      "dest": "icons/clock.svg",
+      "source": "lucide-static/icons/clock.svg",
+      "sha256": "b1beef37d447e9d76c75d860df49bd98f35ee62b838ffce44ad9ce936c8086fd"
+    },
+    {
+      "dest": "icons/copy.svg",
+      "source": "lucide-static/icons/copy.svg",
+      "sha256": "ba7570767d3e7548b13d11503cfa898c0e7155072aa109234e71bd8deda009a4"
+    },
+    {
+      "dest": "icons/cpu.svg",
+      "source": "lucide-static/icons/cpu.svg",
+      "sha256": "03c222c731721fac7b6ea71127c4b82e0bdd2c5907f3615dbe54478011dd64eb"
+    },
+    {
+      "dest": "icons/equal.svg",
+      "source": "lucide-static/icons/equal.svg",
+      "sha256": "abe026247f07748d9df2cea49fbbd8be4367dc3cf7feac96e57ce545b68174de"
+    },
+    {
+      "dest": "icons/equal-not.svg",
+      "source": "lucide-static/icons/equal-not.svg",
+      "sha256": "bc1359231c09089a46f21a0d791c97ccc357053d3706715dc75722d874605cc4"
+    },
+    {
+      "dest": "icons/external-link.svg",
+      "source": "lucide-static/icons/external-link.svg",
+      "sha256": "4cd870674c6353daf8aa16b9072e89c416bf668f38fcd4517b202c9946d5d613"
+    },
+    {
+      "dest": "icons/file-check.svg",
+      "source": "lucide-static/icons/file-check.svg",
+      "sha256": "b44f632421ed05174138f8b21936951b976413cb4fe54caa74e429d135eb8b96"
+    },
+    {
+      "dest": "icons/file-x.svg",
+      "source": "lucide-static/icons/file-x.svg",
+      "sha256": "e039885220f440964dded8f61123b56d9f842e1e3961af61b90799b093496aed"
+    },
+    {
+      "dest": "icons/hourglass.svg",
+      "source": "lucide-static/icons/hourglass.svg",
+      "sha256": "d49d4b3a19e6b1ca1177393c8ada6150b4b92ae3be744be38cffc9e7a6152df5"
+    },
+    {
+      "dest": "icons/info.svg",
+      "source": "lucide-static/icons/info.svg",
+      "sha256": "e789d31dd65c6c6bcd8d84234c2fee631d043493dc67cf493eb48d5320c66a30"
+    },
+    {
+      "dest": "icons/key-round.svg",
+      "source": "lucide-static/icons/key-round.svg",
+      "sha256": "a8062e3517e28dbde20a19b7b0f043c1d10dd6235899cb3eb155f1a04a639cc9"
+    },
+    {
+      "dest": "icons/list.svg",
+      "source": "lucide-static/icons/list.svg",
+      "sha256": "f43417ab174dfa43a990aec47571036b3e3fdf08f7b6de5aa1ffc64b394b7db9"
+    },
+    {
+      "dest": "icons/loader-circle.svg",
+      "source": "lucide-static/icons/loader-circle.svg",
+      "sha256": "019582efdc2354524e3315f27804e283b204e5bebc48f4379a7b1ba50c1a8282"
+    },
+    {
+      "dest": "icons/lock.svg",
+      "source": "lucide-static/icons/lock.svg",
+      "sha256": "bdbff889c8f6c6be8bbd71463942eaaf5865d79d871f77c5962ea0ba580b44bb"
+    },
+    {
+      "dest": "icons/minus.svg",
+      "source": "lucide-static/icons/minus.svg",
+      "sha256": "7dde003425bd8b94be4d83093e4a8404ef196c0d48d81815c31b6258350f6a51"
+    },
+    {
+      "dest": "icons/package-check.svg",
+      "source": "lucide-static/icons/package-check.svg",
+      "sha256": "f5b54a80f681c3362676c72cbe5f10119132fdc0aeba1e70334f231e6b35e01e"
+    },
+    {
+      "dest": "icons/plus.svg",
+      "source": "lucide-static/icons/plus.svg",
+      "sha256": "336c701fdc14ec51205606c65e680f8aade68a8173909f12040b72fc26e5ae9f"
+    },
+    {
+      "dest": "icons/refresh-cw.svg",
+      "source": "lucide-static/icons/refresh-cw.svg",
+      "sha256": "60f02adce4aae6849438fadbb466b2c5355e660bd9c95c0057a42e1aa63c2892"
+    },
+    {
+      "dest": "icons/repeat.svg",
+      "source": "lucide-static/icons/repeat.svg",
+      "sha256": "955f36984779604c478e9ecabebffc776b68a42764a5af0a6d4f90965468ee2d"
+    },
+    {
+      "dest": "icons/server.svg",
+      "source": "lucide-static/icons/server.svg",
+      "sha256": "387c468037fbf3e657bca355cb5dc26b2b41902e2ced9fb297c4c85030ec3b64"
+    },
+    {
+      "dest": "icons/terminal.svg",
+      "source": "lucide-static/icons/terminal.svg",
+      "sha256": "8409ca91cf53e41b9274995dc10a533c4e971ea4c518e300e2bbd070d3b80340"
+    },
+    {
+      "dest": "icons/triangle-alert.svg",
+      "source": "lucide-static/icons/triangle-alert.svg",
+      "sha256": "862a3389768d53f7fc9eb2bfff7e55c5ed07345dbbfe20673fbc9eee6b55ee24"
+    },
+    {
+      "dest": "icons/undo-2.svg",
+      "source": "lucide-static/icons/undo-2.svg",
+      "sha256": "3a51ad311298bf0a304eafcbe7acff4e225655f917baaa23f8de8e64124eedd8"
+    },
+    {
+      "dest": "icons/unlink.svg",
+      "source": "lucide-static/icons/unlink.svg",
+      "sha256": "095c43de00dd68ff3efa812d8015aa4e23960a31dd34b4af3c6c1b87e17627f6"
+    },
+    {
+      "dest": "icons/x.svg",
+      "source": "lucide-static/icons/x.svg",
+      "sha256": "b87f5d4decd163091eafb76bb8d9d9fa8dd7b997aa0e186d920218bd084bb60d"
+    },
+    {
+      "dest": "icons/LICENSE-lucide.txt",
+      "source": "lucide-static/LICENSE",
+      "sha256": "b495047bd93a9b06913511076f504daba17d5bbeb3e0650f3bb53a4220329c57"
+    }
+  ]
+}

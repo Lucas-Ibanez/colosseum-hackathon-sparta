@@ -1,0 +1,247 @@
+/* GERADO por worker/ui-tools/gen-tokens.mjs a partir do DESIGN.md. Não editar à mão.
+ * DESIGN.md sha256=a15a3f77c3a1de6fe60ca8c92c22ea218e457aa1afb68004bfd9d0f42c0eefbd
+ * Camadas: 1 export css-vars; 2 tipografia e componentes; 3 papéis claro/escuro; 4 prosa do DESIGN.md. */
+
+/* Camada 1: design.md export --format css-vars --prefix hive */
+:root {
+  --hive-color-primary: #392d40;
+  --hive-color-secondary: #796680;
+  --hive-color-tertiary: #e8b44c;
+  --hive-color-neutral: #faf7f5;
+  --hive-color-surface: #ffffff;
+  --hive-color-surface-variant: #e7dfe9;
+  --hive-color-on-tertiary: #392d40;
+  --hive-color-outline: #e7dfe9;
+  --hive-color-outline-strong: #9b8aa2;
+  --hive-color-focus-ring: #392d40;
+  --hive-color-success: #1b6b43;
+  --hive-color-success-container: #e3f1e8;
+  --hive-color-danger: #a8281f;
+  --hive-color-danger-container: #fbe7e4;
+  --hive-color-caution: #7a4b00;
+  --hive-color-caution-container: #f9ebd0;
+  --hive-color-pending: #5e4b66;
+  --hive-color-pending-container: #e7dfe9;
+  --hive-color-dark-background: #45404c;
+  --hive-color-dark-nav: #35303d;
+  --hive-color-dark-topbar: #3c3643;
+  --hive-color-dark-panel: #4d4655;
+  --hive-color-dark-control: #57505f;
+  --hive-color-dark-selected: #65556f;
+  --hive-color-dark-outline: #726878;
+  --hive-color-dark-on-surface: #fcf8f2;
+  --hive-color-dark-on-surface-muted: #ded5e3;
+  --hive-color-dark-on-tertiary: #302936;
+  --hive-color-dark-outline-strong: #bdb1c4;
+  --hive-color-dark-focus-ring: #e8b44c;
+  --hive-color-dark-success: #8eddb0;
+  --hive-color-dark-success-container: #2f4b41;
+  --hive-color-dark-danger: #ffb4ab;
+  --hive-color-dark-danger-container: #5b3340;
+  --hive-color-dark-caution: #f5cb82;
+  --hive-color-dark-caution-container: #5a4a35;
+  --hive-color-dark-pending: #ded5e3;
+  --hive-color-dark-pending-container: #57505f;
+  --hive-spacing-xs: 4px;
+  --hive-spacing-sm: 8px;
+  --hive-spacing-md: 12px;
+  --hive-spacing-lg: 16px;
+  --hive-spacing-xl: 24px;
+  --hive-spacing-2xl: 32px;
+  --hive-spacing-3xl: 48px;
+  --hive-spacing-4xl: 64px;
+  --hive-spacing-nav-width: 224px;
+  --hive-spacing-topbar-height: 56px;
+  --hive-spacing-statusbar-height: 32px;
+  --hive-spacing-container-max: 1120px;
+  --hive-spacing-control-height: 40px;
+  --hive-rounded-xs: 4px;
+  --hive-rounded-sm: 8px;
+  --hive-rounded-md: 12px;
+  --hive-rounded-full: 9999px;
+}
+
+/* Camada 2: tipografia (Typography) e dimensões dos componentes (Components) */
+:root {
+  --hive-font-sans: "Manrope", sans-serif;
+  --hive-font-mono: "IBM Plex Mono", monospace;
+  --hive-type-title-lg: 600 28px/36px var(--hive-font-sans);
+  --hive-type-title-lg-tracking: -0.01em;
+  --hive-type-title-lg-numeric: normal;
+  --hive-type-title-md: 600 20px/28px var(--hive-font-sans);
+  --hive-type-title-md-tracking: normal;
+  --hive-type-title-md-numeric: normal;
+  --hive-type-title-sm: 600 16px/24px var(--hive-font-sans);
+  --hive-type-title-sm-tracking: normal;
+  --hive-type-title-sm-numeric: normal;
+  --hive-type-label-lg: 600 14px/20px var(--hive-font-sans);
+  --hive-type-label-lg-tracking: normal;
+  --hive-type-label-lg-numeric: normal;
+  --hive-type-label-md: 500 13px/18px var(--hive-font-sans);
+  --hive-type-label-md-tracking: normal;
+  --hive-type-label-md-numeric: normal;
+  --hive-type-button: 600 14px/20px var(--hive-font-sans);
+  --hive-type-button-tracking: normal;
+  --hive-type-button-numeric: normal;
+  --hive-type-table-head: 600 13px/18px var(--hive-font-sans);
+  --hive-type-table-head-tracking: normal;
+  --hive-type-table-head-numeric: normal;
+  --hive-type-body-lg: 400 16px/24px var(--hive-font-sans);
+  --hive-type-body-lg-tracking: normal;
+  --hive-type-body-lg-numeric: normal;
+  --hive-type-body-md: 400 14px/20px var(--hive-font-sans);
+  --hive-type-body-md-tracking: normal;
+  --hive-type-body-md-numeric: normal;
+  --hive-type-body-sm: 400 13px/18px var(--hive-font-sans);
+  --hive-type-body-sm-tracking: normal;
+  --hive-type-body-sm-numeric: normal;
+  --hive-type-caption: 400 12px/16px var(--hive-font-sans);
+  --hive-type-caption-tracking: normal;
+  --hive-type-caption-numeric: normal;
+  --hive-type-numeric: 400 14px/20px var(--hive-font-sans);
+  --hive-type-numeric-tracking: normal;
+  --hive-type-numeric-numeric: tabular-nums;
+  --hive-type-metric-lg: 600 32px/40px var(--hive-font-sans);
+  --hive-type-metric-lg-tracking: normal;
+  --hive-type-metric-lg-numeric: tabular-nums;
+  --hive-type-metric-md: 600 20px/28px var(--hive-font-sans);
+  --hive-type-metric-md-tracking: normal;
+  --hive-type-metric-md-numeric: tabular-nums;
+  --hive-type-mono-md: 400 13px/20px var(--hive-font-mono);
+  --hive-type-mono-md-tracking: normal;
+  --hive-type-mono-md-numeric: normal;
+  --hive-type-mono-lg: 400 14px/22px var(--hive-font-mono);
+  --hive-type-mono-lg-tracking: normal;
+  --hive-type-mono-lg-numeric: normal;
+  --hive-type-mono-sm: 400 12px/16px var(--hive-font-mono);
+  --hive-type-mono-sm-tracking: normal;
+  --hive-type-mono-sm-numeric: normal;
+  --hive-type-doc-body: 400 16px/26px var(--hive-font-sans);
+  --hive-type-doc-body-tracking: normal;
+  --hive-type-doc-body-numeric: normal;
+  --hive-type-doc-code: 400 14px/21px var(--hive-font-mono);
+  --hive-type-doc-code-tracking: normal;
+  --hive-type-doc-code-numeric: normal;
+  --hive-comp-app-nav-width: 224px;
+  --hive-comp-top-bar-height: 56px;
+  --hive-comp-panel-rounded: 12px;
+  --hive-comp-panel-padding: 24px;
+  --hive-comp-button-primary-rounded: 8px;
+  --hive-comp-button-primary-padding: 0 16px;
+  --hive-comp-button-primary-height: 40px;
+  --hive-comp-button-secondary-rounded: 8px;
+  --hive-comp-button-secondary-padding: 0 16px;
+  --hive-comp-button-secondary-height: 40px;
+  --hive-comp-field-rounded: 8px;
+  --hive-comp-field-padding: 0 12px;
+  --hive-comp-field-height: 40px;
+  --hive-comp-field-mono-rounded: 8px;
+  --hive-comp-field-mono-padding: 0 12px;
+  --hive-comp-field-mono-height: 40px;
+  --hive-comp-divider-height: 1px;
+  --hive-comp-divider-strong-height: 1px;
+  --hive-comp-focus-indicator-height: 2px;
+  --hive-comp-selection-indicator-width: 3px;
+  --hive-comp-status-success-rounded: 12px;
+  --hive-comp-status-success-padding: 12px 16px;
+  --hive-comp-status-danger-rounded: 12px;
+  --hive-comp-status-danger-padding: 12px 16px;
+  --hive-comp-status-caution-rounded: 12px;
+  --hive-comp-status-caution-padding: 12px 16px;
+  --hive-comp-status-pending-rounded: 12px;
+  --hive-comp-status-pending-padding: 12px 16px;
+  --hive-comp-code-block-rounded: 8px;
+  --hive-comp-code-block-padding: 12px 16px;
+  --hive-comp-hash-field-rounded: 4px;
+  --hive-comp-hash-field-padding: 2px 6px;
+  --hive-comp-provenance-badge-rounded: 9999px;
+  --hive-comp-provenance-badge-padding: 2px 8px;
+  --hive-comp-environment-chip-rounded: 9999px;
+  --hive-comp-environment-chip-padding: 4px 10px;
+  --hive-comp-limits-of-proof-rounded: 12px;
+  --hive-comp-limits-of-proof-padding: 24px;
+}
+
+/* Camada 3: papéis (Colors, Mapa de papéis). Claro é o canônico; escuro preparado. */
+:root {
+  color-scheme: light;
+  --hive-bg-page: var(--hive-color-neutral);
+  --hive-bg-nav: var(--hive-color-primary);
+  --hive-bg-topbar: var(--hive-color-surface);
+  --hive-bg-panel: var(--hive-color-surface);
+  --hive-bg-control: var(--hive-color-surface);
+  --hive-bg-sunken: var(--hive-color-neutral);
+  --hive-bg-selected: var(--hive-color-surface-variant);
+  --hive-bg-chip: var(--hive-color-surface-variant);
+  --hive-text-primary: var(--hive-color-primary);
+  --hive-text-secondary: var(--hive-color-secondary);
+  --hive-text-on-nav: var(--hive-color-surface);
+  --hive-text-on-accent: var(--hive-color-on-tertiary);
+  --hive-accent: var(--hive-color-tertiary);
+  --hive-border-subtle: var(--hive-color-outline);
+  --hive-border-strong: var(--hive-color-outline-strong);
+  --hive-focus: var(--hive-color-focus-ring);
+  --hive-link: var(--hive-color-primary);
+  --hive-status-success: var(--hive-color-success);
+  --hive-status-success-bg: var(--hive-color-success-container);
+  --hive-status-danger: var(--hive-color-danger);
+  --hive-status-danger-bg: var(--hive-color-danger-container);
+  --hive-status-caution: var(--hive-color-caution);
+  --hive-status-caution-bg: var(--hive-color-caution-container);
+  --hive-status-pending: var(--hive-color-pending);
+  --hive-status-pending-bg: var(--hive-color-pending-container);
+}
+[data-theme="dark"] {
+  color-scheme: dark;
+  --hive-bg-page: var(--hive-color-dark-background);
+  --hive-bg-nav: var(--hive-color-dark-nav);
+  --hive-bg-topbar: var(--hive-color-dark-topbar);
+  --hive-bg-panel: var(--hive-color-dark-panel);
+  --hive-bg-control: var(--hive-color-dark-control);
+  --hive-bg-sunken: var(--hive-color-dark-background);
+  --hive-bg-selected: var(--hive-color-dark-selected);
+  --hive-bg-chip: var(--hive-color-dark-control);
+  --hive-text-primary: var(--hive-color-dark-on-surface);
+  --hive-text-secondary: var(--hive-color-dark-on-surface-muted);
+  --hive-text-on-nav: var(--hive-color-dark-on-surface);
+  --hive-text-on-accent: var(--hive-color-dark-on-tertiary);
+  --hive-accent: var(--hive-color-tertiary);
+  --hive-border-subtle: var(--hive-color-dark-outline);
+  --hive-border-strong: var(--hive-color-dark-outline-strong);
+  --hive-focus: var(--hive-color-dark-focus-ring);
+  --hive-link: var(--hive-color-tertiary);
+  --hive-status-success: var(--hive-color-dark-success);
+  --hive-status-success-bg: var(--hive-color-dark-success-container);
+  --hive-status-danger: var(--hive-color-dark-danger);
+  --hive-status-danger-bg: var(--hive-color-dark-danger-container);
+  --hive-status-caution: var(--hive-color-dark-caution);
+  --hive-status-caution-bg: var(--hive-color-dark-caution-container);
+  --hive-status-pending: var(--hive-color-dark-pending);
+  --hive-status-pending-bg: var(--hive-color-dark-pending-container);
+}
+
+/* Camada 4: valores dados na prosa do DESIGN.md (seção de origem ao lado) */
+:root {
+  --hive-shadow-2: 0 8px 24px rgba(57, 45, 64, 0.12); /* Elevation & Depth, nível 2 */
+  --hive-scrim: rgba(57, 45, 64, 0.48); /* Elevation & Depth, scrim de modal */
+  --hive-mix-hover: 6%; /* Motion and interaction states, hover */
+  --hive-mix-pressed: 12%; /* Motion and interaction states, pressionado */
+  --hive-mix-accent-hover: 88%; /* Colors, regras de uso do âmbar (hover do primário) */
+  --hive-mix-accent-pressed: 78%; /* Colors, regras de uso do âmbar (pressionado) */
+  --hive-motion-fast: 120ms; /* Motion: hover, pressionado, foco */
+  --hive-motion-base: 200ms; /* Motion: expandir/recolher, toast, troca de estado */
+  --hive-ease: ease-out; /* Motion: curva */
+  --hive-measure: 68ch; /* Typography, regras: largura de leitura */
+  --hive-focus-offset: 2px; /* Components, campos: anel afastado 2 px */
+  --hive-row-height: 48px; /* Components, tabelas: linhas de 48 px */
+  --hive-icon-sm: 16px; /* Shapes, ícones: 16 px */
+  --hive-icon-md: 20px; /* Shapes, ícones: 20 px */
+  --hive-icon-stroke: 1.5px; /* Shapes, ícones: traço de 1,5 px */
+  --hive-partymark-sm: 24px; /* Shapes, hexágono: 24 px */
+  --hive-partymark-md: 32px; /* Shapes, hexágono: 32 px */
+  --hive-spin-period: calc(var(--hive-motion-base) * 5); /* Motion: indicador de atividade em Proving (múltiplo do tempo base) */
+  --hive-brand-signature-min: 128px; /* Brand assets (brand/MANIFEST.md): assinatura horizontal, largura mínima */
+}
+[data-theme="dark"] {
+  --hive-shadow-2: 0 8px 24px rgba(0, 0, 0, 0.32); /* Elevation & Depth, nível 2, escuro */
+}

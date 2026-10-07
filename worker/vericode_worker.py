@@ -150,6 +150,102 @@ SECURITY_HEADERS = (
     ("X-Frame-Options", "DENY"),
 )
 
+# The Hive interface (D11-D12): a fixed table of files under worker/static/, served
+# at /ui/ by exact match, GET only, without the token (the page asks for it) and
+# with a CSP that allows only this origin. Nothing is listed or globbed.
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+STATIC_INDEX = "/ui/"
+STATIC_FILES = (
+    "css/tokens.css",
+    "css/app.css",
+    "js/api.js",
+    "js/components.js",
+    "js/dom.js",
+    "js/format.js",
+    "js/i18n.js",
+    "js/icons.js",
+    "js/main.js",
+    "js/views/job.js",
+    "js/views/jobs.js",
+    "js/views/new-job.js",
+    "fonts/fonts.css",
+    "fonts/manrope-wght-latin-ext.woff2",
+    "fonts/manrope-wght-latin.woff2",
+    "fonts/ibm-plex-mono-400-latin-ext.woff2",
+    "fonts/ibm-plex-mono-400-latin.woff2",
+    "fonts/ibm-plex-mono-500-latin-ext.woff2",
+    "fonts/ibm-plex-mono-500-latin.woff2",
+    "fonts/OFL-Manrope.txt",
+    "fonts/OFL-IBMPlexMono.txt",
+    "brand/hive-horizontal-branco.svg",
+    *(f"icons/{name}.svg" for name in (
+        "blocks", "check", "chevron-down", "chevron-up", "circle-check", "circle-dashed", "circle-x", "clock", "copy",
+        "cpu", "equal", "equal-not", "external-link", "file-check", "file-x", "hourglass", "info", "key-round", "list",
+        "loader-circle", "lock", "minus", "package-check", "plus", "refresh-cw", "repeat", "server", "terminal",
+        "triangle-alert", "undo-2", "unlink", "x")),
+    "icons/LICENSE-lucide.txt",
+)
+STATIC_ROUTES = {STATIC_INDEX: "index.html", **{STATIC_INDEX + name: name for name in STATIC_FILES}}
+CONTENT_TYPES = {
+    ".html": "text/html; charset=utf-8",
+    ".css": "text/css; charset=utf-8",
+    ".js": "text/javascript; charset=utf-8",
+    ".svg": "image/svg+xml",
+    ".woff2": "font/woff2",
+    ".txt": "text/plain; charset=utf-8",
+}
+PAGE_CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; "
+            "connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
+PAGE_HEADERS = (
+    ("Cache-Control", "no-store"),
+    ("X-Content-Type-Options", "nosniff"),
+    ("Content-Security-Policy", PAGE_CSP),
+    ("Referrer-Policy", "no-referrer"),
+    ("X-Frame-Options", "DENY"),
+)
+
+# Read-only views for the interface (D11-D12); they derive from what the worker
+# already stores and decide nothing.
+VERIFIER_RELEASE = "risc0-solana v3.0.0"  # the pinned verifier bytes 34ae6e5c… (CHECK_LINES; README)
+TOKEN_PROGRAM_ID = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+PROGRAM_KEYS = {
+    ESCROW_ID: "escrow",
+    VERIFIER_ID: "verifier",
+    TOKEN_PROGRAM_ID: "token",
+    "11111111111111111111111111111111": "system",
+    "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL": "ata",
+    "ComputeBudget111111111111111111111111111111": "compute_budget",
+}
+JOURNAL_V1_BYTES = 165
+JOURNAL_V1_FIELDS = (("job_id", 4), ("spec_hash", 36), ("harness_hash", 68), ("artifact_hash", 100), ("image_id", 132))
+LOCAL_PROVE_KEYS = ("prove.prover", "prove.artifact", "prove.seconds", "prove.receipt_type", "prove.local_verify",
+                    "prove.journal_equal_to_core", "prove.verdict")
+LOCAL_COMPRESS_KEYS = ("compress.prover", "compress.docker_image", "compress.seconds", "compress.receipt_type",
+                       "compress.local_verify", "compress.journal_equal_to_composite", "compress.selector",
+                       "compress.image_id", "compress.verdict", "compress.journal_digest")
+INVOKE_RE = re.compile(rf"Program ({PK}) invoke \[(\d{{1,2}})\]")
+CONSUMED_RE = re.compile(rf"Program ({PK}) consumed (\d+) of \d+ compute units")
+SUCCESS_RE = re.compile(rf"Program ({PK}) success")
+FAILED_RE = re.compile(rf"Program ({PK}) failed: (.{{1,200}})")
+INSTRUCTION_RE = re.compile(r"Program log: Instruction: ([A-Za-z0-9_]{1,64})")
+ANCHOR_ERROR_RE = re.compile(r"Program log: AnchorError .{0,200}?Error Code: ([A-Za-z0-9_]{1,64})\. Error Number: (\d{1,10})\.")
+MAX_INVOCATIONS = 64
+CREATE_LIVE_RES = {
+    "job": re.compile(rf"create\.job=({PK})"),
+    "vault": re.compile(rf"create\.vault=({PK})"),
+    "slot": re.compile(r"create\.slot=(\d+) deadline_slot=(\d+) offset=(\d+)"),
+}
+FACT_RES = {
+    "cluster": re.compile(r"check\.cluster=(devnet) genesis=(" + PK + ")"),
+    "escrow": re.compile(rf"check\.escrow=({PK}) upgrade_authority=(none) deployed_slot=(\d+)"),
+    "escrow_data": re.compile(r"check\.escrow_program_data bytes=(\d+) sha256=([0-9a-f]{64})"),
+    "verifier": re.compile(rf"check\.verifier=({PK}) program_data=({PK}) upgrade_authority=(none) bytes=(\d+) "
+                           r"sha256=([0-9a-f]{64})"),
+    "mint": re.compile(rf"check\.mint=({PK}) decimals=(\d+) freeze_authority=(none) supply=(\d+)"),
+    "terms": re.compile(r"check\.terms_v1 spec_hash=([0-9a-f]{64}) harness_hash=([0-9a-f]{64}) image_id=([0-9a-f]{64})"),
+}
+MIN_SLOT_CLOCK_SECONDS = 600
+
 
 class WorkerError(Exception):
     pass
@@ -520,6 +616,120 @@ def public_tx(entry, sent_signature):
     }
 
 
+def decode_journal(text):
+    """The frozen JournalV1 v1 (docs/manifest-schema.md): exactly 165 bytes,
+    schema_version 1, verdict PASS=0 / FAIL=1. Display only; the program checks."""
+    if not isinstance(text, str) or not re.fullmatch(r"[0-9a-f]{%d}" % (2 * JOURNAL_V1_BYTES), text):
+        raise ValueError(f"journal is not {JOURNAL_V1_BYTES} bytes of lowercase hex")
+    raw = bytes.fromhex(text)
+    version = int.from_bytes(raw[0:4], "little")
+    if version != 1:
+        raise ValueError(f"journal schema_version {version} is not 1")
+    if raw[164] not in (0, 1):
+        raise ValueError(f"journal verdict tag {raw[164]} is neither PASS (0) nor FAIL (1)")
+    fields = {name: raw[offset:offset + 32].hex() for name, offset in JOURNAL_V1_FIELDS}
+    return {"schema_version": version, **fields, "verdict": "PASS" if raw[164] == 0 else "FAIL", "hex": text}
+
+
+def invocations_of(logs):
+    """Program invocations of a landed transaction, in order, from its public
+    logs: program, depth, instruction (when the program logs it), compute
+    units, result and Anchor error."""
+    calls, stack = [], []
+    for line in logs:
+        if match := INVOKE_RE.fullmatch(line):
+            if len(calls) >= MAX_INVOCATIONS:
+                break
+            call = {"program_id": match.group(1), "program": PROGRAM_KEYS.get(match.group(1)),
+                    "depth": int(match.group(2)), "instruction": None, "units": None, "result": None,
+                    "error": None, "anchor_error": None}
+            calls.append(call)
+            stack.append(call)
+            continue
+        if not stack:
+            continue
+        top = stack[-1]
+        if match := INSTRUCTION_RE.fullmatch(line):
+            if top["instruction"] is None:
+                top["instruction"] = match.group(1)
+        elif match := ANCHOR_ERROR_RE.match(line):
+            top["anchor_error"] = {"name": match.group(1), "code": int(match.group(2))}
+        elif (match := CONSUMED_RE.fullmatch(line)) and match.group(1) == top["program_id"]:
+            top["units"] = int(match.group(2))
+        elif (match := SUCCESS_RE.fullmatch(line)) and match.group(1) == top["program_id"]:
+            top["result"] = "success"
+            stack.pop()
+        elif (match := FAILED_RE.fullmatch(line)) and match.group(1) == top["program_id"]:
+            top["result"], top["error"] = "failed", match.group(2)
+            stack.pop()
+    return calls
+
+
+def token_amount(balance):
+    try:
+        amount = balance["uiTokenAmount"]["amount"]
+    except (TypeError, KeyError):
+        return None
+    return int(amount) if isinstance(amount, str) and amount.isdigit() else None
+
+
+def balances_of(entry, chain):
+    """Token balances before and after a landed transaction (its public
+    `pre/postTokenBalances`), each with the Job role of its owner."""
+    def by_index(name):
+        rows = {}
+        for item in entry.get(name) or []:
+            if isinstance(item, dict) and type(item.get("accountIndex")) is int:
+                rows[item["accountIndex"]] = item
+        return rows
+
+    pre, post = by_index("pre_token_balances"), by_index("post_token_balances")
+    chain = chain if isinstance(chain, dict) and not chain.get("absent") else {}
+    roles = {
+        chain.get("address"): ("vault", (chain.get("vault") or {}).get("address")),
+        chain.get("buyer"): ("buyer", (chain.get("buyer_ata") or {}).get("address")),
+        chain.get("executor"): ("executor", (chain.get("executor_ata") or {}).get("address")),
+    }
+    rows = []
+    for index in sorted(set(pre) | set(post)):
+        source = post.get(index) or pre.get(index)
+        owner, mint = source.get("owner"), source.get("mint")
+        owner = owner if isinstance(owner, str) and PUBKEY_RE.fullmatch(owner) else None
+        mint = mint if isinstance(mint, str) and PUBKEY_RE.fullmatch(mint) else None
+        role, account = roles.get(owner, (None, None)) if owner else (None, None)
+        decimals = (source.get("uiTokenAmount") or {}).get("decimals")
+        rows.append({"account_index": index, "owner": owner, "role": role, "token_account": account, "mint": mint,
+                     "decimals": decimals if type(decimals) is int else None,
+                     "before": token_amount(pre.get(index)), "after": token_amount(post.get(index))})
+    return rows
+
+
+def parse_iso(text):
+    try:
+        return datetime.datetime.fromisoformat(text).timestamp()
+    except (TypeError, ValueError):
+        return None
+
+
+def read_app_commit(root):
+    """The commit at the worker's start, read from .git (files only, no process)."""
+    git = Path(root) / ".git"
+    try:
+        head = (git / "HEAD").read_text().strip()
+        if head.startswith("ref: "):
+            ref = head[5:]
+            if not re.fullmatch(r"refs/heads/[A-Za-z0-9._/-]{1,100}", ref) or ".." in ref:
+                return None
+            if (git / ref).is_file():
+                head = (git / ref).read_text().strip()
+            else:
+                packed = (git / "packed-refs").read_text().splitlines()
+                head = next((line.split()[0] for line in packed if line.endswith(" " + ref)), "")
+    except OSError:
+        return None
+    return head if re.fullmatch(r"[0-9a-f]{40}", head) else None
+
+
 def rejection_of(expect, stdout, entry):
     """Which program rejected a negative run (C10-7), only when the CLI output
     shows all of it: the expected error, the simulation's innermost failure of
@@ -571,6 +781,7 @@ class Worker:
         self.token = None
         self.port = None
         self.incidents = []
+        self.app_commit = None
         replacements = {}
         for role, path in (("buyer", config.buyer_keypair), ("executor", config.executor_keypair)):
             for variant in {path, os.path.realpath(path)}:
@@ -682,6 +893,7 @@ class Worker:
                 raise StartupError(f"{name} check failed (exit {result.exit_code}): missing {missing}")
             report["checks"][name] = [self.scrub(line, f"{name} check") for line in result.stdout]
         self.load_state()
+        self.app_commit = read_app_commit(Path(__file__).resolve().parent.parent)
         self.token = secrets.token_urlsafe(32)
         self.startup_report = report
         self.log_event({"event": "startup", "binaries": report["binaries"], "probes": report["probes"], "checks": "ok"})
@@ -766,6 +978,8 @@ class Worker:
             "signature": transaction.get("signature") or op.get("signature"),
             "explorer": transaction.get("explorer"),
             "rejection": op.get("rejection"),
+            "receipt_job_id": op.get("receipt_job_id"),
+            "params": op.get("params"),
             "started_at": op["started_at"],
             "ended_at": op.get("ended_at"),
         }
@@ -795,6 +1009,32 @@ class Worker:
     def public_receipt(self, attempt):
         return {key: value for key, value in attempt.items() if key != "dir"}
 
+    def receipt_view(self, attempt):
+        """The public receipt plus what its proving operation printed: the
+        local checks (exact CLI keys) and, for a usable receipt, the journal
+        decoded by the frozen offsets (`compress.journal_hex`, which must equal
+        `prove.journal_hex`)."""
+        view = self.public_receipt(attempt)
+        op = self.ops.get(attempt.get("op_id")) or {}
+        lines = {step.get("name"): (step.get("stdout") or "").splitlines() for step in op.get("steps") or []}
+        prove, compress = lines.get("prove", []), lines.get("compress", [])
+        local = {key: line_value(prove, key) for key in LOCAL_PROVE_KEYS}
+        local.update({key: line_value(compress, key) for key in LOCAL_COMPRESS_KEYS})
+        view["local"] = local
+        view["journal"], view["journal_error"] = None, None
+        if attempt.get("status") != "usable":
+            view["journal_error"] = "no usable receipt"
+            return view
+        compressed, proved = line_value(compress, "compress.journal_hex"), line_value(prove, "prove.journal_hex")
+        if compressed is None or compressed != proved:
+            view["journal_error"] = "compress.journal_hex is missing or differs from prove.journal_hex"
+            return view
+        try:
+            view["journal"] = {**decode_journal(compressed), "source": "compress.journal_hex"}
+        except ValueError as error:
+            view["journal_error"] = str(error)
+        return view
+
     def job_view(self, job_id):
         with self.state:
             record = self.jobs.get(job_id)
@@ -810,7 +1050,7 @@ class Worker:
                     "state_scope": scope,
                     "chain": record["chain"],
                     "create": record["create"],
-                    "receipt": self.public_receipt(record["receipts"][-1]) if record["receipts"] else None,
+                    "receipt": self.receipt_view(record["receipts"][-1]) if record["receipts"] else None,
                     "reconcile_pending": job_id in self.pending,
                     "running_op": self.op_summary(op) if op is not None and op.get("job_id") == job_id else None,
                     "ops": [self.op_summary(self.ops[op_id]) for op_id in record["ops"] if op_id in self.ops],
@@ -823,6 +1063,7 @@ class Worker:
             for job_id, record in sorted(self.jobs.items(), key=lambda item: item[1]["first_seen"]):
                 state, scope = self.state_of(record)
                 chain = record["chain"] or {}
+                receipt = record["receipts"][-1] if record["receipts"] else {}
                 jobs.append(
                     {
                         "job_id": job_id,
@@ -831,6 +1072,14 @@ class Worker:
                         "state_scope": scope,
                         "chain_status": chain.get("status"),
                         "reconcile_pending": job_id in self.pending,
+                        "first_seen": record["first_seen"],
+                        "amount": chain.get("amount"),
+                        "deadline_slot": chain.get("deadline_slot"),
+                        "read_slot": chain.get("slot"),
+                        "read_at": chain.get("read_at"),
+                        "past_deadline": chain.get("past_deadline"),
+                        "receipt_status": receipt.get("status"),
+                        "receipt_verdict": receipt.get("verdict"),
                     }
                 )
             return {"jobs": jobs}
@@ -846,15 +1095,107 @@ class Worker:
                     "running_op": self.op_summary(op) if op is not None else None,
                     "reconcile_pending": sorted(self.pending),
                     "incidents": self.incidents,
+                    "v1": self.v1_facts(),
+                    "slot_clock": self.slot_clock(),
+                    "app_commit": self.app_commit,
+                    "ui": STATIC_INDEX,
                 }
             )
+
+    def v1_facts(self):
+        """What the interface shows before a create: the v1 terms and the
+        programs, parsed from the startup `check` lines; the pubkeys from the
+        key probes; the worker's fixed amount and deadline window."""
+        report = self.startup_report or {}
+        cli_lines = (report.get("checks") or {}).get("cli") or []
+        prover_lines = (report.get("checks") or {}).get("prover") or []
+        found = {}
+        for line in cli_lines:
+            for name, pattern in FACT_RES.items():
+                if name not in found and (match := pattern.fullmatch(line)):
+                    found[name] = match.groups()
+
+        def part(name, keys, ints=()):
+            if name not in found:
+                return None
+            return {key: int(value) if key in ints else value for key, value in zip(keys, found[name])}
+
+        escrow = part("escrow", ("program_id", "upgrade_authority", "deployed_slot"), ("deployed_slot",))
+        if escrow is not None and "escrow_data" in found:
+            escrow.update(program_data_bytes=int(found["escrow_data"][0]), program_data_sha256=found["escrow_data"][1])
+        verifier = part("verifier", ("program_id", "program_data", "upgrade_authority", "bytes", "sha256"), ("bytes",))
+        if verifier is not None:
+            verifier["release"] = VERIFIER_RELEASE
+        probes = report.get("probes") or {}
+        return {
+            "cluster": part("cluster", ("name", "genesis")),
+            "escrow": escrow,
+            "verifier": verifier,
+            "mint": part("mint", ("address", "decimals", "freeze_authority", "supply"), ("decimals", "supply")),
+            "terms": part("terms", ("spec_hash", "harness_hash", "image_id")),
+            "guest": {"image_id": line_value(prover_lines, "guest.image_id"),
+                      "admitted": line_value(prover_lines, "guest.admitted"),
+                      "selector": line_value(prover_lines, "groth16.selector")},
+            "buyer": probes.get("buyer"),
+            "executor": probes.get("executor"),
+            "amount": AMOUNT,
+            "deadline_offset": {"min": MIN_DEADLINE_OFFSET, "max": MAX_DEADLINE_OFFSET},
+            "c10_8_margin": C10_8_MARGIN_SLOTS,
+        }
+
+    def slot_clock(self):
+        """The last slot read from the chain (a `job show`), and seconds per
+        slot measured between the oldest and the newest read this worker
+        recorded (null under 10 minutes apart). An estimate, never a deadline."""
+        reads = []
+        for op in self.ops.values():
+            chain = op.get("chain") or {}
+            if type(chain.get("slot")) is int and (at := parse_iso(chain.get("read_at"))) is not None:
+                reads.append((at, chain["slot"], chain["read_at"], op.get("job_id")))
+        for job_id, record in self.jobs.items():
+            chain = record.get("chain") or {}
+            if type(chain.get("slot")) is int and (at := parse_iso(chain.get("read_at"))) is not None:
+                reads.append((at, chain["slot"], chain["read_at"], job_id))
+        if not reads:
+            return {"latest": None, "reference": None, "seconds_per_slot": None}
+        first, last = min(reads), max(reads)
+        rate = None
+        if last[0] - first[0] >= MIN_SLOT_CLOCK_SECONDS and last[1] > first[1]:
+            rate = round((last[0] - first[0]) / (last[1] - first[1]), 4)
+        return {
+            "latest": {"slot": last[1], "read_at": last[2], "job_id": last[3]},
+            "reference": {"slot": first[1], "read_at": first[2], "job_id": first[3]},
+            "seconds_per_slot": rate,
+        }
 
     def op_view(self, op_id):
         with self.state:
             op = self.ops.get(op_id)
             if op is None:
                 raise HttpError(404, "unknown_op")
-            return json.loads(self.scrub_paths(json.dumps(op)))
+            view = json.loads(self.scrub_paths(json.dumps(op)))
+            if op["kind"] in WRITE_KINDS:
+                view["anatomy"] = self.anatomy_of(op)
+            return view
+
+    def anatomy_of(self, op):
+        """Instructions, invocations and token balances of the operation's
+        transaction, from the public fields of the CLI log (`logs`, `programs`,
+        `pre/post_token_balances`). None when no transaction was recorded."""
+        entries = read_tx_entries(self.data / "ops" / op["op_id"] / "cli-tx.jsonl")
+        if not entries:
+            return None
+        entry = entries[-1]
+        logs = [line for line in entry.get("logs") or [] if isinstance(line, str)]
+        programs = [item for item in entry.get("programs") or [] if isinstance(item, str) and PUBKEY_RE.fullmatch(item)]
+        record = self.jobs.get(op.get("job_id")) or {}
+        landed = isinstance(entry.get("slot"), int)
+        return {
+            "landed": landed,
+            "top_level": [{"program_id": item, "program": PROGRAM_KEYS.get(item)} for item in programs],
+            "invocations": invocations_of(logs) if landed else [],
+            "balances": balances_of(entry, record.get("chain")) if landed else [],
+        }
 
     # --- operations ---
 
@@ -912,6 +1253,7 @@ class Worker:
             elif op["status"] == "running":
                 op["status"] = "ok"
             op["ended_at"] = now_iso()
+            op["running_step"] = None
             self.persist_op(op)
             if self.current == op["op_id"]:
                 self.current = None
@@ -950,6 +1292,9 @@ class Worker:
         self.verify_binary(argv[0])
         env = self.child_env(prover)
         started_at = now_iso()
+        with self.state:
+            op["running_step"] = {"name": name, "started_at": started_at}
+            self.persist_op(op)
         result = run_process(argv, env, self.config.home_dir, timeout, on_line)
         step = {
             "name": name,
@@ -965,6 +1310,7 @@ class Worker:
         }
         with self.state:
             op["steps"].append(step)
+            op["running_step"] = None
             self.persist_op(op)
         self.log_event({"event": "step", "op_id": op["op_id"], "name": name, "exit_code": result.exit_code,
                         "seconds": step["seconds"], "timed_out": result.timed_out})
@@ -1059,6 +1405,13 @@ class Worker:
                 "--executor", config.executor_pubkey, "--amount", str(AMOUNT), "--deadline-offset", str(offset)]
 
         def on_job_id(line):
+            for key, pattern in CREATE_LIVE_RES.items():
+                if live := pattern.fullmatch(line):
+                    with self.state:
+                        value = live.group(1) if key != "slot" else {
+                            "slot": int(live.group(1)), "deadline_slot": int(live.group(2)), "offset": int(live.group(3))}
+                        op.setdefault("create_live", {})[key] = value
+                        self.persist_op(op)
             match = CREATE_ID_RE.fullmatch(line)
             if match and op["job_id"] is None:
                 job_id = match.group("job_id")
@@ -1489,6 +1842,21 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if self.command != "HEAD":
             self.wfile.write(body)
 
+    def send_static(self, name):
+        """One file of the fixed table, with the page headers (no token: the
+        page asks the operator for it)."""
+        try:
+            body = (STATIC_DIR / name).read_bytes()
+        except OSError:
+            raise HttpError(404, "not_found") from None
+        self.send_response(200)
+        for header, value in PAGE_HEADERS:
+            self.send_header(header, value)
+        self.send_header("Content-Type", CONTENT_TYPES[os.path.splitext(name)[1]])
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
     def read_body(self):
         if self.headers.get_all("Transfer-Encoding"):
             raise HttpError(400, "chunked_not_allowed")
@@ -1522,6 +1890,15 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 raise HttpError(421, "misdirected_request", "Host must be 127.0.0.1:<port>")
             if "?" in self.path or "#" in self.path:
                 raise HttpError(400, "query_not_allowed")
+            # http.server collapses a leading "//" into "/"; only the path as sent is routed.
+            parts = self.requestline.split(" ")
+            if len(parts) != 3 or parts[1] != self.path:
+                raise HttpError(400, "bad_path")
+            if self.path in STATIC_ROUTES:
+                if method != "GET":
+                    raise HttpError(405, "method_not_allowed")
+                self.send_static(STATIC_ROUTES[self.path])
+                return
             if not self.path.startswith("/api/"):
                 raise HttpError(404, "not_found")
             tokens = self.headers.get_all("X-VeriCode-Token") or []
@@ -1559,6 +1936,7 @@ def main(argv=None):
         for line in lines:
             print(f"worker.check.{name}: {line}")
     print(f"worker.url=http://127.0.0.1:{worker.port}")
+    print(f"worker.ui=http://127.0.0.1:{worker.port}{STATIC_INDEX}")
     # The token goes only to the operator's terminal, never to a worker log.
     print(f"worker.token={worker.token}", flush=True)
     try:

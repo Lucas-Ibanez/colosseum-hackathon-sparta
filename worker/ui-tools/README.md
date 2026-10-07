@@ -42,13 +42,33 @@ npm ci --ignore-scripts --prefix worker/ui-tools        # recria node_modules a 
 npm --prefix worker/ui-tools run lint:design            # design.md lint DESIGN.md
 ```
 
-Exportação dos tokens (o gerador e o teste de deriva entram no D11):
+Desde o D11–D12:
 
 ```bash
-cd worker/ui-tools
-npx --no-install design.md export --format css-vars --prefix hive ../../DESIGN.md   # cores, espaços, raios
-npx --no-install design.md export --format dtcg ../../DESIGN.md                      # inclui a tipografia
+npm --prefix worker/ui-tools run gen:tokens     # DESIGN.md -> worker/static/css/tokens.css
+npm --prefix worker/ui-tools run check:tokens   # regenera em memória e compara byte a byte (deriva = exit 1)
+npm --prefix worker/ui-tools run sync:assets    # copia a tabela static-assets.json e confere cada SHA-256
+npm --prefix worker/ui-tools run check:assets   # só confere destino e origem contra a tabela
+VU_WORKER_TOKEN=<token> node worker/ui-tools/capture.mjs <dir-fora-do-clone> jobs='#/jobs' [--blocks] [--dark] [--reduced-motion] [--width=1280]
 ```
+
+- **`gen-tokens.mjs`**: quatro camadas, todas do `DESIGN.md`: (1) a saída de
+  `design.md export --format css-vars --prefix hive` (cores, espaços, raios), sem
+  mudança; (2) tipografia e dimensões dos componentes, do modelo que a API de lint do
+  pacote resolve; (3) os papéis do "Mapa de papéis" em `:root` (claro, canônico) e
+  `[data-theme="dark"]` (preparado); (4) os valores que o `DESIGN.md` dá em prosa
+  (sombra de nível 2, scrim, misturas de hover/pressionado, 120/200 ms, `68ch`,
+  tamanhos de ícone e de `PartyMark`, altura de linha de tabela, afastamento do foco),
+  cada um com a seção de origem, e a largura mínima da assinatura (`brand/MANIFEST.md`).
+  O cabeçalho grava o SHA-256 do `DESIGN.md`; `worker/tests/test_static.py` confere esse
+  hash e as cores sem precisar de Node.
+- **`sync-assets.mjs` e `static-assets.json`**: tabela fixa (destino, origem, SHA-256)
+  das 43 cópias: 6 fontes, `fonts.css` e 2 licenças OFL de `brand/fonts/`, o logotipo
+  `brand/logo/hive-horizontal-branco.svg`, 32 ícones de `lucide-static` e a licença ISC.
+  Sem listagem nem glob. `--pin` só na primeira cópia.
+- **`capture.mjs`**: capturas para a verificação visual; só lê a tela (não clica em
+  ações que escrevem). O token vem do ambiente, é digitado no campo de senha e nunca é
+  impresso; erros de console, de página e de CSP saem no fim (exit 1).
 
 Para recriar o navegador do Playwright: `npx --no-install playwright install --only-shell chromium`.
 Se um dia o `sudo` estiver disponível, `sudo apt-get install -y libnss3 libnspr4 libasound2t64`

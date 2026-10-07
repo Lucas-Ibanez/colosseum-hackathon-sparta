@@ -8,7 +8,12 @@
     "node": ">=24"
   },
   "scripts": {
-    "lint:design": "design.md lint ../../DESIGN.md"
+    "lint:design": "design.md lint ../../DESIGN.md",
+    "gen:tokens": "node gen-tokens.mjs",
+    "check:tokens": "node gen-tokens.mjs --check",
+    "sync:assets": "node sync-assets.mjs",
+    "check:assets": "node sync-assets.mjs --check",
+    "capture": "node capture.mjs"
   },
   "devDependencies": {
     "@google/design.md": "0.4.0",

@@ -1,0 +1,119 @@
+{
+ "_comment": "Public data of a D10 devnet transaction (CLI --log record of worker op 775358cf9bc51bca) and the public chain view of Job 8ab4ee8d; no keys.",
+ "chain": {
+  "address": "7bSmM1ravrGsqqVRRUzAZuKvkTD7bduTRKMWkxXz6ZAm",
+  "buyer": "EZgGUg4JhEAhzMPd4jBuKWFXdDNpFATvCjkj7mLAdxU6",
+  "buyer_ata": {
+   "address": "61tkoEv4YSYgXRyuxqmF3K5vPDNZgyPMCDG9Xg75FZuw",
+   "sol_lamports": 99750400,
+   "test_usdc": 999993000000
+  },
+  "executor": "EdB25bVhdj6rm5b7FbVHe5A3zx2hAhPpK4YAzrLaDs6U",
+  "executor_ata": {
+   "address": "HpZkHZ59uB2hfxPGuPXWd2sWJMbm6MNyb8PwJK1PPJpG",
+   "sol_lamports": 29910000,
+   "test_usdc": 7000000
+  },
+  "status": "RefundedOnTimeout",
+  "vault": {
+   "address": "DZ2ko9Q9w2oBbkATVHKmJdvvPSuDXkce2cXTaR9vinzD",
+   "amount": 0,
+   "authority_is_job_pda": true
+  }
+ },
+ "entry": {
+  "blockhash": "CJQZVmDDyEddMscZSYimh6d6KUHbtqaL5wHBKh1A8p6q",
+  "err": null,
+  "expect": "Success",
+  "explorer": "https://explorer.solana.com/tx/57UYbVX9gEXdp7dproD5mEyxj5UzxuQZdjwhQZe96XKTfCKbrWSxrfhKTmqrTdnAby8PGyJVSa1gDZsdk7P9Xd9v?cluster=devnet",
+  "fee": 5000,
+  "kind": "tx",
+  "label": "refund_on_timeout",
+  "logs": [
+   "Program GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH invoke [1]",
+   "Program log: Instruction: RefundOnTimeout",
+   "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]",
+   "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 105 of 186676 compute units",
+   "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success",
+   "Program GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH consumed 14605 of 200000 compute units",
+   "Program GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH success"
+  ],
+  "outcome": "PASS",
+  "payer": "EZgGUg4JhEAhzMPd4jBuKWFXdDNpFATvCjkj7mLAdxU6",
+  "post_token_balances": [
+   {
+    "accountIndex": 1,
+    "mint": "9TE2VPFmgrNxT22yS3sEZyRcMxLgJkwzgAoquWRXwV2F",
+    "owner": "EZgGUg4JhEAhzMPd4jBuKWFXdDNpFATvCjkj7mLAdxU6",
+    "programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "uiTokenAmount": {
+     "amount": "999993000000",
+     "decimals": 6,
+     "uiAmount": 999993.0,
+     "uiAmountString": "999993"
+    }
+   },
+   {
+    "accountIndex": 3,
+    "mint": "9TE2VPFmgrNxT22yS3sEZyRcMxLgJkwzgAoquWRXwV2F",
+    "owner": "7bSmM1ravrGsqqVRRUzAZuKvkTD7bduTRKMWkxXz6ZAm",
+    "programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "uiTokenAmount": {
+     "amount": "0",
+     "decimals": 6,
+     "uiAmount": null,
+     "uiAmountString": "0"
+    }
+   }
+  ],
+  "pre_token_balances": [
+   {
+    "accountIndex": 1,
+    "mint": "9TE2VPFmgrNxT22yS3sEZyRcMxLgJkwzgAoquWRXwV2F",
+    "owner": "EZgGUg4JhEAhzMPd4jBuKWFXdDNpFATvCjkj7mLAdxU6",
+    "programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "uiTokenAmount": {
+     "amount": "999992000000",
+     "decimals": 6,
+     "uiAmount": 999992.0,
+     "uiAmountString": "999992"
+    }
+   },
+   {
+    "accountIndex": 3,
+    "mint": "9TE2VPFmgrNxT22yS3sEZyRcMxLgJkwzgAoquWRXwV2F",
+    "owner": "7bSmM1ravrGsqqVRRUzAZuKvkTD7bduTRKMWkxXz6ZAm",
+    "programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "uiTokenAmount": {
+     "amount": "1000000",
+     "decimals": 6,
+     "uiAmount": 1.0,
+     "uiAmountString": "1"
+    }
+   }
+  ],
+  "programs": [
+   "GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH"
+  ],
+  "signature": "57UYbVX9gEXdp7dproD5mEyxj5UzxuQZdjwhQZe96XKTfCKbrWSxrfhKTmqrTdnAby8PGyJVSa1gDZsdk7P9Xd9v",
+  "simulation": {
+   "err": null,
+   "logs": [
+    "Program GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH invoke [1]",
+    "Program log: Instruction: RefundOnTimeout",
+    "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]",
+    "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 105 of 186676 compute units",
+    "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success",
+    "Program GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH consumed 14605 of 200000 compute units",
+    "Program GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH success"
+   ],
+   "units": 14605
+  },
+  "size": 342,
+  "slot": 508247421,
+  "units": 14605,
+  "unix_time": 1791326639,
+  "verifier_invoked": false
+ },
+ "job_id": "8ab4ee8d56eb7dd6f5bcd619e1df7d76f934885afe4a133fb7f726938dda38a8"
+}

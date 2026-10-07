@@ -1,0 +1,157 @@
+{
+ "_comment": "Public data of a D10 devnet transaction (CLI --log record of worker op 8c51bd2822478c8f) and the public chain view of Job bc334093; no keys.",
+ "chain": {
+  "address": "9rbr5EokRsKgbhivLEfDK8WFdHoRKEjP1Y1JzSYLgmAN",
+  "buyer": "EZgGUg4JhEAhzMPd4jBuKWFXdDNpFATvCjkj7mLAdxU6",
+  "buyer_ata": {
+   "address": "61tkoEv4YSYgXRyuxqmF3K5vPDNZgyPMCDG9Xg75FZuw",
+   "sol_lamports": 99750400,
+   "test_usdc": 999993000000
+  },
+  "executor": "EdB25bVhdj6rm5b7FbVHe5A3zx2hAhPpK4YAzrLaDs6U",
+  "executor_ata": {
+   "address": "HpZkHZ59uB2hfxPGuPXWd2sWJMbm6MNyb8PwJK1PPJpG",
+   "sol_lamports": 29910000,
+   "test_usdc": 7000000
+  },
+  "status": "Released",
+  "vault": {
+   "address": "CvRooDpUfUTU4aibFDt1nVxNx89az455Q3f5zvqmHjXa",
+   "amount": 0,
+   "authority_is_job_pda": true
+  }
+ },
+ "entry": {
+  "blockhash": "6YTyvoxoG3QFkSPYRHUcogSZ8Ei5WpKwaWgmDs31sef8",
+  "err": {
+   "InstructionError": [
+    1,
+    {
+     "Custom": 6003
+    }
+   ]
+  },
+  "expect": "Failure { program: THq1qFYQoh7zgcjXoMXduDBqiZRCPeg3PvvMbrVQUge, code: 6003 }",
+  "explorer": "https://explorer.solana.com/tx/4cKK83JBYxRVfrAT5t6visKQdEWim5NANMe3eMH4bHsDmPumzq3WZb83F4eWiuYC694uivPqhsip3D8ySxJBmX2u?cluster=devnet",
+  "fee": 5000,
+  "kind": "tx",
+  "label": "deliver+release",
+  "logs": [
+   "Program GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH invoke [1]",
+   "Program log: Instruction: Deliver",
+   "Program GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH consumed 4947 of 400000 compute units",
+   "Program GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH success",
+   "Program GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH invoke [1]",
+   "Program log: Instruction: Release",
+   "Program THq1qFYQoh7zgcjXoMXduDBqiZRCPeg3PvvMbrVQUge invoke [2]",
+   "Program log: Instruction: Verify",
+   "Program log: AnchorError occurred. Error Code: PairingError. Error Number: 6003. Error Message: Pairing error.",
+   "Program THq1qFYQoh7zgcjXoMXduDBqiZRCPeg3PvvMbrVQUge consumed 100528 of 381290 compute units",
+   "Program THq1qFYQoh7zgcjXoMXduDBqiZRCPeg3PvvMbrVQUge failed: custom program error: 0x1773",
+   "Program GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH consumed 114291 of 395053 compute units",
+   "Program GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH failed: custom program error: 0x1773"
+  ],
+  "outcome": "PASS",
+  "payer": "EdB25bVhdj6rm5b7FbVHe5A3zx2hAhPpK4YAzrLaDs6U",
+  "post_token_balances": [
+   {
+    "accountIndex": 2,
+    "mint": "9TE2VPFmgrNxT22yS3sEZyRcMxLgJkwzgAoquWRXwV2F",
+    "owner": "9rbr5EokRsKgbhivLEfDK8WFdHoRKEjP1Y1JzSYLgmAN",
+    "programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "uiTokenAmount": {
+     "amount": "1000000",
+     "decimals": 6,
+     "uiAmount": 1.0,
+     "uiAmountString": "1"
+    }
+   },
+   {
+    "accountIndex": 3,
+    "mint": "9TE2VPFmgrNxT22yS3sEZyRcMxLgJkwzgAoquWRXwV2F",
+    "owner": "EdB25bVhdj6rm5b7FbVHe5A3zx2hAhPpK4YAzrLaDs6U",
+    "programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "uiTokenAmount": {
+     "amount": "6000000",
+     "decimals": 6,
+     "uiAmount": 6.0,
+     "uiAmountString": "6"
+    }
+   }
+  ],
+  "pre_token_balances": [
+   {
+    "accountIndex": 2,
+    "mint": "9TE2VPFmgrNxT22yS3sEZyRcMxLgJkwzgAoquWRXwV2F",
+    "owner": "9rbr5EokRsKgbhivLEfDK8WFdHoRKEjP1Y1JzSYLgmAN",
+    "programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "uiTokenAmount": {
+     "amount": "1000000",
+     "decimals": 6,
+     "uiAmount": 1.0,
+     "uiAmountString": "1"
+    }
+   },
+   {
+    "accountIndex": 3,
+    "mint": "9TE2VPFmgrNxT22yS3sEZyRcMxLgJkwzgAoquWRXwV2F",
+    "owner": "EdB25bVhdj6rm5b7FbVHe5A3zx2hAhPpK4YAzrLaDs6U",
+    "programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "uiTokenAmount": {
+     "amount": "6000000",
+     "decimals": 6,
+     "uiAmount": 6.0,
+     "uiAmountString": "6"
+    }
+   }
+  ],
+  "programs": [
+   "GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH",
+   "GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH"
+  ],
+  "signature": "4cKK83JBYxRVfrAT5t6visKQdEWim5NANMe3eMH4bHsDmPumzq3WZb83F4eWiuYC694uivPqhsip3D8ySxJBmX2u",
+  "simulation": {
+   "err": {
+    "InstructionError": [
+     1,
+     {
+      "Custom": 6003
+     }
+    ]
+   },
+   "logs": [
+    "Program GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH invoke [1]",
+    "Program log: Instruction: Deliver",
+    "Program GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH consumed 4947 of 400000 compute units",
+    "Program GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH success",
+    "Program GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH invoke [1]",
+    "Program log: Instruction: Release",
+    "Program THq1qFYQoh7zgcjXoMXduDBqiZRCPeg3PvvMbrVQUge invoke [2]",
+    "Program log: Instruction: Verify",
+    "Program log: AnchorError occurred. Error Code: PairingError. Error Number: 6003. Error Message: Pairing error.",
+    "Program THq1qFYQoh7zgcjXoMXduDBqiZRCPeg3PvvMbrVQUge consumed 100528 of 381290 compute units",
+    "Program THq1qFYQoh7zgcjXoMXduDBqiZRCPeg3PvvMbrVQUge failed: custom program error: 0x1773",
+    "Program GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH consumed 114291 of 395053 compute units",
+    "Program GZqbL2TbeDVHcNRosngaRfCwzV9YJT6iEbckYr8uwkCH failed: custom program error: 0x1773"
+   ],
+   "units": 119238
+  },
+  "size": 883,
+  "slot": 508248802,
+  "snapshot": {
+   "after_slot": 508248811,
+   "before_slot": 508248797,
+   "keys": [
+    "9rbr5EokRsKgbhivLEfDK8WFdHoRKEjP1Y1JzSYLgmAN",
+    "CvRooDpUfUTU4aibFDt1nVxNx89az455Q3f5zvqmHjXa",
+    "61tkoEv4YSYgXRyuxqmF3K5vPDNZgyPMCDG9Xg75FZuw",
+    "HpZkHZ59uB2hfxPGuPXWd2sWJMbm6MNyb8PwJK1PPJpG"
+   ],
+   "unchanged": true
+  },
+  "units": 119238,
+  "unix_time": 1791326965,
+  "verifier_invoked": true
+ },
+ "job_id": "bc3340938cb7b6298a657618e972c2ef559f629e8e3d4d37801360c4f160df83"
+}
