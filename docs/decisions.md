@@ -1976,3 +1976,59 @@ Registre decisões relevantes do projeto neste formato.
     (`HIVE_MVP_UI_ADAPTATION.md`, seção 5).
 - **Próximo gate:** D11–D12, conforme `docs/handoffs/d11a-to-d11.md`, que substitui
   `docs/handoffs/d10-to-d11.md`.
+
+## 2026-10-07 — D11–D12: interface Hive servida pelo worker; U1–U10 pela interface
+
+- **Data:** 2026-10-07 (09:19–13:45 -03:00)
+- **Commits:**
+  - `37d2d63` (`worker: add Hive interface (D11-D12)`);
+  - `docs: record D11-D12 interface`.
+- **Decisões aplicadas:** "Fundação da interface Hive (D11a)", P1–P6 do D10 (P3: sem
+  carteira no navegador), C10-1 a C10-10, as 8 frases congeladas (frase 1 com "da
+  Hive" só na interface) e a lista fechada de escritas U1–U10, aprovadas com o plano em
+  Plan Mode (09:37).
+- **Escolhas do agente, no plano aprovado:**
+  - interface em `/ui/` (não em `/`), para manter verde o teste do D10 que exige 404
+    em `/`; tabela literal de arquivos, só GET, sem token nos estáticos, CSP `'self'`;
+  - SPA por hash, com o token só na memória da aba (uma recarga pede o token de novo);
+  - lacunas 1–5 como visões só de leitura do worker (journal pelos offsets
+    congelados, anatomia e saldos do `--log`, termos e slot do `check` e das leituras,
+    commit de `.git/HEAD`), sem processo novo nem mudança de argv;
+  - `tokens.css` gerado do `DESIGN.md` em quatro camadas (export, modelo resolvido,
+    mapa de papéis, valores da prosa com a seção de origem); o teste Python confere o
+    hash do `DESIGN.md` e as cores, e o `check:tokens` regenera byte a byte;
+  - ícones Lucide inseridos como SVG (parse XML) para herdar a cor e ter o traço de
+    1,5 px do `DESIGN.md`;
+  - ensaio de U1–U10 sobre os executáveis falsos antes da primeira escrita, e as
+    escritas reais dirigidas por cliques num Chromium headless (`d11/bin/u11_drive.mjs`),
+    com o navegador fechado antes de cada compressão.
+- **Achado e correção:** o `http.server` colapsa `//` inicial em `/`; o worker passou a
+  responder 400 a qualquer caminho reescrito pela stdlib.
+- **Resultado (evidência):**
+  - `unittest` 53/53 (23 do D10 + 30 novos); lint do `DESIGN.md` 0/0; `check:tokens`
+    e `check:assets` sem deriva;
+  - devnet, pela interface: T₃ `2c38ca66…` (U1 `8AJzbbKf…`, U2 6021 escrow
+    `4jDL97DG…`, U10 `RefundedOnTimeout` `5oTbFiTX…`); P₃ `26df9ef4…` (U3 `5vWoxx2m…`,
+    prova `(21,42)` `PASS`, U4 6014 escrow com a receipt de `bc334093…` `5CBFajsa…`,
+    U5 6003 verificador `kTQdVojx…`, **U6 `Released` com o verificador invocado,
+    99.541 CU, `2gB9djwM…`**, U7 6007 escrow `j2pmqFWu…`); F₃ `7395a76d…` (U8
+    `2jjiYDAo…`, prova `(7,15)` `FAIL`, **U9 `RefundedOnFail` com o verificador
+    invocado, 99.541 CU, `4jcugMyX…`**);
+  - exatamente 10 transações novas (5 buyer, 5 executor, 0 deployer); saldos fecham por
+    lamport e por unidade;
+  - relatório: [`docs/d11-ui-results.md`](d11-ui-results.md); roteiro "Gravação pela
+    interface" em `docs/demo-script.md`.
+- **Desvios registrados:** um `pkill -f` encerrou o worker do D10 e o próprio comando
+  (antes de qualquer escrita); uma colisão de variável de ambiente fez duas leituras
+  GET de conferência irem a `/ui//api/…` (404), sem efeito em escrita; um
+  `__pycache__` criado por comando do agente sem `-B` foi removido.
+- **Risco aberto:** P3; a seção adversarial também aceita Jobs antigos já liquidados
+  (confirmação obrigatória, mas um erro de operador numa tomada vira escrita fora do
+  roteiro); `app_commit` é o HEAD da partida (reiniciar o worker depois do commit);
+  `slot_clock` é estimativa; dicionário inglês só com os rótulos do `DESIGN.md`;
+  memória do WSL (~340 MB livres no pico do `compress`); os riscos anteriores (sem
+  e-stop, rent preso em 17 Jobs, mint authority = deployer, ImageID não recertificado,
+  spec v1 trivial, RD7-08 na CLI).
+- **Próximo gate:** R-UI, revisão adversarial do worker (D10) e da interface (D11–D12)
+  juntos, somente leitura, conforme `docs/handoffs/d11-to-r-ui.md`; depois, vídeo
+  definitivo numa tomada contínua (10/10) e submissão (11/10).

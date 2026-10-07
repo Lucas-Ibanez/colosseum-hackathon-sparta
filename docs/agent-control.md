@@ -1,15 +1,15 @@
-# Controle autônomo — D11a concluído (fundação da interface Hive); próximo D11–D12
+# Controle autônomo — D11–D12 concluído (interface Hive); próximo R-UI
 
 ## Objetivo atual
 
-D11–D12, conforme `docs/handoffs/d11a-to-d11.md`: telas Jobs, Novo job e
-Detalhe do job em HTML/CSS/JS estático servido pelo worker do D10, com a
-identidade Hive do `DESIGN.md`, a adaptação ao MVP de
-`HIVE_MVP_UI_ADAPTATION.md`, sem carteira no navegador (P3) e só com frases
-congeladas (frase 1 com "da Hive" na interface).
+R-UI, conforme `docs/handoffs/d11-to-r-ui.md`: revisão adversarial do worker (D10)
+e da interface Hive (D11–D12) juntos, numa sessão separada e somente leitura (Opus
+5.5, esforço max): assinatura e envio pelo worker, argv e ambiente, shim, `Host`,
+token, CORS e CSP, DOM só com `textContent`, rótulo C10-7, chaves, claims e frases
+(inclusive "da Hive"), fidelidade ao `DESIGN.md` e à adaptação, e o roteiro "Gravação
+pela interface".
 
-Depois: revisão curta da interface (claims e chaves), vídeo definitivo numa
-tomada contínua e submissão até 11/10.
+Depois: vídeo definitivo numa tomada contínua (10/10) e submissão (11/10).
 
 ## Marcos anteriores
 
@@ -43,7 +43,27 @@ tomada contínua e submissão até 11/10.
   desenvolvimento) e o Node 24 isolado em `~/.local/share/vericode-spikes/ui/`.
 - D10: worker local e W1–W7 pela API:
   - `6eba814` (worker);
-  - `docs: record D10 worker`.
+  - `23a91b5` (`docs: record D10 worker`).
+- D11–D12: interface Hive servida pelo worker e U1–U10 pela interface:
+  - `37d2d63` (worker);
+  - `docs: record D11-D12 interface`.
+
+## Baseline (D11–D12)
+
+- Raiz `/home/lucas/src/vericode`; branch `main`; HEAD de baseline = commit
+  `docs: record D11-D12 interface`.
+- **Worker:** `worker/vericode_worker.py` `bbdf6dbe…`; interface em `worker/static/`
+  (56 arquivos da tabela `STATIC_FILES`), servida em `http://127.0.0.1:8710/ui/`;
+  `unittest` 53/53 (23 do D10 + 30 de `test_static.py`); lint do `DESIGN.md` 0/0;
+  `check:tokens` e `check:assets` sem deriva.
+- **Jobs consumidos a mais (D11–D12):** T₃ `2c38ca66…` `RefundedOnTimeout`, P₃
+  `26df9ef4…` `Released`, F₃ `7395a76d…` `RefundedOnFail`.
+- **Saldos no fim do D11–D12** (slot 508.515.193):
+  - SOL: deployer 2.805.194.240; buyer 88.981.200; executor 29.885.000 lamports;
+  - Test USDC: ATA do buyer 999.992.000.000; ATA do executor 8.000.000.
+- **Fora do clone:** `d11/` (`bin/` com `u11_*`, `logs/`, `shots/`, `tmp/`); o worker
+  continua com `d10/worker.json` e `d10/data` (6 Jobs, receipts de `bc334093`, P₃ e
+  F₃).
 
 ## Baseline (D10)
 
@@ -104,7 +124,7 @@ tomada contínua e submissão até 11/10.
 
 ## Gate atual
 
-`D11a` (concluído) → próximo `D11–D12`.
+`D11–D12` (concluído) → próximo `R-UI`.
 
 ## Estado
 
@@ -140,6 +160,14 @@ tomada contínua e submissão até 11/10.
   programa identificado só pela saída da CLI. Saldos fecham; nenhuma chave
   nem caminho de chave saiu do worker.
 
+- D11–D12 (`docs/d11-ui-results.md`): interface Hive em `worker/static/`, servida
+  pelo worker em `/ui/` (tabela fixa, só GET, CSP `'self'`), com as lacunas 1–6 da
+  adaptação fechadas como visões só de leitura; ensaio sobre os falsos e U1–U10 em
+  devnet por cliques na interface: T₃ `RefundedOnTimeout`, P₃ `Released` e F₃
+  `RefundedOnFail` com o verificador invocado (99.541 CU), negativos 6021, 6014, 6007
+  (escrow) e 6003 (verificador); 10 transações, saldos fecham; seção "Gravação pela
+  interface" no roteiro.
+
 ## Decisões humanas registradas
 
 - D2a.1, D2a.2, D2b, D2c, D2d, D2c.1, "Decisões humanas para o D2b.1",
@@ -155,6 +183,8 @@ tomada contínua e submissão até 11/10.
   na interface, fontes auto-hospedadas, cópia verificada de assets,
   `worker/static/`, stack (execução sem dependência; ferramentas npm só de
   desenvolvimento, emendando a P2), idioma padrão português.
+- D11–D12: plano aprovado em Plan Mode (2026-10-07 09:37), com a lista fechada
+  U1–U10 (`docs/decisions.md`).
 
 ## Ações proibidas (permanentes salvo novo objetivo)
 
@@ -234,10 +264,18 @@ tomada contínua e submissão até 11/10.
   binários de mesmo nome (incidente do D10a): usar targets separados.
 - O `env.sh` herdado define `R`, `B`, `D` e `VC`; não reutilizar esses nomes
   (incidente do R-D7).
-- **Calendário:** 2026-10-06; prazo de entrega 11/10.
+- **Interface (D11–D12):**
+  - a seção adversarial aceita também Jobs antigos já liquidados (confirmação
+    obrigatória); numa tomada, um Job errado vira escrita fora do roteiro;
+  - `app_commit` é o HEAD da partida: reiniciar o worker depois do commit;
+  - `slot_clock` é estimativa (~0,24 s por slot medidos);
+  - o dicionário inglês cobre só os rótulos do `DESIGN.md`;
+  - o SPL Token não registra o nome da instrução nos logs (a tela diz isso);
+  - favicon inexistente (`TODO(brand)`).
+- **Calendário:** 2026-10-07; prazo de entrega 11/10.
 
 ## Próxima transição permitida
 
-`D11–D12`, conforme `docs/handoffs/d11a-to-d11.md` (substitui
-`docs/handoffs/d10-to-d11.md`), em sessão nova (Opus 5.5, xhigh, Plan Mode
-antes de alterar `worker/` e antes da primeira escrita em devnet).
+`R-UI`, conforme `docs/handoffs/d11-to-r-ui.md`, em sessão nova e separada, somente
+leitura (Opus 5.5, esforço max). Depois: vídeo definitivo numa tomada contínua (10/10)
+pela seção "Gravação pela interface" de `docs/demo-script.md`, e submissão (11/10).

@@ -131,6 +131,8 @@ revisão R-D4a. Detalhes em
 | `prover/` | host | próprio | receipts `Composite` → `Groth16` do guest admitido |
 | `cli/` | host | próprio | cliente de devnet |
 | `worker/` (D10) | host | nenhum (Python 3.12, só biblioteca padrão) | worker local HTTP sobre a CLI e o prover |
+| `worker/static/` (D11–D12) | navegador | nenhum (HTML, CSS e módulos ES sem dependência) | interface Hive servida pelo worker em `/ui/` |
+| `worker/ui-tools/` (D11a, D11–D12) | desenvolvimento | `package-lock.json` (96 pacotes, só desenvolvimento) | lint do `DESIGN.md`, geração de `tokens.css`, cópia verificada de assets, capturas |
 
 ## Estado D10 (`worker-api`)
 
@@ -152,6 +154,25 @@ Em devnet, as escritas W1–W7 do D10 foram dirigidas pela API do worker
 (`docs/d10-worker-results.md`). Não há carteira no navegador (P3): as telas do D11–D12
 chamam o worker.
 
+## Estado D11–D12 (`frontend`)
+
+O módulo `frontend/` do guia é `worker/static/`, servido pelo próprio worker (decisão
+D11a; `HIVE_MVP_UI_ADAPTATION.md`, seção 7):
+- telas Jobs, Novo job e Detalhe do job (blocos A a F do guia, adaptados), em HTML, CSS
+  e JavaScript sem framework nem dependência; DOM só por `textContent`;
+- rotas fixas em `/ui/` (tabela no código, só GET, sem token), CSP `'self'` e os
+  demais cabeçalhos; a API continua exigindo o token, que a página guarda só na
+  memória da aba;
+- sem carteira no navegador (P3): toda ação é uma rota do worker, que assina pela CLI;
+- a interface não calcula hash, não decide veredito e não lê RPC: o estado vem do
+  `job show` do worker, com o slot da leitura; o journal, a anatomia e os saldos vêm
+  de visões só de leitura do worker sobre o que ele já guarda (`worker/README.md`);
+- identidade só por tokens gerados do `DESIGN.md` (`css/tokens.css`); fontes, logotipo
+  e ícones copiados por tabela com SHA-256.
+
+Em devnet, as escritas U1–U10 do D11–D12 foram feitas pela interface
+(`docs/d11-ui-results.md`).
+
 ## Fluxo
 
 `Buyer cria Job (termos da v1) e deposita Test USDC` -> `Executor entrega e compromete o hash do artefato (deliver)` -> `host executa o harness e gera receipt Groth16` -> `contrato valida journal contra o Job e a entrega e verifica a prova pelo verificador Groth16 (CPI)` -> `release ao executor em PASS válido ou refund conforme as regras do Job`
@@ -170,7 +191,8 @@ vericode job refund-timeout -> refund_on_timeout depois do prazo
 ```
 
 Desde o D10, o worker local executa esses mesmos comandos por argv fixo, atrás de uma
-API em `127.0.0.1` (`worker/README.md`). A UI ainda não existe (D11–D12).
+API em `127.0.0.1` (`worker/README.md`); desde o D11–D12, a interface Hive em `/ui/`
+dispara essas mesmas rotas.
 
 ## Componentes e responsabilidades
 
@@ -183,7 +205,7 @@ API em `127.0.0.1` (`worker/README.md`). A UI ainda não existe (D11–D12).
 | Programa Anchor (`anchor/programs/vericode-escrow`) | Manter Job/escrow, custodiar no vault PDA e liquidar somente pelo core após validações do Job | Reexecutar regra de negócio, aceitar admin bypass ou confiar apenas no host |
 | Verificador Groth16 (`risc0-solana v3.0.0`) | Verificar receipt Groth16 por CPI direta do escrow (D4a em `solana-program-test`; em devnet desde o D4b) | Ser chamado de "Verifier Router" ou ter o claim estendido a mainnet |
 | Worker local (`worker/`, D10) | Orquestrar CLI e prover por argv fixo, uma operação por vez, e expor estado reconciliado com a cadeia | Decidir pagamento, repetir escrita sozinho, aceitar caminho/flag do cliente ou devolver caminho ou conteúdo de chave |
-| Front-end | Criar e consultar Jobs e apresentar estados/transações | Decidir verdict ou custodiar segredos do usuário |
+| Front-end (`worker/static/`, D11–D12) | Criar e consultar Jobs pelo worker e apresentar estados, evidência e transações com proveniência | Decidir veredito ou destino de token, calcular hash, falar com o RPC, guardar o token fora da memória da aba ou custodiar segredos |
 
 ## Fronteiras
 

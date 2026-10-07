@@ -45,7 +45,7 @@ evidência nem um escopo proibido.
 | `anchor-program/` | `anchor/programs/vericode-escrow` (workspace `anchor/`, testes em `anchor/tests-local`) | D2c/D2b.1/D2e/D4a: `create_job` (termos da v1, mint Test USDC admitido, janela de prazo), `fund`, `deliver`, `release`/`refund_on_fail` com CPI direta ao verificador Groth16 de `risc0-solana v3.0.0` (sem Router desde o D4a), `refund_on_timeout`; destino = ATA canônica; testado em processo com o verificador real (rebuild e bytes de devnet); **implantado e finalizado em devnet** (D4b: `GZqbL2Tb…`, authority `none`) |
 | CLI (guia §3 e §10: "CLI como fonte de verdade") | `cli/` (D7) | `vericode`: `check`, `job create/deliver/settle/refund-timeout/show` em devnet; instruções iguais byte a byte aos builders da suíte; Jobs P e T liquidados em devnet (D7); Jobs P′ e T′ e quatro negativos em ambiente limpo (D9); endurecida no D10a (falha mais interna no `--expect-error`, "already processed", leituras com `minContextSlot`), com testes contra RPC falso local |
 | `worker-api/` | `worker/` (D10) | `vericode_worker.py` (Python 3.12, só biblioteca padrão): HTTP só em `127.0.0.1`, `Host` conferido, token por execução em toda rota, sem CORS; só os binários do D10a por argv fixo, ambiente do zero, uma operação por vez; estado do `job show` e do `--log`; shim conferido e linha `docker_run` exigida (C10-2); 23 testes `unittest`; W1–W7 em devnet pela API |
-| `frontend/` | `worker/static/` (D11–D12); ferramentas em `worker/ui-tools/` | ainda sem telas. D11a: identidade Hive (`DESIGN.md`, lint sem erros), guia (`HIVE_MVP_UI_GUIDE.md`) e sua adaptação ao MVP (`HIVE_MVP_UI_ADAPTATION.md`), assets em `brand/` (fontes em `brand/fonts/`) e stack definida |
+| `frontend/` | `worker/static/` (D11–D12); ferramentas em `worker/ui-tools/` | interface Hive (D11–D12): Jobs, Novo job e Detalhe do job (blocos A–F), HTML/CSS/JS sem dependência, servida pelo worker em `/ui/` (tabela fixa, CSP `'self'`), identidade só por tokens gerados do `DESIGN.md`, sem carteira (P3); lacunas 1–6 da adaptação como visões só de leitura do worker; U1–U10 em devnet pela interface |
 
 Os nomes do guia descrevem responsabilidades; não renomear diretórios
 existentes sem decisão registrada.
@@ -89,14 +89,15 @@ adversariais com prefixo `R-`). O gate seguinte ao D4 é o `D7`, não "D5".
 | R-D10a | revisão delta curta do D10a, somente leitura (APROVADO COM RESSALVAS, C10-1 a C10-10) | guia §11 |
 | D10 | worker local em Python (stdlib), em `127.0.0.1`, sobre os binários do D10a; escritas W1–W7 pela API | D10 |
 | D11a | fundação da interface Hive: marca, adaptação do guia ao MVP, stack, fontes e assets | preparação de D11–D12 |
-| D11–D12 (próximo) | telas Jobs, Novo job e Detalhe do job servidas pelo worker, com a identidade Hive (sem carteira no navegador) | D11–D12 |
+| D11–D12 | telas Jobs, Novo job e Detalhe do job servidas pelo worker, com a identidade Hive (sem carteira no navegador); U1–U10 em devnet pela interface; roteiro "Gravação pela interface" | D11–D12 |
+| R-UI (próximo) | revisão adversarial do worker (D10) e da interface (D11–D12), somente leitura | guia §11 |
 
 Itens de produto e mercado do plano (inscrição, outreach, design partners,
 pitch, telas, vídeo) não são rastreados neste repositório.
 
-## Estado da sequência (evidência, 2026-10-06)
+## Estado da sequência (evidência, 2026-10-07)
 
-Data de calendário: 2026-10-06, que corresponde ao dia D10 do cronograma. O
+Data de calendário: 2026-10-07, que corresponde ao dia D11 do cronograma. O
 projeto concluiu tecnicamente o **D3** e o caminho forte local dos **D5/D6**
 (D2e concluído). O **D4** também está concluído:
 - a parte local (D4a) foi aprovada com ressalvas pelo R-D4a;
@@ -144,8 +145,18 @@ O **D11a** (2026-10-07) preparou a interface: identidade Hive (`DESIGN.md`),
 guia de interface e sua adaptação ao MVP construído
 (`HIVE_MVP_UI_ADAPTATION.md`), assets e fontes em `brand/`, e a stack (execução
 sem dependência em `worker/static/`; ferramentas de desenvolvimento em
-`worker/ui-tools/`). O próximo gate é o **D11–D12**, conforme
-`docs/handoffs/d11a-to-d11.md`.
+`worker/ui-tools/`).
+
+O **D11–D12** (2026-10-07) entregou a interface (`docs/d11-ui-results.md`):
+- telas Jobs, Novo job e Detalhe do job em `worker/static/`, servidas pelo worker em
+  `/ui/`, com a identidade do `DESIGN.md` só por tokens e as frases congeladas;
+- lacunas 1–6 da adaptação fechadas no worker como visões só de leitura; `unittest`
+  53/53;
+- U1–U10 em devnet por cliques na interface: T₃ `RefundedOnTimeout`, P₃ `Released`
+  e F₃ `RefundedOnFail` com o verificador invocado (99.541 CU), negativos 6021, 6014,
+  6007 (escrow) e 6003 (verificador); saldos fecham.
+
+O próximo gate é o **R-UI**, conforme `docs/handoffs/d11-to-r-ui.md`.
 
 | Dia | Situação | Evidência / lacuna |
 | --- | --- | --- |
@@ -160,7 +171,7 @@ sem dependência em `worker/static/`; ferramentas de desenvolvimento em
 | D9 | **concluído** (técnico); vídeo de reserva a gravar pelo humano | demo em ambiente limpo pela CLI (CR4 (a), não máquina nova): core 42/42 ×2, CLI 14/14, suíte 61/61, prover 4/4; P′ `Released` (`5tjezXYh…`, 99.541 CU no verificador), T′ `RefundedOnTimeout` (`33ezPvow…`), negativos 6021/6014/`verifier:6003`/6007; frases permitidas congeladas no `README.md` e no roteiro; seção "Gravação" em `docs/demo-script.md` (`docs/d9-demo-results.md`) |
 | D10a | **concluído**; R-D10a: APROVADO COM RESSALVAS (C10-1 a C10-10) | antes × depois: lógica do D9 com 7 falhas em `negative_runs` e 2 no `docker_shim`; CLI do D9 aceitava `escrow:6003` sobre falha do verificador e dava erro falso com "already processed"/nó atrasado; prover do D9 chamava o Bonsai. Depois: core 42/42 ×2, CLI 30/30, suíte 61/61, prover 5/5 + 2/2; `Groth16` pelo shim novo; `check=ok` com o verificador `34ae6e5c…` (`docs/d10a-hardening-results.md`) |
 | D10 | **concluído** (2026-10-06) | worker local em `worker/` (23/23 testes); partida com os binários do D10a, sondas de chave e `check` duplo; W1/W2 `RefundedOnTimeout` dos Jobs das gravações (`57UYbVX9…`, `625JvmR8…`); Job `bc334093…`: 6021 (escrow), prova `Composite` → `Groth16` com a linha `docker_run`, 6003 (verificador), **`Released` com o verificador invocado, 99.541 CU** (`ByGF4BFP…`), 6007 (escrow); tudo pela API (`docs/d10-worker-results.md`) |
-| D11–D12 | não iniciado; fundação pronta (D11a) | telas (08–09/10) servidas pelo worker, com a identidade Hive; sem carteira no navegador (divergência registrada, P3) |
+| D11–D12 | **concluído** (2026-10-07) | interface Hive em `worker/static/` (`/ui/`), 53 testes; U1–U10 pela interface: P₃ `Released` (`2gB9djwM…`) e F₃ `RefundedOnFail` (`4jcugMyX…`) com o verificador invocado, T₃ `RefundedOnTimeout` (`5oTbFiTX…`), negativos 6021/6014/6007 (escrow) e 6003 (verificador); sem carteira no navegador (P3) (`docs/d11-ui-results.md`) |
 
 ### Caminho crítico e risco de prazo
 
@@ -206,9 +217,10 @@ sem dependência em `worker/static/`; ferramentas de desenvolvimento em
      (`docs/d10-worker-results.md`);
   9. D11a concluído: fundação da interface Hive (marca, adaptação ao MVP,
      stack, fontes e assets);
-  10. D11–D12: telas (08–09/10), conforme `docs/handoffs/d11a-to-d11.md`;
-     revisão curta da interface (09/10); vídeo definitivo numa tomada
-     contínua (10/10); submissão (11/10).
+  10. D11–D12 concluído: interface Hive e U1–U10 pela interface
+     (`docs/d11-ui-results.md`);
+  11. R-UI (09/10), conforme `docs/handoffs/d11-to-r-ui.md`; vídeo definitivo
+     numa tomada contínua (10/10); submissão (11/10).
 - Wallets de devnet: o agente está autorizado a criar keypairs efêmeros de
   devnet/localnet (D2a.2), sob as restrições do princípio 9 de `AGENTS.md`.
 
