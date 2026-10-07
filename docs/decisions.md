@@ -1879,3 +1879,100 @@ Registre decisões relevantes do projeto neste formato.
     recertificado; spec v1 trivial.
 - **Próximo gate:** D11–D12, telas finas servidas pelo worker, conforme
   `docs/handoffs/d10-to-d11.md`.
+
+## 2026-10-07 — Fundação da interface Hive (D11a): marca, adaptação ao MVP, stack, fontes e assets
+
+- **Data:** 2026-10-07
+- **Contexto:** o humano trouxe o sistema visual (`DESIGN.md`), o guia de interface
+  (`HIVE_MVP_UI_GUIDE.md`) e os assets de marca (`brand/`). A marca da interface
+  passa a ser **Hive**; o código continua com os nomes legados (`vericode*`). O
+  guia foi escrito antes do MVP e descreve verificação "pelo Verifier Router" e um
+  "fallback", que não existem no MVP construído (D4a).
+- **Organização (Etapas 0 a 4 do prompt humano de organização):**
+  - `DESIGN.md` e `HIVE_MVP_UI_GUIDE.md` na raiz; `brand/MANIFEST.md`,
+    `brand/logo/`, `brand/symbol/`, `brand/reference/` e pastas vazias
+    `brand/app-icons/` e `brand/mascot/`;
+  - bloco `hive-ui-core` no `AGENTS.md` (marca, nomenclatura legada, leitura
+    obrigatória de UI/UX, precedência, invariantes) e importações no
+    `CLAUDE.md`;
+  - nenhum código renomeado: o nome legado só cresceu dentro do bloco (+23
+    ocorrências, todas no `AGENTS.md`).
+- **Decisões humanas (2026-10-07):**
+  1. **Adaptar o front-end ao MVP construído** ("é PRIMORDIAL que você respeite
+     aquilo que construímos até aqui"), com a maior fidelidade possível ao
+     front-end planejado e a identidade respeitada integralmente.
+     - Criado `HIVE_MVP_UI_ADAPTATION.md`: guia seção por seção (manter,
+       adaptar, fora), estados, cenários e erros reais, mapa de dados, lacunas do
+       worker e stack.
+     - Precedência sobre fatos do MVP: evidência e código > adaptação > guia;
+       aparência: `DESIGN.md`, inalterado.
+     - O guia e o `DESIGN.md` não foram reescritos; o guia ganhou só um aviso no
+       topo.
+  2. **Frase congelada 1** (escolha delegada ao agente): na interface, só a
+     palavra de marca muda: "A receipt Groth16 **da Hive** é verificada em devnet
+     por CPI ao verificador Groth16 imutável de risc0-solana v3.0.0, na mesma
+     instrução que libera ou devolve o Test USDC do Job."
+     - O `README.md` e o roteiro mantêm o texto atual até uma decisão própria
+       sobre a documentação.
+     - As frases 2 a 8 não mudam. A revisão da interface confere o uso.
+  3. **Fontes** ("pode importar elas de lá"): Manrope (variável, 200–800) e IBM
+     Plex Mono (400, 500) baixadas do Google Fonts, subconjuntos `latin` e
+     `latin-ext`, e **auto-hospedadas** em `brand/fonts/` com as licenças OFL e
+     os hashes. O próprio `DESIGN.md` exige auto-hospedagem, sem CDN de
+     terceiros.
+  4. **Assets** (escolha delegada): cópia explícita e verificada de `brand/`
+     (e de `lucide-static`, para ícones) para `worker/static/`.
+     - Tabela fixa de arquivos e teste de SHA-256 byte a byte.
+     - Sem pipeline de build em tempo de execução.
+     - Favicon e mascote fora: o favicon não existe; o mascote é proibido no
+       produto.
+  5. **Pasta do front-end:** `worker/static/` (confirmada).
+  6. **PDF de identidade:** colocado pelo humano em `brand/reference/`; renomeado
+     para o nome que o `brand/MANIFEST.md` cataloga
+     (`Hive-posicionamento-identidade-2026-10-05.pdf`, 10,3 MB). Por decisão
+     humana, **não é versionado**: fica local, ignorado por `brand/reference/*.pdf`
+     no `.gitignore`.
+  7. **`_incoming/`:** os 13 `*:Zone.Identifier` (metadados do Windows) foram
+     apagados, e a pasta, removida.
+  8. **Skill `frontend-design`:** instalada no escopo de usuário. O id real neste
+     ambiente é `frontend-design@anthropic-plugin-directory`; o
+     `claude-plugins-official` do prompt não existe aqui.
+  9. **Stack** (escolha delegada: "mapeie qual será a stack… pode instalar"):
+     - **Execução (mantém P2):** HTML, CSS e JavaScript (módulos ES), sem
+       framework, bundler ou dependência, servidos pelo worker de
+       `worker/static/` com CSP `'self'`.
+     - **Desenvolvimento (emenda P2):** a P2 vetava "npm, crate ou lock novo".
+       Fica permitido um lock npm **só de ferramentas de desenvolvimento**, em
+       `worker/ui-tools/`, fora do caminho de execução:
+       - `@google/design.md` 0.4.0 (lint e exportação de tokens);
+       - `lucide-static` 1.52.0 (ícones);
+       - `playwright` 1.63.0 (capturas);
+       - 96 pacotes do registry oficial, sem fonte git, `--ignore-scripts`.
+
+       Motivo: o `DESIGN.md` exige lint, exportação de tokens e verificação
+       visual por capturas.
+     - **Node 24 LTS isolado** (v24.21.0, SHA-256 oficial conferido),
+       Chromium headless e as bibliotecas que faltavam (`libnss3`, `libnspr4`,
+       `libasound2t64`, extraídas sem `sudo`) em
+       `~/.local/share/vericode-spikes/ui/`. Nada no perfil padrão.
+  10. **Idioma padrão** (escolha do agente, reversível pelo humano):
+      português, porque as frases congeladas e o roteiro estão em português;
+      dicionário pronto para inglês. Traduzir as frases congeladas exige decisão
+      registrada.
+- **Evidência:**
+  - `design.md lint DESIGN.md`: 0 erros, 0 avisos (38 cores, 19 escalas, 42
+    componentes);
+  - teste de fumaça com o Chromium headless: Manrope 400/600 e IBM Plex Mono
+    400/500 carregadas dos arquivos locais, acentos do português corretos, SVG da
+    marca renderizado;
+  - hashes das fontes em `brand/fonts/README.md`.
+- **Risco aberto:**
+  - cadeia de suprimentos do npm, só em desenvolvimento;
+  - custo de contexto dos arquivos importados (cerca de 32 mil tokens por
+    sessão: 113 KB entre `CLAUDE.md`, `AGENTS.md`, a adaptação, o guia e o
+    `DESIGN.md`);
+  - o guia ainda cita o Router, o que a adaptação neutraliza;
+  - lacunas do worker para os blocos B, D e da faixa
+    (`HIVE_MVP_UI_ADAPTATION.md`, seção 5).
+- **Próximo gate:** D11–D12, conforme `docs/handoffs/d11a-to-d11.md`, que substitui
+  `docs/handoffs/d10-to-d11.md`.

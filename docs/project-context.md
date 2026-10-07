@@ -45,7 +45,7 @@ evidência nem um escopo proibido.
 | `anchor-program/` | `anchor/programs/vericode-escrow` (workspace `anchor/`, testes em `anchor/tests-local`) | D2c/D2b.1/D2e/D4a: `create_job` (termos da v1, mint Test USDC admitido, janela de prazo), `fund`, `deliver`, `release`/`refund_on_fail` com CPI direta ao verificador Groth16 de `risc0-solana v3.0.0` (sem Router desde o D4a), `refund_on_timeout`; destino = ATA canônica; testado em processo com o verificador real (rebuild e bytes de devnet); **implantado e finalizado em devnet** (D4b: `GZqbL2Tb…`, authority `none`) |
 | CLI (guia §3 e §10: "CLI como fonte de verdade") | `cli/` (D7) | `vericode`: `check`, `job create/deliver/settle/refund-timeout/show` em devnet; instruções iguais byte a byte aos builders da suíte; Jobs P e T liquidados em devnet (D7); Jobs P′ e T′ e quatro negativos em ambiente limpo (D9); endurecida no D10a (falha mais interna no `--expect-error`, "already processed", leituras com `minContextSlot`), com testes contra RPC falso local |
 | `worker-api/` | `worker/` (D10) | `vericode_worker.py` (Python 3.12, só biblioteca padrão): HTTP só em `127.0.0.1`, `Host` conferido, token por execução em toda rota, sem CORS; só os binários do D10a por argv fixo, ambiente do zero, uma operação por vez; estado do `job show` e do `--log`; shim conferido e linha `docker_run` exigida (C10-2); 23 testes `unittest`; W1–W7 em devnet pela API |
-| `frontend/` | inexistente | não iniciado (D11–D12, servido pelo worker) |
+| `frontend/` | `worker/static/` (D11–D12); ferramentas em `worker/ui-tools/` | ainda sem telas. D11a: identidade Hive (`DESIGN.md`, lint sem erros), guia (`HIVE_MVP_UI_GUIDE.md`) e sua adaptação ao MVP (`HIVE_MVP_UI_ADAPTATION.md`), assets em `brand/` (fontes em `brand/fonts/`) e stack definida |
 
 Os nomes do guia descrevem responsabilidades; não renomear diretórios
 existentes sem decisão registrada.
@@ -88,7 +88,8 @@ adversariais com prefixo `R-`). O gate seguinte ao D4 é o `D7`, não "D5".
 | D10a | endurecimento da CLI e do prover (RD7-01, 02, 03, 04, 07 e os opcionais 06, 09, 10), com testes que falham no D9 | preparação de D10–D12 |
 | R-D10a | revisão delta curta do D10a, somente leitura (APROVADO COM RESSALVAS, C10-1 a C10-10) | guia §11 |
 | D10 | worker local em Python (stdlib), em `127.0.0.1`, sobre os binários do D10a; escritas W1–W7 pela API | D10 |
-| D11–D12 (próximo) | telas finas Buyer, Submit e Result servidas pelo worker (sem carteira no navegador) | D11–D12 |
+| D11a | fundação da interface Hive: marca, adaptação do guia ao MVP, stack, fontes e assets | preparação de D11–D12 |
+| D11–D12 (próximo) | telas Jobs, Novo job e Detalhe do job servidas pelo worker, com a identidade Hive (sem carteira no navegador) | D11–D12 |
 
 Itens de produto e mercado do plano (inscrição, outreach, design partners,
 pitch, telas, vídeo) não são rastreados neste repositório.
@@ -139,8 +140,12 @@ O **D10** também está concluído (`docs/d10-worker-results.md`):
 - sem carteira no navegador (P3); nenhuma chave nem caminho de chave saiu do
   worker.
 
-O próximo gate é o **D11–D12** (telas finas servidas pelo worker), conforme
-`docs/handoffs/d10-to-d11.md`.
+O **D11a** (2026-10-07) preparou a interface: identidade Hive (`DESIGN.md`),
+guia de interface e sua adaptação ao MVP construído
+(`HIVE_MVP_UI_ADAPTATION.md`), assets e fontes em `brand/`, e a stack (execução
+sem dependência em `worker/static/`; ferramentas de desenvolvimento em
+`worker/ui-tools/`). O próximo gate é o **D11–D12**, conforme
+`docs/handoffs/d11a-to-d11.md`.
 
 | Dia | Situação | Evidência / lacuna |
 | --- | --- | --- |
@@ -155,7 +160,7 @@ O próximo gate é o **D11–D12** (telas finas servidas pelo worker), conforme
 | D9 | **concluído** (técnico); vídeo de reserva a gravar pelo humano | demo em ambiente limpo pela CLI (CR4 (a), não máquina nova): core 42/42 ×2, CLI 14/14, suíte 61/61, prover 4/4; P′ `Released` (`5tjezXYh…`, 99.541 CU no verificador), T′ `RefundedOnTimeout` (`33ezPvow…`), negativos 6021/6014/`verifier:6003`/6007; frases permitidas congeladas no `README.md` e no roteiro; seção "Gravação" em `docs/demo-script.md` (`docs/d9-demo-results.md`) |
 | D10a | **concluído**; R-D10a: APROVADO COM RESSALVAS (C10-1 a C10-10) | antes × depois: lógica do D9 com 7 falhas em `negative_runs` e 2 no `docker_shim`; CLI do D9 aceitava `escrow:6003` sobre falha do verificador e dava erro falso com "already processed"/nó atrasado; prover do D9 chamava o Bonsai. Depois: core 42/42 ×2, CLI 30/30, suíte 61/61, prover 5/5 + 2/2; `Groth16` pelo shim novo; `check=ok` com o verificador `34ae6e5c…` (`docs/d10a-hardening-results.md`) |
 | D10 | **concluído** (2026-10-06) | worker local em `worker/` (23/23 testes); partida com os binários do D10a, sondas de chave e `check` duplo; W1/W2 `RefundedOnTimeout` dos Jobs das gravações (`57UYbVX9…`, `625JvmR8…`); Job `bc334093…`: 6021 (escrow), prova `Composite` → `Groth16` com a linha `docker_run`, 6003 (verificador), **`Released` com o verificador invocado, 99.541 CU** (`ByGF4BFP…`), 6007 (escrow); tudo pela API (`docs/d10-worker-results.md`) |
-| D11–D12 | não iniciado | telas finas (08–09/10) servidas pelo worker; sem carteira no navegador (divergência registrada, P3) |
+| D11–D12 | não iniciado; fundação pronta (D11a) | telas (08–09/10) servidas pelo worker, com a identidade Hive; sem carteira no navegador (divergência registrada, P3) |
 
 ### Caminho crítico e risco de prazo
 
@@ -199,7 +204,9 @@ O próximo gate é o **D11–D12** (telas finas servidas pelo worker), conforme
      (`docs/r-d10a-review-results.md`);
   8. D10 concluído: worker local e W1–W7 pela API
      (`docs/d10-worker-results.md`);
-  9. D11–D12: telas finas (08–09/10), conforme `docs/handoffs/d10-to-d11.md`;
+  9. D11a concluído: fundação da interface Hive (marca, adaptação ao MVP,
+     stack, fontes e assets);
+  10. D11–D12: telas (08–09/10), conforme `docs/handoffs/d11a-to-d11.md`;
      revisão curta da interface (09/10); vídeo definitivo numa tomada
      contínua (10/10); submissão (11/10).
 - Wallets de devnet: o agente está autorizado a criar keypairs efêmeros de

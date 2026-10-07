@@ -1,10 +1,12 @@
-# Controle autônomo — D10 concluído (worker local); próximo D11–D12
+# Controle autônomo — D11a concluído (fundação da interface Hive); próximo D11–D12
 
 ## Objetivo atual
 
-D11–D12, conforme `docs/handoffs/d10-to-d11.md`: telas finas Buyer, Submit e
-Result em HTML/JS estático servido pelo worker do D10, sem carteira no
-navegador (P3), só com frases congeladas.
+D11–D12, conforme `docs/handoffs/d11a-to-d11.md`: telas Jobs, Novo job e
+Detalhe do job em HTML/CSS/JS estático servido pelo worker do D10, com a
+identidade Hive do `DESIGN.md`, a adaptação ao MVP de
+`HIVE_MVP_UI_ADAPTATION.md`, sem carteira no navegador (P3) e só com frases
+congeladas (frase 1 com "da Hive" na interface).
 
 Depois: revisão curta da interface (claims e chaves), vídeo definitivo numa
 tomada contínua e submissão até 11/10.
@@ -35,6 +37,10 @@ tomada contínua e submissão até 11/10.
   - `7fe9c3b` (prover);
   - `2a2e3c5` (docs).
 - R-D10a `544b685`: **APROVADO COM RESSALVAS** para o D10 (C10-1 a C10-10).
+- D11a (fundação da interface Hive): `DESIGN.md`, `HIVE_MVP_UI_GUIDE.md`,
+  `HIVE_MVP_UI_ADAPTATION.md`, `brand/` (com `brand/fonts/`), bloco
+  `hive-ui-core` no `AGENTS.md`, `worker/ui-tools/` (ferramentas de
+  desenvolvimento) e o Node 24 isolado em `~/.local/share/vericode-spikes/ui/`.
 - D10: worker local e W1–W7 pela API:
   - `6eba814` (worker);
   - `docs: record D10 worker`.
@@ -98,7 +104,7 @@ tomada contínua e submissão até 11/10.
 
 ## Gate atual
 
-`D10` (concluído) → próximo `D11–D12`.
+`D11a` (concluído) → próximo `D11–D12`.
 
 ## Estado
 
@@ -145,6 +151,10 @@ tomada contínua e submissão até 11/10.
   D10a) e D10a.
 - R-D10a, "Decisões humanas para o D10" (ratificadas com o prompt e o Plan
   Mode do D10, 19:18), "Vídeo de reserva" e D10.
+- "Fundação da interface Hive (D11a)": adaptação ao MVP, frase 1 com "da Hive"
+  na interface, fontes auto-hospedadas, cópia verificada de assets,
+  `worker/static/`, stack (execução sem dependência; ferramentas npm só de
+  desenvolvimento, emendando a P2), idioma padrão português.
 
 ## Ações proibidas (permanentes salvo novo objetivo)
 
@@ -228,6 +238,6 @@ tomada contínua e submissão até 11/10.
 
 ## Próxima transição permitida
 
-`D11–D12`, conforme `docs/handoffs/d10-to-d11.md`, em sessão nova (Opus
-5.5, xhigh, Plan Mode antes de alterar `worker/` e antes da primeira escrita
-em devnet).
+`D11–D12`, conforme `docs/handoffs/d11a-to-d11.md` (substitui
+`docs/handoffs/d10-to-d11.md`), em sessão nova (Opus 5.5, xhigh, Plan Mode
+antes de alterar `worker/` e antes da primeira escrita em devnet).
