@@ -33,7 +33,7 @@ export function newJobView(ctx) {
 
   function argvTemplate(offset) {
     const v1 = (ctx.health() || {}).v1 || {};
-    return ["vericode", "--log", "LOG", "job", "create", "--buyer-keypair", "<buyer-keypair>", "--executor", v1.executor || "?",
+    return ["vericode", "--log", "LOG", "job", "create", "--buyer-keypair", "<buyer-keypair>", "--executor", v1.executor || t("data.unavailable"),
       "--amount", String(v1.amount || 1000000), "--deadline-offset", String(offset)];
   }
 
@@ -67,7 +67,7 @@ export function newJobView(ctx) {
       title: t("new.fund"),
       body: [
         t("new.confirmWhat"),
-        t("new.confirmProgram", { id: (v1.escrow && v1.escrow.program_id) || "?" }),
+        t("new.confirmProgram", { id: (v1.escrow && v1.escrow.program_id) || t("data.unavailable") }),
         t("new.confirmAmount", { amount: fmtToken(v1.amount) }),
         t("new.confirmIds"),
         t("new.confirmImmutable"),
@@ -144,7 +144,7 @@ export function newJobView(ctx) {
     ]);
     const latest = clock.latest;
     const slotLine = latest
-      ? el("p", { class: "field-help" }, el("span", { class: "numeric", text: t("new.slotNow", { n: fmtInt(latest.slot) }) }), " ", el("span", { class: "meta", text: t("new.slotAge", { at: fmtUtc(latest.read_at), ago: fmtDuration(Math.max(0, (workerNow() - parseTime(latest.read_at)) / 1000)) || "?" }) }))
+      ? el("p", { class: "field-help" }, el("span", { class: "numeric", text: t("new.slotNow", { n: fmtInt(latest.slot) }) }), " ", el("span", { class: "meta", text: t("new.slotAge", { at: fmtUtc(latest.read_at), ago: fmtDuration(Math.max(0, (workerNow() - parseTime(latest.read_at)) / 1000)) || t("data.unavailable") }) }))
       : el("p", { class: "field-help", text: t("new.slotNone") });
     const reread = button(state.reading ? t("chain.reading") : t("chain.reread"), {
       iconName: "refresh-cw", onClick: rereadHandler, disabled: state.reading || !latest || locked, focusKey: "reread",
@@ -241,7 +241,7 @@ export function newJobView(ctx) {
             family: "caution",
             iconName: "triangle-alert",
             title: t("new.failed"),
-            children: [el("p", { class: "mono-detail", text: op.error || op.cli_error || op.outcome || "?" })],
+            children: [el("p", { class: "mono-detail", text: op.error || op.cli_error || op.outcome || t("data.unavailable") })],
             live: true,
           }),
         );

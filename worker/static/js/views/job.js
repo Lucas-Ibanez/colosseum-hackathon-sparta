@@ -41,6 +41,7 @@ export function jobView(ctx, jobId) {
     ops: new Map(),
     others: new Map(),
     candidates: [],
+    firstSeen: null,
     error: null,
     lastOk: null,
     reading: false,
@@ -75,7 +76,11 @@ export function jobView(ctx, jobId) {
       }
       if (job.origin === "worker") {
         const list = await getJobs();
-        st.candidates = list.jobs.filter((item) => item.job_id !== jobId && item.origin === "worker" && item.receipt_status === "usable");
+        // D-NEG and D-6014: when this Job was first seen, and the other receipts newest first.
+        st.firstSeen = (list.jobs.find((item) => item.job_id === jobId) || {}).first_seen || null;
+        st.candidates = list.jobs
+          .filter((item) => item.job_id !== jobId && item.origin === "worker" && item.receipt_status === "usable")
+          .sort((a, b) => (parseTime(b.first_seen) ?? 0) - (parseTime(a.first_seen) ?? 0));
       }
       st.job = job;
       st.error = null;
@@ -110,6 +115,7 @@ export function jobView(ctx, jobId) {
       st.job,
       [...st.ops.values()].map((op) => [op.op_id, op.status, op.running_step, op.signature, (op.steps || []).length]),
       st.candidates.map((item) => item.job_id),
+      st.firstSeen,
       st.error && [st.error.status, st.error.payload && st.error.payload.error],
       st.reading,
       st.starting,
@@ -177,7 +183,7 @@ export function jobView(ctx, jobId) {
       title: t("ops.settleTitle"),
       body: [
         t("ops.settleWhat", { instruction, verdict: receipt.verdict }),
-        t("ops.settleProgram", { id: (v1.escrow && v1.escrow.program_id) || "?", verifier: (v1.verifier && v1.verifier.program_id) || "?" }),
+        t("ops.settleProgram", { id: (v1.escrow && v1.escrow.program_id) || t("data.unavailable"), verifier: (v1.verifier && v1.verifier.program_id) || t("data.unavailable") }),
       ],
       argv: ["vericode", "--log", "LOG", "job", "settle", "--job-id", jobId, "--receipt", "RD", "--deliver", "--executor-keypair", "<executor-keypair>"],
       confirmLabel: t("ops.settle"),
@@ -189,7 +195,7 @@ export function jobView(ctx, jobId) {
     const v1 = health().v1 || {};
     const ok = await confirmDialog({
       title: t("ops.refundTitle"),
-      body: [t("ops.refundWhat"), t("ops.refundProgram", { id: (v1.escrow && v1.escrow.program_id) || "?" })],
+      body: [t("ops.refundWhat"), t("ops.refundProgram", { id: (v1.escrow && v1.escrow.program_id) || t("data.unavailable") })],
       argv: ["vericode", "--log", "LOG", "job", "refund-timeout", "--job-id", jobId, "--payer-keypair", "<buyer-keypair>"],
       confirmLabel: t("ops.refund"),
       primary: false,
@@ -209,7 +215,7 @@ export function jobView(ctx, jobId) {
     const name = t(`adv.${kind.split("-")[1]}`);
     const ok = await confirmDialog({
       title: t("adv.confirmTitle", { name }),
-      body: [t(`adv.what.${kind}`, { other: other || "?" }), t("adv.expect", { expect: NEGATIVE_META[kind][2] })],
+      body: [t(`adv.what.${kind}`, { other: other || t("data.unavailable") }), t("adv.expect", { expect: NEGATIVE_META[kind][2] })],
       argv,
       confirmLabel: name,
       primary: false,
@@ -273,7 +279,8 @@ export function jobView(ctx, jobId) {
         "span",
         {},
         el("span", { class: "numeric", text: t("job.deadlineSlot", { n: fmtInt(chain.deadline_slot) }) }),
-        el("span", { class: "meta meta--block", text: chain.past_deadline ? t("job.passed") : t("job.remaining", { n: fmtInt(remaining) }) }),
+        // A settled Job has no deadline left to count (RUI-11).
+        TERMINAL.includes(chain.status) ? null : el("span", { class: "meta meta--block", text: chain.past_deadline ? t("job.passed") : t("job.remaining", { n: fmtInt(remaining) }) }),
       );
     }
     const rereadButton = button(st.reading ? t("chain.reading") : t("chain.reread"), {
@@ -290,7 +297,7 @@ export function jobView(ctx, jobId) {
     return el(
       "header",
       { class: "job-head panel" },
-      el("div", { class: "job-head__id" }, el("h1", { class: "page__title" }, el("span", { text: "Job " }), hashField(job.job_id, { label: "job_id", size: "lg" }))),
+      el("div", { class: "job-head__id" }, el("h1", { class: "page__title" }, el("span", { text: `${t("job.title")} ` }), hashField(job.job_id, { label: "job_id", size: "lg" }))),
       el(
         "div",
         { class: "job-head__facts" },
@@ -324,7 +331,8 @@ export function jobView(ctx, jobId) {
         family,
         iconName,
         title: t(`banner.${key}.title`),
-        detail: t(`banner.${key}.detail`),
+        // A create that left no Job account on the chain has nothing to prove or settle (RUI-05).
+        detail: key === "Failed" && job.chain && job.chain.absent ? t("banner.FailedCreate.detail") : t(`banner.${key}.detail`),
         children: [
           link
             ? el("p", { class: "banner__links" },
@@ -609,7 +617,7 @@ export function jobView(ctx, jobId) {
         return el(
           "li",
           { class: "check" },
-          resultLabel(ok ? "success" : "danger", ok ? "circle-check" : "circle-x", label || `\`${key}=${value ?? "?"}\``),
+          resultLabel(ok ? "success" : "danger", ok ? "circle-check" : "circle-x", label || `\`${key}=${value ?? t("data.unavailable")}\``),
           label ? el("span", { class: "check__value" }, el("code", { class: "code-inline", text: `${key}=` }), hashField(value, { label: key, size: "sm" })) : null,
         );
       };
@@ -629,7 +637,7 @@ export function jobView(ctx, jobId) {
           check("compress.selector", guest.selector || "73c457ba"),
         ),
         definitionList([
-          [t("verify.times"), el("span", { class: "numeric", text: `${fmtDuration(seconds("prove.seconds") + seconds("compress.seconds")) || "?"}` }), rich(t("proving.finalDetail", { p: fmtDecimal(seconds("prove.seconds")), c: fmtDecimal(seconds("compress.seconds")) }), "span", { class: "meta meta--block" })],
+          [t("verify.times"), el("span", { class: "numeric", text: fmtDuration(seconds("prove.seconds") + seconds("compress.seconds")) || t("data.unavailable") }), rich(t("proving.finalDetail", { p: fmtDecimal(seconds("prove.seconds")), c: fmtDecimal(seconds("compress.seconds")) }), "span", { class: "meta meta--block" })],
           [t("verify.dockerRun"), el("code", { class: "mono-detail", text: receipt.docker_run || "" })],
           [t("verify.shim"), receipt.shim ? el("span", {}, hashField(receipt.shim.sha256, { label: "shim" }), el("span", { class: "meta", text: ` ${receipt.shim.mode}` })) : el("span", { text: t("data.unavailable") })],
           [t("verify.memory"), receipt.mem_available_kb_before_compress ? el("span", { class: "numeric", text: t("verify.mib", { n: fmtInt(Math.round(receipt.mem_available_kb_before_compress / 1024)) }) }) : el("span", { text: t("data.unavailable") })],
@@ -650,21 +658,28 @@ export function jobView(ctx, jobId) {
     if (settle && settle.kind === "settle" && tx.verifier_invoked === true) {
       const verifierCall = ((settleDetail.anatomy && settleDetail.anatomy.invocations) || []).find((call) => call.program === "verifier");
       const href = explorerHref(tx.explorer);
+      // "Verified on-chain" and phrase 1 only next to the settlement link (RUI-08).
+      if (href) body.push(statusBanner({ family: "success", iconName: "circle-check", title: t("verify.onchainOk") }));
       body.push(
-        statusBanner({ family: "success", iconName: "circle-check", title: t("verify.onchainOk") }),
         definitionList([
           [t("verify.program"), hashField(v1.verifier && v1.verifier.program_id, { kind: "address", label: t("program.verifier"), explorer: v1.verifier && addressExplorer(v1.verifier.program_id) }), el("span", { class: "meta meta--block", text: t("env.verifierNote", { release: (v1.verifier && v1.verifier.release) || "" }) })],
           [t("verify.units"), el("span", { class: "numeric", text: tx.verifier_units != null ? `${fmtInt(tx.verifier_units)} CU` : t("data.unavailable") })],
-          [t("verify.result"), verifierCall && verifierCall.result === "success" ? resultLabel("success", "circle-check", `\`${verifierCall.instruction || "?"}\` ${t("settle.ok")}`) : el("span", { text: t("data.unavailable") })],
+          [t("verify.result"), verifierCall && verifierCall.result === "success" && verifierCall.instruction ? resultLabel("success", "circle-check", `\`${verifierCall.instruction}\` ${t("settle.ok")}`) : el("span", { text: t("data.unavailable") })],
           [t("verify.tx"), hashField(tx.signature, { kind: "signature", label: t("verify.tx"), explorer: tx.explorer }), tx.slot ? provenance("tx", { slot: tx.slot }) : null],
         ]),
-        el(
-          "div",
-          { class: "claim claim--linked" },
-          rich(t("claim.f1"), "p"),
-          href ? el("a", { class: "link", attrs: { href, target: "_blank", rel: "noopener noreferrer" } }, icon("external-link", "sm"), t("action.explorer")) : null,
-        ),
+        href
+          ? el(
+              "div",
+              { class: "claim claim--linked" },
+              rich(t("claim.f1"), "p"),
+              el("a", { class: "link", attrs: { href, target: "_blank", rel: "noopener noreferrer" } }, icon("external-link", "sm"), t("action.explorer")),
+            )
+          : null,
+        reconcileNote(settle, status),
       );
+    } else if (!settle && ["Released", "RefundedOnFail"].includes(status)) {
+      // Terminal on the chain, settled by a transaction this worker did not record (RUI-04).
+      body.push(statusBanner({ family: "pending", iconName: "blocks", title: t("settle.external") }));
     } else if (status === "RefundedOnTimeout") {
       body.push(statusBanner({ family: "pending", iconName: "clock", title: t("verify.onchainPending"), detail: t("verify.timeoutNone") }));
     } else {
@@ -675,16 +690,34 @@ export function jobView(ctx, jobId) {
 
   // --- D: settlement (TransactionAnatomy, BalanceDelta) -------------------------------------------
 
+  // The landed settlement: a PASS outcome (the transaction landed as expected) whose
+  // operation is no longer running. Its status may be "failed" when only the reconcile
+  // `job show` failed (RUI-03); the chain state still comes from the last `job show`.
   function settlementOp(job) {
     return summaries()
-      .filter((op) => (op.kind === "settle" || op.kind === "refund-timeout") && op.outcome === "PASS" && op.status === "ok")
+      .filter((op) => (op.kind === "settle" || op.kind === "refund-timeout") && op.outcome === "PASS" && op.status !== "running")
       .at(-1) || null;
+  }
+
+  function reconcileNote(settle, status) {
+    if (!settle || settle.status !== "failed" || !TERMINAL.includes(status)) return null;
+    return el("p", { class: "meta", text: t("settle.reconcileFailed") });
   }
 
   function settlement(job) {
     const status = job.chain && !job.chain.absent ? job.chain.status : null;
     const settle = settlementOp(job);
     const opDetail = settle ? detail(settle.op_id) : null;
+    if (!settle && TERMINAL.includes(status)) {
+      return panel({
+        title: t("settle.title"),
+        id: "blk-d",
+        children: [
+          el("p", { class: "settle-result" }, statusLabel(status, { size: "md" }), " ", rich(t("settle.reason", { reason: t(`settle.reason.${status}`) }))),
+          statusBanner({ family: "pending", iconName: "blocks", title: t("settle.external") }),
+        ],
+      });
+    }
     if (!settle || !opDetail || !TERMINAL.includes(status)) {
       return panel({ title: t("settle.title"), id: "blk-d", children: [statusBanner({ family: "pending", iconName: "circle-dashed", title: t("settle.none") })] });
     }
@@ -693,6 +726,7 @@ export function jobView(ctx, jobId) {
       id: "blk-d",
       children: [
         el("p", { class: "settle-result" }, statusLabel(status, { size: "md" }), " ", rich(t("settle.reason", { reason: t(`settle.reason.${status}`) }))),
+        reconcileNote(settle, status),
         el("div", { class: "grid-12 settle-grid" }, anatomyBlock(opDetail), balancesBlock(opDetail)),
       ],
     });
@@ -812,11 +846,17 @@ export function jobView(ctx, jobId) {
     const usable = receipt && receipt.status === "usable";
     const isBusy = busy();
     const margin = health().v1 ? health().v1.c10_8_margin : 300;
+    // D-NEG (C-UI-2): writes only on Jobs this worker first saw since its current start, so a
+    // take never sends a scenario to a consumed Job. Unknown times keep the scenarios off.
+    const started = parseTime(health().startup && health().startup.started_at);
+    const seen = parseTime(st.firstSeen);
+    const thisRun = started !== null && seen !== null && seen >= started;
+    const why = (reason) => (thisRun ? reason : t("adv.why.thisRun"));
     const reasons = {
-      "escrow-6021": isBusy ? t("ops.busy") : status !== "Funded" ? t("adv.why.funded") : chain.deadline_slot - chain.slot < margin ? t("adv.why.margin", { m: fmtInt(margin) }) : null,
-      "escrow-6014": isBusy ? t("ops.busy") : status !== "Funded" ? t("adv.why.funded") : !st.candidates.length ? t("adv.noOther") : null,
-      "verifier-6003": isBusy ? t("ops.busy") : status !== "Funded" ? t("adv.why.funded") : !usable ? t("adv.why.receipt") : null,
-      "escrow-6007": isBusy ? t("ops.busy") : !["Released", "RefundedOnFail"].includes(status) ? t("adv.why.settled") : !usable ? t("adv.why.receipt") : null,
+      "escrow-6021": why(isBusy ? t("ops.busy") : status !== "Funded" ? t("adv.why.funded") : chain.deadline_slot - chain.slot < margin ? t("adv.why.margin", { m: fmtInt(margin) }) : null),
+      "escrow-6014": why(isBusy ? t("ops.busy") : status !== "Funded" ? t("adv.why.funded") : !st.candidates.length ? t("adv.noOther") : null),
+      "verifier-6003": why(isBusy ? t("ops.busy") : status !== "Funded" ? t("adv.why.funded") : !usable ? t("adv.why.receipt") : null),
+      "escrow-6007": why(isBusy ? t("ops.busy") : !["Released", "RefundedOnFail"].includes(status) ? t("adv.why.settled") : !usable ? t("adv.why.receipt") : null),
     };
     const select = st.candidates.length
       ? (() => {
@@ -861,7 +901,7 @@ export function jobView(ctx, jobId) {
         family: "caution",
         iconName: "triangle-alert",
         title: t("scenario.noneTitle"),
-        detail: t("scenario.noneDetail", { outcome: summary.outcome || "?" }),
+        detail: t("scenario.noneDetail", { outcome: summary.outcome || t("data.unavailable") }),
         children: [el("p", { class: "mono-detail", text: opDetail.error || "" }), el("p", { class: "meta", text: fmtUtc(summary.ended_at) || "" })],
       });
     }

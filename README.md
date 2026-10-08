@@ -50,6 +50,21 @@ README, roteiro, vídeo, worker e telas usam só estas frases, ou paráfrases qu
 
 **Não dizer:** "o código está correto"; "trustless" ou "ninguém precisa confiar em ninguém"; "qualquer repositório"; "Verifier Router" como caminho atual; "mainnet" ou "dinheiro real"; "ZK on-chain" sem a frase 1; "auditado"; "privado"; "máquina nova". Também não apresentar uma execução anterior como ao vivo, nem mostrar uma receipt sem dizer de qual Job ela é.
 
+## Frozen phrases (English, ratified R-UI)
+
+Official English text of the list above (decision D-EN-1, entry "R-UI" of [`docs/decisions.md`](docs/decisions.md)), used by the interface and the video. Phrase 1 carries the brand Hive. The Portuguese list above remains valid and equivalent; the English version of the whole README is gate D13.
+
+1. **Claim:** "Hive's Groth16 receipt is verified on devnet via CPI to the immutable Groth16 verifier of risc0-solana v3.0.0, in the same instruction that releases or refunds the Job's Test USDC." Always with the link of a transaction.
+2. **Statement:** "A previously committed deterministic evaluator ran on the artifact delivered in the Job and produced the published verdict. The program moves the Test USDC only after checking the binding between journal, Job and delivery and verifying the proof."
+3. **Limit:** "The proof attests to the execution of the fixed rule on this artifact, not to the quality of a piece of software. The v1 rule is trivial (output = 2 × input) and serves to demonstrate the flow."
+4. **No administrator:** "The escrow and the verifier are immutable (upgrade authority `none`). No one, not even the project, changes the rules or decides the payment; there is also no e-stop."
+5. **Network:** "Devnet and Test USDC only; none of this exists on mainnet."
+6. **Negatives:** "On devnet, a tampered proof, a journal from another Job, a refund before the deadline and a second settlement were rejected without moving funds." Always with the links.
+7. **Reproduction:** "The flow was reproduced with this repository's CLI and prover in a clean environment: a fresh clone and fresh targets, with copied isolated toolchains, not a new machine." (D9)
+8. **Proof:** "The proof is generated locally and compressed to Groth16 in a local Docker container, with no network access."
+
+**Do not say:** "the code is correct"; "trustless" or "nobody needs to trust anybody"; "any repository"; "Verifier Router" as the current path; "mainnet" or "real money"; "ZK on-chain" without phrase 1; "audited", "private" or "new machine". Also do not present an earlier run as live, nor show a receipt without saying which Job it belongs to.
+
 ## Escopo do MVP
 
 - Um único artefato serializado restrito, avaliado por regra determinística e harness fixo.

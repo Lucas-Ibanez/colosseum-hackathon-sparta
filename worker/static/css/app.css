@@ -861,6 +861,7 @@ pre,
 .banner .table-wrap {
   background: var(--hive-bg-panel);
   border-radius: var(--hive-rounded-sm);
+  color: var(--hive-text-primary); /* field names keep the text color; the row and label carry the result (RUI-11) */
 }
 
 [data-theme="dark"] .banner--success {
@@ -1142,6 +1143,16 @@ pre,
 
 .op-grid--4 {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+/* Long labels (English, D12a) wrap inside their column instead of overflowing it; the
+   control keeps at least its height and the font size never shrinks (DESIGN.md). */
+.op-group .button {
+  height: auto;
+  min-height: var(--hive-comp-button-primary-height);
+  padding-block: var(--hive-spacing-sm);
+  white-space: normal;
+  text-align: start;
 }
 
 .op-grid > .proving,

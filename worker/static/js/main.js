@@ -153,7 +153,7 @@ function renderEnvironment() {
     el("span", { class: "status-bar__item" }, t("env.mint"), " ", code(truncate(mint.address || "", "address"))),
     el("span", { class: "status-bar__item" }, rich(t("env.imageIdShort")), " ", code(truncate(terms.image_id || ""))),
     el("span", { class: "status-bar__item" }, t("env.verifierShort"), " ", code(truncate(verifier.program_id || "", "address")), rich(t("env.immutable"))),
-    el("span", { class: "status-bar__item" }, t("env.escrowShort"), " ", code(truncate(escrow.program_id || "", "address")), rich(t("env.authorityShort", { value: escrow.upgrade_authority || "?" }))),
+    el("span", { class: "status-bar__item" }, t("env.escrowShort"), " ", code(truncate(escrow.program_id || "", "address")), rich(t("env.authorityShort", { value: escrow.upgrade_authority || t("data.unavailable") }))),
     // TODO(data): the commit is unavailable when .git cannot be read at the worker's start
     el("span", { class: "status-bar__item" }, t("env.commit"), " ", commit ? code(commit.slice(0, 7)) : t("data.unavailable")),
   );
@@ -166,11 +166,11 @@ function renderEnvironment() {
       { class: "facts" },
       row(t("env.cluster"), el("span", { text: t("top.devnet") }), null),
       row(t("env.genesis"), hashField(v1.cluster && v1.cluster.genesis, { kind: "address", label: t("env.genesis") })),
-      row(t("env.escrow"), hashField(escrow.program_id, { kind: "address", label: t("env.escrow").replace(/`/g, ""), explorer: escrow.program_id && addressExplorer(escrow.program_id) }), t("env.authority", { value: escrow.upgrade_authority || "?" })),
+      row(t("env.escrow"), hashField(escrow.program_id, { kind: "address", label: t("env.escrow").replace(/`/g, ""), explorer: escrow.program_id && addressExplorer(escrow.program_id) }), t("env.authority", { value: escrow.upgrade_authority || t("data.unavailable") })),
       row(t("env.sha"), hashField(escrow.program_data_sha256, { label: t("env.sha") }), t("env.bytes", { n: fmtInt(escrow.program_data_bytes) })),
       row(t("env.verifier"), hashField(verifier.program_id, { kind: "address", label: t("env.verifier"), explorer: verifier.program_id && addressExplorer(verifier.program_id) }), t("env.verifierNote", { release: verifier.release || "" })),
       row(t("env.sha"), hashField(verifier.sha256, { label: t("env.sha") }), t("env.bytes", { n: fmtInt(verifier.bytes) })),
-      row(t("env.mint"), hashField(mint.address, { kind: "address", label: t("env.mint"), explorer: mint.address && addressExplorer(mint.address) }), t("env.mintDetail", { d: mint.decimals, f: mint.freeze_authority || "?" })),
+      row(t("env.mint"), hashField(mint.address, { kind: "address", label: t("env.mint"), explorer: mint.address && addressExplorer(mint.address) }), t("env.mintDetail", { d: mint.decimals, f: mint.freeze_authority || t("data.unavailable") })),
       row(t("env.imageId"), hashField(terms.image_id, { label: "image_id", size: "lg" })),
       row(t("env.commit"), commit ? hashField(commit, { label: t("env.commit") }) : el("span", { text: t("data.unavailable") }), t("env.commitNote")),
     ),

@@ -5,8 +5,9 @@ no D9 num ambiente limpo (clone e targets novos, com toolchains isoladas
 copiadas; não uma máquina nova), com as escritas W1–W8 em devnet
 ([`docs/d9-demo-results.md`](d9-demo-results.md)). O vídeo de reserva é
 gravado pelo humano seguindo a seção [Gravação](#gravação).
-O vídeo definitivo, numa tomada contínua pela interface Hive, segue a seção
-[Gravação pela interface](#gravação-pela-interface) (D11–D12).
+O vídeo definitivo, em inglês, numa tomada contínua pela interface Hive, segue a
+seção [Gravação pela interface](#gravação-pela-interface) (D11–D12; roteiro final em
+inglês no D12a).
 
 ## Mensagem e limite (dizer no início e no fim)
 
@@ -63,6 +64,49 @@ Também não:
 - mostrar uma receipt sem dizer de qual Job ela é;
 - dizer qual programa rejeitou a partir de um `escrow:6000` a `6003`
   (RD7-01). Esses códigos nunca são usados na demo.
+
+### Frozen phrases in English (ratified R-UI)
+
+Texto oficial em inglês das frases acima (decisão D-EN-1, entrada "R-UI" de
+`docs/decisions.md`), igual à seção "Frozen phrases (English, ratified R-UI)" do
+[`README.md`](../README.md). É o que se diz no vídeo; o português continua válido e
+equivalente.
+
+1. **Claim:** "Hive's Groth16 receipt is verified on devnet via CPI to the immutable
+   Groth16 verifier of risc0-solana v3.0.0, in the same instruction that releases or
+   refunds the Job's Test USDC." Always with the link of a transaction.
+2. **Statement:** "A previously committed deterministic evaluator ran on the artifact
+   delivered in the Job and produced the published verdict. The program moves the Test
+   USDC only after checking the binding between journal, Job and delivery and verifying
+   the proof."
+3. **Limit:** "The proof attests to the execution of the fixed rule on this artifact,
+   not to the quality of a piece of software. The v1 rule is trivial (output = 2 ×
+   input) and serves to demonstrate the flow."
+4. **No administrator:** "The escrow and the verifier are immutable (upgrade authority
+   `none`). No one, not even the project, changes the rules or decides the payment;
+   there is also no e-stop."
+5. **Network:** "Devnet and Test USDC only; none of this exists on mainnet."
+6. **Negatives:** "On devnet, a tampered proof, a journal from another Job, a refund
+   before the deadline and a second settlement were rejected without moving funds."
+   Always with the links.
+7. **Reproduction:** "The flow was reproduced with this repository's CLI and prover in
+   a clean environment: a fresh clone and fresh targets, with copied isolated
+   toolchains, not a new machine." (D9)
+8. **Proof:** "The proof is generated locally and compressed to Groth16 in a local
+   Docker container, with no network access."
+
+**Do not say:**
+- "the code is correct";
+- "trustless" or "nobody needs to trust anybody";
+- "any repository";
+- "Verifier Router" as the current path;
+- "mainnet" or "real money";
+- "ZK on-chain" without phrase 1;
+- "audited", "private" or "new machine".
+
+Also do not present an earlier run as live, nor show a receipt without saying which Job
+it belongs to. Regra de operação (fora da lista congelada): o programa que rejeitou vem só
+de `rejection` (C10-7), nunca de um código `escrow:6000`–`6003` (RD7-01).
 
 ## Preparação (qualquer apresentador)
 
@@ -328,163 +372,194 @@ depois da cena 2.
 
 ## Gravação pela interface
 
-Passo a passo para o vídeo definitivo **numa tomada contínua, com os mesmos Jobs do
-início ao fim** ("Vídeo de reserva" em `docs/decisions.md`), pela interface Hive
-servida pelo worker local (D10) sobre os binários do D10a. Ensaiado em devnet no
-D11–D12 (escritas U1 a U10, 2026-10-07 13:17–13:29 -03:00,
-[`docs/d11-ui-results.md`](d11-ui-results.md)). Cada tomada cria Jobs novos: nunca
-reutilize um `job_id` consumido (S, A, B, C, P, T, P′, T′, `8ab4ee8d`, `8bce67f2`,
-`cd77e7bd`, `3e115ca8`, `104f9a21`, `bc334093`, e T₃ `2c38ca66`, P₃ `26df9ef4`,
-F₃ `7395a76d` do ensaio).
+Passo a passo do **vídeo definitivo, em inglês, numa tomada contínua pela interface
+Hive** servida pelo worker local (D10) sobre os binários do D10a, com os mesmos Jobs do
+início ao fim ("Vídeo de reserva" em `docs/decisions.md`). Roteiro da R-UI
+([`docs/r-ui-review-results.md`](r-ui-review-results.md), seção 10), conferido no D12a
+texto a texto contra a interface implementada, num ensaio completo sobre os executáveis
+falsos ([`docs/d12a-results.md`](d12a-results.md)). As instruções estão em português; os
+rótulos entre aspas são os da tela, em inglês, exatamente como aparecem.
 
-Falas: as afirmações são só as frases congeladas (indicadas pelo número). O restante
-da narração apenas lê o que a tela mostra (nomes de botão, estado, erro), sem
-acrescentar promessa.
+- Jobs novos: **T** (prazo de 1.560 slots), **P** (`PASS`) e **F** (`FAIL`). Nunca
+  reutilize um `job_id` consumido (S, A, B, C, P, T, P′, T′, `8ab4ee8d`, `8bce67f2`,
+  `cd77e7bd`, `3e115ca8`, `104f9a21`, `bc334093`, T₃ `2c38ca66`, P₃ `26df9ef4`, F₃
+  `7395a76d`). A interface só habilita os cenários adversariais em Jobs vistos desde a
+  partida atual do worker (D-NEG); num Job antigo eles ficam desabilitados com "Available
+  only for jobs created since the worker's current start."
+- Falas: só as frases ratificadas em inglês (F1 a F8, seção "Frozen phrases in English"
+  acima), lidas da tela ou indicadas pelo número (C-UI-7). O resto da narração só lê a
+  tela. Diga de qual Job é a receipt do 6014. Nunca apresente uma execução anterior como
+  ao vivo. F7 não se aplica a esta tomada.
+- Tempos: os da prova vêm do ensaio em devnet do D11–D12; os demais, do ensaio do D12a.
 
-### 1. Antes de gravar (fora da câmera, ~5 min)
+### 1. Antes de gravar (fora da câmera, ~10 min)
 
-- Feche builds, testes e outras provas. Confira `free -m`: o `compress` só começa
-  com `MemAvailable` ≥ 2,5 GiB (no ensaio, 4,5 GiB antes; pico de 337 MB livres com
-  swap em uso, sem exit 137).
-- Num terminal **fora da gravação**, inicie o worker e espere `worker.ui=`:
+1. **Commit e worker (C-UI-5).** O commit do D12a está feito e `git status --short` está
+   vazio. Pare o worker em execução **pelo PID exato** (`ss -ltnp | grep 8710` mostra o
+   PID; `kill <PID>`; nunca `pkill -f`) e inicie de novo, num terminal **fora da
+   gravação**, para que o "Commit" da barra seja o `HEAD` atual:
 
-  ```bash
-  cd /home/lucas/src/vericode
-  env -i HOME=~/.local/share/vericode-spikes/d10/home PATH=/usr/bin:/bin LANG=C.UTF-8 \
-    python3 -B worker/vericode_worker.py --config ~/.local/share/vericode-spikes/d10/worker.json
-  ```
+   ```bash
+   cd /home/lucas/src/vericode
+   env -i HOME=~/.local/share/vericode-spikes/d10/home PATH=/usr/bin:/bin LANG=C.UTF-8 \
+     python3 -B worker/vericode_worker.py --config ~/.local/share/vericode-spikes/d10/worker.json
+   ```
 
-  Saída esperada: hashes `e6cd4e29…`/`3f66e1c0…`/`2a8f75b8…`, `worker.buyer=EZgG…`,
-  `worker.executor=EdB2…`, `check=ok`, `prover=LocalProver env=ok`,
-  `worker.url=http://127.0.0.1:8710`, `worker.ui=http://127.0.0.1:8710/ui/` e a linha
-  do token. **Esse terminal nunca aparece no vídeo.**
-- No navegador (janela de 1440 px ou mais, zoom 100%), abra
-  `http://127.0.0.1:8710/ui/`, cole o token no campo "Token do worker" (campo de
-  senha) e clique em "Conectar" **antes de começar a gravar**. O token fica só na
-  memória da aba: não recarregue a página durante a tomada (uma recarga pede o token
-  de novo).
-- Confira a barra de status: Devnet, Test USDC `9TE2…wV2F`, `image_id`
-  `4da06f90…fac0fb1a`, Verificador `THq1…QUge`, imutável, Escrow `GZqb…wkCH`,
-  authority `none`, Commit.
-- Para o negativo 6014 (cena 6), a receipt de outro Job tem de existir neste worker:
-  `bc334093…` (D10) ou `26df9ef4…` (P₃ do ensaio). Diga na fala de qual Job ela é
-  (CR6).
-- Opcional: abas do Explorer do escrow, do verificador e do mint (seção "Gravação",
-  item 1).
+   Saída esperada: hashes `e6cd4e29…`/`3f66e1c0…`/`2a8f75b8…`, `worker.buyer=EZgG…`,
+   `worker.executor=EdB2…`, `check=ok`, `prover=LocalProver env=ok`,
+   `worker.url=http://127.0.0.1:8710`, `worker.ui=http://127.0.0.1:8710/ui/` e a linha
+   do token. **Esse terminal nunca aparece no vídeo.**
+2. **Navegador.** Perfil limpo, sem extensões; recuse "salvar senha". Janela de 1440 px
+   ou mais, zoom 100%. Abra **exatamente** `http://127.0.0.1:8710/ui/` (`localhost` dá
+   421). Tela "Connect to the local worker": cole o token no campo "Worker token" (campo
+   de senha) **fora da câmera** e clique em "Connect". Não recarregue a página durante a
+   tomada: uma recarga volta à tela do token.
+3. **Barra de status:** "Devnet", "Test USDC `9TE2…wV2F`", "`image_id` `4da06f90…fac0fb1a`",
+   "Verifier `THq1…QUge`, immutable", "Escrow `GZqb…wkCH`, authority `none`", "Commit"
+   igual a `git rev-parse --short HEAD`.
+4. **Ritmo dos slots.** Em "New job", clique em "Reread the chain" e leia a estimativa
+   ao lado do prazo (`~N min`, "estimate"). A ~0,24 s por slot, 1.560 slots dão ~6 min. Se
+   der mais de 9 min, faça a cena 13 depois da 14.
+5. **Memória (C-UI-5).** Feche builds, testes e outras provas; `MemAvailable` ≥ 3 GiB
+   antes da cena 5 (`free -m`). No ensaio do D11–D12, o `compress` chegou a 337 MB livres
+   no pico, sem exit 137.
+6. **Orçamento (C-UI-6).** Cada tomada completa custa ao buyer 10.769.200 lamports (3
+   rents + 5 taxas) e ao executor 25.000. Com o saldo do buyer no fim da R-UI
+   (88.981.200), cabem **no máximo 8 tomadas**. Mais SOL de devnet exige um gate.
+7. Opcional: abas do Explorer do escrow, do verificador e do mint (seção "Gravação",
+   item 1).
 
 ### 2. Cenas, cliques e saída esperada
 
-Tempos do ensaio (relógio do worker; os da prova dependem da máquina).
+**Cena 1 — Environment (~30 s).** Tela "Jobs". Clique em "Details" na barra de status
+(rodapé).
 
-**Cena 1 — ambiente (~30 s).** Tela Jobs. Clique em "Detalhes" na barra de status.
+- "Environment details" mostra: "Escrow `vericode_escrow`" `GZqb…wkCH` com "upgrade
+  authority `none`" e "SHA-256 of the bytes" `cdf6967f…`; "Groth16 verifier" `THq1…QUge`,
+  "risc0-solana v3.0.0, immutable" (`34ae6e5c…`); "Test USDC" com "6 decimals, freeze
+  authority `none`"; e, na própria tela, F4 e F5.
+- Fala: **F4** e **F5**. Feche com Esc.
 
-- Mostra: escrow `GZqb…` com upgrade authority `none` e SHA-256 `cdf6967f…`;
-  verificador `THq1…`, risc0-solana v3.0.0, imutável (`34ae6e5c…`); Test USDC com 6
-  decimais e freeze authority `none`.
-- Fala: frase 4 e frase 5. Feche os detalhes (Esc).
+**Cena 2 — Job T (~15 s).** "New job" → no campo "Deadline, in slots from submission",
+`1560` → "Fund job" → leia o diálogo → "Fund job".
 
-**Cena 2 — Job do prazo curto (U1, ~10 s).** "Novo job" → prazo `1560` →
-"Financiar job" → leia o diálogo (o que será executado, programa, valor e comando) →
-"Financiar job".
+- O diálogo "Fund job" mostra "`create_job` + `fund` in a single transaction, signed by
+  the buyer in the local worker's CLI.", o programa, "Amount: 1.00 Test USDC from the
+  buyer to the job vault." e o comando ("Command the worker runs").
+- "Commitment summary": o `job_id` e o "Vault (job PDA)" assim que a CLI os imprime;
+  depois "Job funded", a assinatura e "Read from chain at slot N".
+- "Open job": "State" `Funded`, "Amount" 1.00 Test USDC, "Deadline" `slot N` com "1,560
+  slots left at the last slot read".
+- Mostre, sem comentar além do texto, "Limitations of this environment" no fim da página
+  (P3).
 
-- O resumo mostra o `job_id` e o vault assim que a CLI os imprime; depois, "Job
-  financiado", a assinatura e "Lido da cadeia no slot N".
-- "Abrir job": `Funded`, 1,00 Test USDC, prazo em slot. Com ~0,24 s por slot, 1.560
-  slots são ~6 min (no ensaio, o prazo venceu ~6 min depois).
+**Cena 3 — Refund before the deadline em T (~20 s)**, logo em seguida: o envio exige pelo
+menos 300 slots de margem.
 
-**Cena 3 — refund antes do prazo (U2, ~20 s).** No Detalhe do Job do prazo curto,
-"Cenários adversariais (demonstração)" → "Pedir refund antes do prazo" → confirmar.
+- "Adversarial scenarios (demonstration)" → "Request refund before the deadline" →
+  confirmar no diálogo ("Expected: the transaction is rejected (`--expect-error
+  escrow:6021`).").
+- Resultado: "Transaction rejected: deadline not reached yet", "Rejected by
+  `vericode_escrow`: `DeadlineNotReached` (6021)", "The job state was not changed.", "Read
+  before sending: slot …, deadline …, margin of … slots (minimum 300)." e o link.
 
-- O worker relê o Job e só envia com pelo menos 300 slots antes do prazo.
-- Resultado: "Transação rejeitada: prazo ainda não venceu", "Rejeitada por
-  `vericode_escrow`: `DeadlineNotReached` (6021)", "O estado do job não foi alterado."
-  e o link do Explorer.
+**Cena 4 — Job P (~15 s).** "New job" → `9000` → "Fund job" → confirmar → "Open job".
 
-**Cena 4 — o Job que vai ser cumprido (U3, ~10 s).** "Novo job" → prazo `9000` →
-"Financiar job" → confirmar → "Abrir job".
+- Aponte, em "Commitments and observed", `spec_hash`, `harness_hash` e `image_id` na
+  coluna "Committed in job" (a tela "New job" os mostra como "Fixed by the program").
 
-- Mostra os compromissos fixados pelo programa (`spec_hash`, `harness_hash`,
-  `image_id`) antes do depósito.
+**Cena 5 — Proof of P (~3 min 20 s).** Em "Operations": "Input" `21`, "Claimed output"
+`42` → "Generate proof" → confirmar.
 
-**Cena 5 — prova (~3 min 20 s).** "Entrada" `21`, "Saída alegada" `42` → "Gerar
-prova" → confirmar.
+- "Generating proof" com "Elapsed time" pelo relógio do worker e "Current step:
+  `prove`", depois `compress`; o estado `Proving` aparece com "(local, off-chain)". No
+  ensaio do D11–D12: 7,2 s de `prove` e 177,9 s de `compress`.
+- Fala: **F8**. Se a edição acelerar a espera, rotule "accelerated" e não corte a tomada.
+- Ao fim: "Proving time"; "Local verification" com `prove.receipt_type=Composite`,
+  `compress.receipt_type=Groth16`, "Admitted `image_id`", a linha "`docker_run` line" e
+  F8; "Commitments and observed" com o journal decodificado ("Matches").
 
-- O painel "Gerando prova" mostra o tempo decorrido pelo relógio do worker e a etapa
-  (`prove`, depois `compress`). Estado `Proving` (local, fora da cadeia).
-- No ensaio: 7,2 s de `prove` e 177,9 s de `compress`.
-- Fala: frase 8. Se a edição acelerar a espera, rotule "acelerado" e não corte a
-  tomada.
-- Ao fim: "Verificação local" com `Composite`, `Groth16`, `image_id` admitido e a
-  linha `docker_run`; "Compromissos e observado" com o journal decodificado.
+**Cena 6 — Tampered proof em P (~20 s).** "Submit tampered proof" → confirmar.
 
-**Cena 6 — receipt de outro Job (U4, ~20 s).** Em "Receipt do job", escolha
-`bc334093…` → "Enviar receipt de outro job" → confirmar.
+- Resultado: "Transaction rejected: invalid proof", "Rejected by the Groth16 verifier:
+  `PairingError` (6003)", "The job state was not changed."
 
-- Fala: diga que a receipt é do Job `bc334093…`, de uma execução anterior.
-- Resultado: "Transação rejeitada: vínculo diverge", `JournalJobIdMismatch` (6014)
-  pelo `vericode_escrow` e a tabela com o `job_id` em "Diverge"; "O estado do job não
-  foi alterado."
+**Cena 7 — PASS settlement de P (~25 s).** "Submit delivery and proof" → o diálogo diz
+"`deliver` + `release` in a single transaction…" e "The receipt's journal says `PASS`." →
+confirmar.
 
-**Cena 7 — prova adulterada (U5, ~17 s).** "Enviar prova adulterada" → confirmar.
-
-- Resultado: "Transação rejeitada: proof inválida", "Rejeitada por verificador
-  Groth16: `PairingError` (6003)".
-
-**Cena 8 — liquidação PASS (U6, ~20 s).** "Enviar entrega e prova" → o diálogo diz
-`deliver` + `release` e que o journal diz `PASS` → confirmar.
-
-- Resultado: "Liquidado: Released".
-- "Verificação on-chain": programa `THq1…`, 99.541 CU, `Verify` concluída, a frase 1
-  ao lado do link do Explorer.
-- "Anatomia da transação": Instrução 1 `Deliver`; Instrução 2 `Release` com as CPIs
-  `Verify` (verificador Groth16) e SPL Token, numa só transação.
-- "Saldos antes e depois": vault 1,00 → 0,00; ATA do executor +1,00.
-- Fala: frase 1, apontando o link; depois a frase 2. Abra o link do Explorer e mostre
+- Resultado: "Settled: Released", "Criteria met (`PASS`). Reason: verified PASS verdict."
+  com "View on Explorer" e "Transaction anatomy".
+- "On-chain verification": "Proof verified on-chain by the Groth16 verifier (direct
+  CPI).", "Program" `THq1…QUge`, "Verifier compute units" 99,541 CU, "Result" "`Verify`
+  succeeded", e **F1 ao lado do link** ("View on Explorer").
+- "Transaction anatomy": "Instruction 1" `vericode_escrow` `Deliver`; "Instruction 2"
+  `vericode_escrow` `Release`, com as CPIs "Groth16 verifier" `Verify` (99,541 CU) e "SPL
+  Token" `TransferChecked`, numa só transação.
+- "Balances before and after": "Job vault" 1.00 → 0.00 (−1.00); "Executor ATA" +1.00.
+- Fala: **F1**, apontando o link; depois **F2**. Abra o link do Explorer e mostre
   `Program THq1… invoke [2]` antes da transferência do Token.
 
-**Cena 9 — liquidar de novo (U7, ~20 s).** "Liquidar de novo" → confirmar.
+**Cena 8 — Settle again em P (~20 s).** "Settle again" → confirmar.
 
-- Resultado: "Transação rejeitada: job já liquidado", `AlreadyReleased` (6007).
+- Resultado: "Transaction rejected: job already settled", "Rejected by
+  `vericode_escrow`: `AlreadyReleased` (6007)".
 
-**Cena 10 — Job que não atende à regra (U8, ~10 s).** "Novo job" → `9000` →
-"Financiar job" → confirmar → "Abrir job".
+**Cena 9 — Job F (~15 s).** "New job" → `9000` → "Fund job" → confirmar → "Open job".
 
-**Cena 11 — prova com saída errada (~2 min).** "Entrada" `7`, "Saída alegada" `15`
-→ "Gerar prova" → confirmar.
+**Cena 10 — Another job's receipt em F (~25 s).** Antes da prova de F.
 
-- Ao fim: receipt utilizável com veredito `FAIL` (no ensaio, 8,6 s + 91,4 s).
+- Em "Receipt of job", confira que o selecionado é o `job_id` de **P** (mesmo prefixo do
+  cabeçalho de P; a lista vem do Job mais recente para o mais antigo) → "Submit another
+  job's receipt" → confirmar.
+- Fala: diga que a receipt é do Job P, desta mesma gravação.
+- Resultado: "Transaction rejected: binding mismatch", "Rejected by `vericode_escrow`:
+  `JournalJobIdMismatch` (6014)", "The job state was not changed.", "Receipt of job …,
+  another job of this worker." e a tabela com `job_id` em "Mismatch" e os demais campos em
+  "Matches".
 
-**Cena 12 — liquidação FAIL (U9, ~20 s).** "Enviar entrega e prova" → o diálogo diz
-`deliver` + `refund_on_fail` e que o journal diz `FAIL` → confirmar.
+**Cena 11 — Proof of F (~2 min).** "Input" `7`, "Claimed output" `15` → "Generate
+proof" → confirmar.
 
-- Resultado: "Critérios não atendidos (`FAIL`)", "Resultado verificado, não um erro";
-  verificador invocado (99.541 CU); 1,00 Test USDC de volta ao comprador.
+- Ao fim: "Usable receipt: `FAIL`." (no ensaio do D11–D12, 8,6 s + 91,4 s).
 
-**Cena 13 — reembolso por prazo (U10, ~35 s).** Abra o Job do prazo curto (Jobs) →
-"Reler a cadeia" → "Solicitar refund" fica habilitado quando o último `job show` diz
-que o prazo venceu → confirmar.
+**Cena 12 — FAIL settlement de F (~25 s).** "Submit delivery and proof" → o diálogo diz
+"`deliver` + `refund_on_fail` …" e "The receipt's journal says `FAIL`." → confirmar.
 
-- Resultado: "Prazo expirado sem liquidação", `RefundedOnTimeout`; a "Verificação
-  on-chain" diz que essa transação não invocou o verificador.
-- Antes do prazo, o botão fica desabilitado com "Disponível a partir do slot N".
+- Resultado: "Criteria not met (`FAIL`)", "A verified result, not an error: the Test USDC
+  went back to the buyer. Reason: verified FAIL verdict."; "On-chain verification" com o
+  verificador invocado (99,541 CU) e F1 ao lado do link; "Buyer ATA" +1.00.
+- Fala: **F6**, com os resultados dos quatro negativos na tela (links).
 
-**Cena 14 — encerramento (~30 s).** Desça até "Limites desta prova" e leia as
-frases 2 e 3; termine com a frase 5 e a lista de Jobs.
+**Cena 13 — Refund of T by deadline (~40 s).** "Jobs" → T (confira o prefixo) →
+"Reread the chain".
 
-Duração bruta esperada: ~12 min (no ensaio, 11 min 16 s de U1 a U10).
+- Antes do prazo, "Request refund" fica desabilitado com "Available from slot N. Reread
+  the chain to check the current slot."
+- Quando o último `job show` diz que o prazo passou, "Request refund" habilita →
+  confirmar.
+- Resultado: "Deadline passed without settlement", "The Test USDC went back to the buyer
+  by an objective condition: deadline passed without settlement."; estado
+  `RefundedOnTimeout`; "On-chain verification" diz "The refund-by-deadline transaction
+  did not invoke the verifier (`verifier_invoked=false`)."
 
-### 3. Se algo falhar
+**Cena 14 — Closing (~40 s).** Role até "Limits of this proof" ("What this verification
+shows" / "What it does not show") e leia **F2** e **F3**; termine com **F5** e a lista
+"Jobs" (T, P e F).
 
-- **"Outra operação está em curso"** (409 `busy`): espere a operação terminar.
-- **"O worker aguarda a releitura da cadeia"** (`reconcile_pending`): "Reler a
-  cadeia" no Job indicado.
-- **"Sem rejeição confirmada"** (ex.: `UNEXPECTED`): pare a tomada; não repita o
-  negativo; registre.
-- **"Falha operacional: sem veredito"** (prova ou compressão falhou, ex.: exit 137):
-  a receipt nunca é usada; feche outras janelas e clique em "Gerar prova" uma vez; se
-  falhar de novo, pare.
-- **Token recusado** (worker reiniciado): fora da câmera, cole o token novo.
-- **RPC fora do ar:** plano B, dizendo que é uma execução anterior (tabela abaixo).
+Duração bruta: ~13 min (no ensaio do D11–D12, 11 min 16 s de U1 a U10).
+
+### 3. Se algo falhar (plano B)
+
+| Sintoma na tela | O que fazer |
+| --- | --- |
+| "Another operation is running in the worker" (409) | Esperar a operação terminar. |
+| "The worker is waiting for a chain reread before any other operation" | "Reread the chain" no Job indicado. Se a releitura de reconciliação falhou, C e D continuam coerentes com a cadeia, com a nota "The reconciliation read of this operation failed; the state came from the chain reread." |
+| "No confirmed rejection" | Parar a tomada; não repetir o negativo; registrar. |
+| "Operational failure: no verdict" | A receipt nunca é usada. Fechar outras janelas e clicar em "Generate proof" uma vez; se falhar de novo, parar. |
+| Prazo de T ainda não venceu na cena 13 | Fazer a cena 14 e voltar a T, sem cortar. |
+| Tela do token no meio da tomada | Colar o token no campo mascarado, sem mostrar o terminal. Se o worker reiniciou, os Jobs da tomada ficam travados para os cenários adversariais: a tomada recomeça com Jobs novos (C-UI-6). |
+| RPC de devnet fora do ar | Mostrar as tabelas de "Plano B: evidência já executada" abaixo, dizendo que são uma execução anterior (D11–D12 ou D9). |
 
 ## Plano B: evidência já executada
 
@@ -508,18 +583,19 @@ limpo, CLI e prover deste repositório;
 
 **Execução anterior pela interface (D11–D12)** (2026-10-07, 13:17–13:29 -03:00,
 ensaio U1–U10; [`docs/d11-ui-results.md`](d11-ui-results.md)). Cenas da seção
-"Gravação pela interface":
+"Gravação pela interface" (numeração do roteiro do D12a; no ensaio, a receipt do 6014 era
+a do Job `bc334093…`, aplicada em P₃):
 
 | Cena | Caso | Transação |
 | --- | --- | --- |
 | 2 | Job T₃ criado e financiado | [`8AJzbbKf…`](https://explorer.solana.com/tx/8AJzbbKfaeKSpjRxzX2wTu1R4DxpujLgT7z2ZRsUHjeUGDMka8bAkyriXZJ7ZuCNTfY3zYzq3rQWr1P4yoABDNo?cluster=devnet) |
 | 3 | Reembolso antes do prazo em T₃ → 6021 | [`4jDL97DG…`](https://explorer.solana.com/tx/4jDL97DGJRLQhB2m2NKK9kof85EFHSQMyPDPMmdhQ9mm6nkRKcbFF9HCuXcEiooWKKWomBCuhhTd2KbpYFAGiRHF?cluster=devnet) |
 | 4 | Job P₃ criado e financiado | [`5vWoxx2m…`](https://explorer.solana.com/tx/5vWoxx2mBra2iP5TfBX9FeYUjt5fujMde7m7saWHpo1kGEksZbrwVy66L9X6DqMLqDDNbk6BR5P6UjXqtZK5gzT6?cluster=devnet) |
-| 6 | Receipt do Job `bc334093…` em P₃ → 6014 | [`5CBFajsa…`](https://explorer.solana.com/tx/5CBFajsaFvYreCJkQwiPuR8rHWtpBKCULoVAeysUJGRwTDfF2CXYzeFkuit6azjBjqQkoif8TbYwxByv8Ckmo4en?cluster=devnet) |
-| 7 | Seal adulterado em P₃ → verificador 6003 | [`kTQdVojx…`](https://explorer.solana.com/tx/kTQdVojxjzJULzS97Jo5HBFRcroqnYVMaK9Crtx2LmyAY1pUhnBgh7v1Xs686wY3gvvxGz3aiN9URWhNgepRg39?cluster=devnet) |
-| 8 | PASS de P₃: `deliver`+`release`, verificador invocado (99.541 CU) | [`2gB9djwM…`](https://explorer.solana.com/tx/2gB9djwM3WpApHLXYf5riF974mTK5W4UW7HCv1xJamLPu3NEwnPcCY4oT6zAwvbMkaKRcATf1LCQPyXP8rmpj3o?cluster=devnet) |
-| 9 | Dupla liquidação em P₃ → 6007 | [`j2pmqFWu…`](https://explorer.solana.com/tx/j2pmqFWuTSe4H6isKyEFX3cBYmufEANP9Ue1p74tTUawXbiPSQ4KqckPW6WX3gnoAWsXE5XBdeVHEevpLa852ky?cluster=devnet) |
-| 10 | Job F₃ criado e financiado | [`2jjiYDAo…`](https://explorer.solana.com/tx/2jjiYDAoCQTrF93LvTAFB3RHTB3ab86k2BZmRXnFv3FmgK2ps2Kf1U2vs4MeFMMo7iqDQ77TSqz9hjigaQMrFQbW?cluster=devnet) |
+| 6 | Seal adulterado em P₃ → verificador 6003 | [`kTQdVojx…`](https://explorer.solana.com/tx/kTQdVojxjzJULzS97Jo5HBFRcroqnYVMaK9Crtx2LmyAY1pUhnBgh7v1Xs686wY3gvvxGz3aiN9URWhNgepRg39?cluster=devnet) |
+| 7 | PASS de P₃: `deliver`+`release`, verificador invocado (99.541 CU) | [`2gB9djwM…`](https://explorer.solana.com/tx/2gB9djwM3WpApHLXYf5riF974mTK5W4UW7HCv1xJamLPu3NEwnPcCY4oT6zAwvbMkaKRcATf1LCQPyXP8rmpj3o?cluster=devnet) |
+| 8 | Dupla liquidação em P₃ → 6007 | [`j2pmqFWu…`](https://explorer.solana.com/tx/j2pmqFWuTSe4H6isKyEFX3cBYmufEANP9Ue1p74tTUawXbiPSQ4KqckPW6WX3gnoAWsXE5XBdeVHEevpLa852ky?cluster=devnet) |
+| 9 | Job F₃ criado e financiado | [`2jjiYDAo…`](https://explorer.solana.com/tx/2jjiYDAoCQTrF93LvTAFB3RHTB3ab86k2BZmRXnFv3FmgK2ps2Kf1U2vs4MeFMMo7iqDQ77TSqz9hjigaQMrFQbW?cluster=devnet) |
+| 10 | Receipt do Job `bc334093…` em P₃ → 6014 | [`5CBFajsa…`](https://explorer.solana.com/tx/5CBFajsaFvYreCJkQwiPuR8rHWtpBKCULoVAeysUJGRwTDfF2CXYzeFkuit6azjBjqQkoif8TbYwxByv8Ckmo4en?cluster=devnet) |
 | 12 | FAIL de F₃: `deliver`+`refund_on_fail`, verificador invocado (99.541 CU) | [`4jcugMyX…`](https://explorer.solana.com/tx/4jcugMyXqhAttG7cjcjWZnMiyZe3SosHC2cgphQ6rf48n5KfrWZ4TRfzR1ZioP5NwYE2qeo2zUDEcD4rJQDTCmSJ?cluster=devnet) |
 | 13 | Refund por timeout de T₃ | [`5oTbFiTX…`](https://explorer.solana.com/tx/5oTbFiTXjkv8aBgTQPrKSqTShfNgVqSePZuP5x57GXxfEi6mTPMLfXFCWpnZSQzgcXbyqSjBHSJy65dEy5aAKVzi?cluster=devnet) |
 

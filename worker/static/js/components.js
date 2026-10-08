@@ -327,10 +327,10 @@ export function toast(text, { error = false } = {}) {
 
 export function describeError(error) {
   const payload = (error && error.payload) || {};
-  if (payload.error === "busy") return t("err.busy", { kind: (payload.running_op && payload.running_op.kind) || "?" });
+  if (payload.error === "busy") return t("err.busy", { kind: (payload.running_op && payload.running_op.kind) || t("data.unavailable") });
   if (payload.error === "reconcile_pending") return t("err.pending", { jobs: (payload.jobs || []).map((id) => truncate(id)).join(", ") });
   if (payload.error === "unreachable") return t("err.read", { detail: payload.detail || "" });
-  return t("err.http", { status: error ? error.status : "?", code: payload.error || "?" });
+  return t("err.http", { status: error && error.status ? error.status : t("data.unavailable"), code: payload.error || t("data.unavailable") });
 }
 
 export function errorBanner(error, { stale = null } = {}) {

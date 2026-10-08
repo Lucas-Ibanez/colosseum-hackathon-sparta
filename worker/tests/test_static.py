@@ -354,12 +354,53 @@ class FactsTests(unittest.TestCase):
 # --- scans of the served interface ---------------------------------------------------------------
 
 
-def frozen_phrases():
+README_SECTIONS = {"PT": "## Frases permitidas (congeladas no D9)\n", "EN": "## Frozen phrases (English, ratified R-UI)\n"}
+
+
+def readme_section(lang):
+    """One section of README.md, from its heading to the next `## ` heading."""
     readme = (REPO / "README.md").read_text()
+    heading = README_SECTIONS[lang]
+    if readme.count(heading) != 1:
+        raise AssertionError(f"README.md must have exactly one {heading.strip()!r}")
+    body = readme.split(heading, 1)[1]
+    return body.split("\n## ", 1)[0]
+
+
+def frozen_phrases(lang):
+    """The 8 numbered phrases of one README section (PT or EN), never mixed."""
     phrases = {}
-    for number, text in re.findall(r'^(\d)\. \*\*[^*]+\*\* "([^"]+)"', readme, re.MULTILINE):
+    for number, text in re.findall(r'^(\d)\. \*\*[^*]+\*\* "([^"]+)"', readme_section(lang), re.MULTILINE):
+        if int(number) in phrases:
+            raise AssertionError(f"phrase {number} twice in the {lang} section")
         phrases[int(number)] = text
     return phrases
+
+
+def dictionary(name):
+    """One dictionary of i18n.js (`const PT = {` or `const EN = {`): one entry per line."""
+    text = (STATIC / "js" / "i18n.js").read_text()
+    head = f"const {name} = {{\n"
+    if text.count(head) != 1:
+        raise AssertionError(f"i18n.js must define {name} once")
+    body = text.split(head, 1)[1].split("\n};\n", 1)[0]
+    entries = {}
+    for line in body.splitlines():
+        if not line.strip() or line.strip().startswith("//"):
+            continue
+        match = re.fullmatch(r'  "([^"]+)": "((?:[^"\\]|\\.)*)",', line)
+        if not match:
+            raise AssertionError(f"{name}: unparsed line {line!r}")
+        if match.group(1) in entries:
+            raise AssertionError(f"{name}: duplicate key {match.group(1)}")
+        entries[match.group(1)] = match.group(2).replace("\\'", "'")
+    return entries
+
+
+# DESIGN.md ("Labels and vocabulary") keys that the code names differently; verify.fallback is
+# not used in this MVP (HIVE_MVP_UI_ADAPTATION.md §3.4).
+DESIGN_KEY_MAP = {"job.new": "nav.new", "job.fund": "new.fund", "job.funded": "new.funded", "action.refund": "ops.refund",
+                  "refund.disabled": "ops.refundDisabled", "env.devnet": "top.devnet", "env.testToken": "top.testToken"}
 
 
 class InterfaceScanTests(unittest.TestCase):
@@ -413,13 +454,14 @@ class InterfaceScanTests(unittest.TestCase):
 
     def test_mainnet_appears_only_in_the_frozen_phrase_5(self):
         hits = [(path.name, line) for path, text in self.js.items() for line in text.splitlines() if "mainnet" in line.lower()]
-        self.assertEqual(len(hits), 1, hits)
-        self.assertIn('"claim.f5"', hits[0][1])
+        self.assertEqual(len(hits), 2, hits)  # claim.f5 in PT and in EN
+        for _, line in hits:
+            self.assertIn('"claim.f5"', line)
 
-    def test_claims_are_the_frozen_phrases_with_the_brand_change_only(self):
-        frozen = frozen_phrases()
+    def test_portuguese_claims_are_the_frozen_phrases_with_the_brand_change_only(self):
+        frozen = frozen_phrases("PT")
         self.assertEqual(sorted(frozen), [1, 2, 3, 4, 5, 6, 7, 8])
-        claims = dict(re.findall(r'"claim\.f(\d)": "([^"]+)"', self.i18n))
+        claims = {key[len("claim.f"):]: text for key, text in dictionary("PT").items() if key.startswith("claim.")}
         self.assertEqual(sorted(claims), ["1", "2", "3", "4", "5", "8"])
         for number, text in claims.items():
             expected = frozen[int(number)]
@@ -430,9 +472,74 @@ class InterfaceScanTests(unittest.TestCase):
                 self.assertEqual(text, expected)
         self.assertNotIn("VeriCode", "".join(claims.values()))
 
+    def test_english_claims_are_the_ratified_phrases(self):
+        frozen = frozen_phrases("EN")
+        self.assertEqual(sorted(frozen), [1, 2, 3, 4, 5, 6, 7, 8])
+        self.assertTrue(frozen[1].startswith("Hive's Groth16 receipt is verified on devnet"))
+        claims = {key[len("claim.f"):]: text for key, text in dictionary("EN").items() if key.startswith("claim.")}
+        self.assertEqual(sorted(claims), ["1", "2", "3", "4", "5", "8"])
+        for number, text in claims.items():
+            with self.subTest(claim=number):
+                self.assertEqual(text, frozen[int(number)])
+        self.assertNotIn("VeriCode", "".join(claims.values()))
+
+    def test_english_is_the_default_and_both_dictionaries_have_the_same_keys(self):
+        self.assertIn('export const LANG = "en";', self.i18n)
+        self.assertIn('export const LOCALE = "en-US";', self.i18n)
+        pt, en = dictionary("PT"), dictionary("EN")
+        self.assertEqual(set(pt) - set(en), set(), "PT keys without EN")
+        self.assertEqual(set(en) - set(pt), set(), "EN keys without PT")
+        self.assertIn("adv.why.thisRun", pt)
+        for key in pt:
+            with self.subTest(key=key):
+                self.assertEqual(sorted(re.findall(r"\{(\w+)\}", pt[key])), sorted(re.findall(r"\{(\w+)\}", en[key])))
+                self.assertEqual(pt[key].count("`"), en[key].count("`"))
+                self.assertEqual(pt[key].count("`") % 2, 0)
+
+    def test_design_md_labels_in_both_languages(self):
+        design = (REPO / "DESIGN.md").read_text()
+        section = design.split("## Labels and vocabulary\n", 1)[1].split("\n## ", 1)[0]
+        rows = re.findall(r"^\| `([a-zA-Z.]+)` \| ([^|]+) \| ([^|]+) \|$", section, re.MULTILINE)
+        self.assertGreaterEqual(len(rows), 30)
+        pt, en = dictionary("PT"), dictionary("EN")
+        for key, portuguese, english in rows:
+            if key == "verify.fallback":
+                self.assertNotIn(key, pt)
+                continue
+            code_key = DESIGN_KEY_MAP.get(key, key)
+            with self.subTest(key=key):
+                self.assertEqual(pt[code_key], portuguese.strip())
+                self.assertEqual(en[code_key], english.strip())
+
+    def test_no_forbidden_english_words(self):
+        words = (r"verifier router", r"fallback", r"trustless", r"nobody needs to trust", r"\baudit", r"\bprivate\b",
+                 r"new machine", r"real money", r"zk on-chain", r"\bsecure\b", r"\bsafe\b", r"trustworthy", r"guarantee",
+                 r"certified", r"approved", r"verified agent", r"reputation", r"\bscore\b", r"trust level",
+                 r"any repository", r"code is correct", r"mascot")
+        for key, text in dictionary("EN").items():
+            lowered = text.lower()
+            for word in words:
+                with self.subTest(key=key, word=word):
+                    self.assertIsNone(re.search(word, lowered))
+            # "rejected" names the program's rejection in the scenario results, never a UI verdict
+            if "reject" in lowered:
+                with self.subTest(key=key):
+                    self.assertTrue(key.startswith("scenario.") or key in ("adv.expect", "adv.lead"), key)
+
+    def test_r_ui_fixes_stay_in_the_job_view(self):
+        job = (STATIC / "js" / "views" / "job.js").read_text()
+        # C-UI-3: the landed settlement, not only the "ok" one
+        self.assertIn('op.outcome === "PASS" && op.status !== "running"', job)
+        self.assertNotIn('op.status === "ok")\n', job.split("function settlementOp", 1)[1].split("}", 1)[0])
+        # C-UI-2: scenarios only for Jobs first seen since the worker's current start
+        self.assertIn('t("adv.why.thisRun")', job)
+        self.assertIn("health().startup && health().startup.started_at", job)
+        self.assertIn("seen >= started", job)
+
     def test_brand_and_legacy_names(self):
         self.assertIn("<title>Hive</title>", self.html)
-        self.assertIn('lang="pt-BR"', self.html)
+        self.assertIn('<html lang="en">', self.html)
+        self.assertIn("<noscript><p>The Hive interface needs JavaScript.</p></noscript>", self.html)
         for path, text in self.js.items():
             for line in text.splitlines():
                 if "VeriCode" in line:
