@@ -1,20 +1,15 @@
-# Controle autônomo — D12a concluído; próximo D13 (e o vídeo definitivo)
+# Controle autônomo — D13 concluído; próximo D13b (fechamento da submissão)
 
 ## Objetivo atual
 
-D13, conforme `docs/handoffs/d12a-to-d13.md`, em inglês, com a marca Hive, os
-identificadores legados exatos e os links dos vídeos a preencher:
-- `README.md` inteiro em inglês; o português vai para `docs/README.pt-BR.md`, com a
-  frase 1 "da Hive";
-- texto de submissão;
-- roteiro do pitch (até 3 min);
-- lista de cortes da demo técnica (2–3 min) a partir da tomada contínua.
-
-O D13 pode começar antes da gravação.
+D13b, conforme `docs/handoffs/d13-to-d13b.md`: preencher os `TODO(…)` com os dados do
+humano (vídeos, formulário, time, validação, modelo de negócio, slogan, acesso ao
+repositório), push autorizado e conferência final dos links, para a submissão de 11/10.
 
 Em paralelo, o humano grava a tomada contínua em inglês (10/10), pela seção "Gravação pela
-interface" de `docs/demo-script.md`, depois do reinício do worker (C-UI-5). Submissão:
-11/10.
+interface" de `docs/demo-script.md`, depois do reinício do worker (C-UI-5), e monta a demo
+técnica pela seção "Demo técnica (corte de 2–3 min)" e o pitch por
+`docs/pitch-script.md`.
 
 ## Marcos anteriores
 
@@ -58,6 +53,9 @@ interface" de `docs/demo-script.md`, depois do reinício do worker (C-UI-5). Sub
   liquidação aterrissada com reconciliação falha, recomendados RUI-04/05/08/09/11,
   ensaio C-UI-4 sobre os falsos e roteiro final em inglês; commits `ba79080`
   (`worker: English interface and R-UI fixes (D12a)`) e `docs: record D12a`.
+- D13 (`docs/d13-results.md`): `README.md` em inglês, `docs/README.pt-BR.md` (f1 "da
+  Hive"), `docs/submission.md`, `docs/pitch-script.md` e a seção "Demo técnica (corte de
+  2–3 min)" do roteiro; commit pendente de autorização.
 
 ## Baseline (D11–D12)
 
@@ -135,7 +133,8 @@ interface" de `docs/demo-script.md`, depois do reinício do worker (C-UI-5). Sub
 
 ## Gate atual
 
-`D12a` (concluído) → próximo `D13`; tomada contínua pelo humano.
+`D13` (concluído; commit pendente de autorização) → próximo `D13b`; tomada contínua e
+montagem dos vídeos pelo humano.
 
 ## Estado
 
@@ -191,6 +190,11 @@ interface" de `docs/demo-script.md`, depois do reinício do worker (C-UI-5). Sub
   README; roteiro final em `docs/demo-script.md`; adaptação editada só em §2 e §6.
   Desvio registrado e aceito pelo humano: regra de CSS de quebra de rótulo dos botões.
   Nenhuma escrita em devnet; worker real intocado.
+- D13 (`docs/d13-results.md`): textos públicos em inglês com a marca Hive e os
+  identificadores legados exatos; frases EN byte a byte iguais às ratificadas; o PT dos
+  testes vem de `docs/README.pt-BR.md`; `unittest` 58/58; varreduras sem achado (termos,
+  75 links de devnet, 29/29 assinaturas `finalized`, âncoras, comandos, segredos); uma linha
+  de `worker/README.md` autorizada; nenhuma escrita em devnet; worker real intocado.
 
 ## Decisões humanas registradas
 
@@ -225,6 +229,8 @@ interface" de `docs/demo-script.md`, depois do reinício do worker (C-UI-5). Sub
   - frase 1 portuguesa "da Hive";
   - vídeos: pitch de até 3 min e demo técnica de 2–3 min cortada da tomada contínua,
     que fica como evidência completa.
+- D13 (2026-10-07, Plan Mode): uma linha de `worker/README.md` autorizada; nome do produto
+  Hive também na prosa de `docs/README.pt-BR.md`.
 
 ## Ações proibidas (permanentes salvo novo objetivo)
 
@@ -310,7 +316,11 @@ interface" de `docs/demo-script.md`, depois do reinício do worker (C-UI-5). Sub
   - RUI-06 (`Content-Length: ²` → 500) fica no worker; RUI-07, 10, 12 a 14 abertos
     (informativos);
   - D-NEG depende do relógio do worker (resolução de 1 s);
-  - o README português ainda tem a f1 com "do VeriCode" (muda para "da Hive" no D13);
+  - f1 portuguesa "da Hive" em `docs/README.pt-BR.md` e no roteiro desde o D13; os
+    comentários de `worker/static/js/i18n.js` e a §6 da adaptação ainda descrevem o README
+    português (fora de escopo);
+  - `TODO(video)`, `TODO(form)`, `TODO(team)`, `TODO(validation)`, `TODO(business)`,
+    `TODO(brand)` e `TODO(repo)` nos textos públicos, até o humano fornecer (D13b);
   - **vídeos da submissão:** pelo guia da Colosseum (edição anterior), pitch de até
     3 min e demo técnica de 2–3 min; o humano confere as regras e os campos da edição
     atual. A tomada de ~13 min não é a demo técnica;
@@ -319,6 +329,8 @@ interface" de `docs/demo-script.md`, depois do reinício do worker (C-UI-5). Sub
   - orçamento do buyer: no máximo 8 tomadas completas sem novo SOL de devnet
     (C-UI-6);
   - `app_commit` é o HEAD da partida: reiniciar o worker depois do commit;
+  - o WSL reiniciou em 2026-10-08 07:43 e o worker real (PID 121845) parou com ele; o
+    humano o inicia de novo antes da gravação (C-UI-5);
   - `slot_clock` é estimativa (~0,24 s por slot medidos);
   - o SPL Token não registra o nome da instrução nos logs (a tela diz isso);
   - favicon inexistente (`TODO(brand)`).
@@ -326,6 +338,6 @@ interface" de `docs/demo-script.md`, depois do reinício do worker (C-UI-5). Sub
 
 ## Próxima transição permitida
 
-`D13`, conforme `docs/handoffs/d12a-to-d13.md` (Opus 5.5, high; Plan
-Mode obrigatório por mudar claims públicos). Em paralelo: a tomada contínua (10/10),
-cortada depois para a demo técnica. Submissão: 11/10.
+`D13b`, conforme `docs/handoffs/d13-to-d13b.md` (Opus 5.5, high; Plan Mode obrigatório
+por mudar claims públicos e pedir push). Em paralelo: a tomada contínua (10/10), cortada
+depois para a demo técnica. Submissão: 11/10.

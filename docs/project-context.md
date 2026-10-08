@@ -92,7 +92,8 @@ adversariais com prefixo `R-`). O gate seguinte ao D4 é o `D7`, não "D5".
 | D11–D12 | telas Jobs, Novo job e Detalhe do job servidas pelo worker, com a identidade Hive (sem carteira no navegador); U1–U10 em devnet pela interface; roteiro "Gravação pela interface" | D11–D12 |
 | R-UI | revisão adversarial do worker (D10) e da interface (D11–D12), somente leitura (APROVADO COM RESSALVAS, C-UI-1 a C-UI-7) | guia §11 |
 | D12a | correções da R-UI para o vídeo em inglês (interface em inglês, trava dos negativos, liquidação sem reconciliação), ensaio sobre os falsos e roteiro final em inglês | D12 |
-| D13 (próximo) | `README.md` em inglês (português em `docs/README.pt-BR.md`, f1 "da Hive"), texto de submissão, roteiro do pitch (até 3 min) e lista de cortes da demo técnica (2–3 min), com os links dos vídeos a preencher | submissão |
+| D13 | `README.md` em inglês (português em `docs/README.pt-BR.md`, f1 "da Hive"), texto de submissão, roteiro do pitch (até 3 min) e lista de cortes da demo técnica (2–3 min), com os links dos vídeos a preencher | submissão |
+| D13b (próximo) | fechamento da submissão: `TODO(…)` preenchidos com os dados do humano, push autorizado e conferência final dos links | submissão |
 
 Itens de produto e mercado do plano (inscrição, outreach, design partners,
 pitch, telas, vídeo) não são rastreados neste repositório.
@@ -180,8 +181,14 @@ Depois do D12a, o humano:
 - adotou dois vídeos, conforme o guia da Colosseum: um pitch de até 3 min e uma demo
   técnica de 2–3 min, cortada da tomada contínua, que fica como evidência completa.
 
-O próximo gate é o **D13**, conforme `docs/handoffs/d12a-to-d13.md`; em paralelo, a
-tomada contínua pelo humano.
+O **D13** (2026-10-07, `docs/d13-results.md`) deixou os textos públicos em inglês, com a
+marca Hive e os identificadores legados exatos: `README.md` inteiro em inglês,
+`docs/README.pt-BR.md` (f1 "da Hive", fonte das frases portuguesas dos testes),
+`docs/submission.md`, `docs/pitch-script.md` e a seção "Demo técnica (corte de 2–3 min)"
+de `docs/demo-script.md`. Os dados que só o humano tem ficam como `TODO(…)`.
+
+O próximo gate é o **D13b**, conforme `docs/handoffs/d13-to-d13b.md`; em paralelo, a
+tomada contínua e a montagem dos vídeos pelo humano.
 
 | Dia | Situação | Evidência / lacuna |
 | --- | --- | --- |
@@ -199,6 +206,7 @@ tomada contínua pelo humano.
 | D11–D12 | **concluído** (2026-10-07) | interface Hive em `worker/static/` (`/ui/`), 53 testes; U1–U10 pela interface: P₃ `Released` (`2gB9djwM…`) e F₃ `RefundedOnFail` (`4jcugMyX…`) com o verificador invocado, T₃ `RefundedOnTimeout` (`5oTbFiTX…`), negativos 6021/6014/6007 (escrow) e 6003 (verificador); sem carteira no navegador (P3) (`docs/d11-ui-results.md`) |
 | R-UI | **concluída** (2026-10-07) | revisão somente leitura: 53/53, devnet só leitura igual ao D11–D12, PoCs HTTP e de navegador sobre os falsos; RUI-01 (inglês, alto), RUI-02 e RUI-03 (médios); APROVADO COM RESSALVAS para o vídeo (`docs/r-ui-review-results.md`) |
 | D12a | **concluído** (2026-10-07; `ba79080` e `docs: record D12a`) | interface em inglês (`LANG = "en"`, 371 chaves PT = EN, frases ratificadas), trava D-NEG por `first_seen` ≥ partida, liquidação aterrissada com reconciliação falha, RUI-04/05/08/09/11; `unittest` 58/58; ensaio C-UI-4 em inglês sobre os falsos (0 palavras portuguesas, 0 CSP); antes × depois de RUI-01/02/03; roteiro final em `docs/demo-script.md` (`docs/d12a-results.md`) |
+| D13 | **concluído** (2026-10-07; commit pendente de autorização) | `README.md` em inglês e `docs/README.pt-BR.md`; `docs/submission.md`, `docs/pitch-script.md` e a lista de cortes da demo técnica; frases EN byte a byte iguais às ratificadas; `unittest` 58/58; varreduras sem achado (0 termos proibidos, 75 links de devnet, 29/29 assinaturas `finalized`, âncoras e comandos); `TODO(…)` do humano listados (`docs/d13-results.md`) |
 
 ### Caminho crítico e risco de prazo
 
@@ -249,9 +257,10 @@ tomada contínua pelo humano.
   11. R-UI concluída: **APROVADO COM RESSALVAS** para o vídeo
      (`docs/r-ui-review-results.md`);
   12. D12a concluído (`docs/d12a-results.md`);
-  13. D13 (README, texto de submissão, pitch e cortes da demo técnica, em inglês),
-     conforme `docs/handoffs/d12a-to-d13.md`; vídeo definitivo em inglês numa tomada
-     contínua (10/10); submissão (11/10).
+  13. D13 concluído (README, texto de submissão, pitch e cortes da demo técnica, em
+     inglês; `docs/d13-results.md`);
+  14. D13b (fechamento da submissão), conforme `docs/handoffs/d13-to-d13b.md`; vídeo
+     definitivo em inglês numa tomada contínua (10/10); submissão (11/10).
 - Wallets de devnet: o agente está autorizado a criar keypairs efêmeros de
   devnet/localnet (D2a.2), sob as restrições do princípio 9 de `AGENTS.md`.
 

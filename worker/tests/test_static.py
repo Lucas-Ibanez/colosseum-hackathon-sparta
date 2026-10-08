@@ -354,15 +354,17 @@ class FactsTests(unittest.TestCase):
 # --- scans of the served interface ---------------------------------------------------------------
 
 
-README_SECTIONS = {"PT": "## Frases permitidas (congeladas no D9)\n", "EN": "## Frozen phrases (English, ratified R-UI)\n"}
+# Since D13 the README is in English and the Portuguese text lives in docs/README.pt-BR.md.
+README_SECTIONS = {"PT": ("docs/README.pt-BR.md", "## Frases permitidas (congeladas no D9)\n"),
+                   "EN": ("README.md", "## Frozen phrases (English, ratified R-UI)\n")}
 
 
 def readme_section(lang):
-    """One section of README.md, from its heading to the next `## ` heading."""
-    readme = (REPO / "README.md").read_text()
-    heading = README_SECTIONS[lang]
+    """One section of the README of a language, from its heading to the next `## ` heading."""
+    name, heading = README_SECTIONS[lang]
+    readme = (REPO / name).read_text()
     if readme.count(heading) != 1:
-        raise AssertionError(f"README.md must have exactly one {heading.strip()!r}")
+        raise AssertionError(f"{name} must have exactly one {heading.strip()!r}")
     body = readme.split(heading, 1)[1]
     return body.split("\n## ", 1)[0]
 
@@ -458,18 +460,15 @@ class InterfaceScanTests(unittest.TestCase):
         for _, line in hits:
             self.assertIn('"claim.f5"', line)
 
-    def test_portuguese_claims_are_the_frozen_phrases_with_the_brand_change_only(self):
+    def test_portuguese_claims_are_the_frozen_phrases(self):
         frozen = frozen_phrases("PT")
         self.assertEqual(sorted(frozen), [1, 2, 3, 4, 5, 6, 7, 8])
+        self.assertTrue(frozen[1].startswith("A receipt Groth16 da Hive é verificada em devnet"))
         claims = {key[len("claim.f"):]: text for key, text in dictionary("PT").items() if key.startswith("claim.")}
         self.assertEqual(sorted(claims), ["1", "2", "3", "4", "5", "8"])
         for number, text in claims.items():
-            expected = frozen[int(number)]
-            if number == "1":
-                self.assertIn("A receipt Groth16 do VeriCode", expected)
-                expected = expected.replace("do VeriCode", "da Hive")
             with self.subTest(claim=number):
-                self.assertEqual(text, expected)
+                self.assertEqual(text, frozen[int(number)])
         self.assertNotIn("VeriCode", "".join(claims.values()))
 
     def test_english_claims_are_the_ratified_phrases(self):

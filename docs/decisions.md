@@ -2177,3 +2177,52 @@ Registre decisões relevantes do projeto neste formato.
     - nenhuma execução anterior apresentada como ao vivo;
     - a receipt do 6014 sempre identificada;
     - a frase 1 sempre junto do link da liquidação.
+
+## 2026-10-07 — D13: README em inglês, texto de submissão, roteiro do pitch e cortes da demo técnica
+
+- **Data:** 2026-10-07 23:10 a 2026-10-08 ~07:55 (-03:00), com pausa durante a noite
+- **Commits:** não autorizados por este prompt; pedidos ao humano no fim. HEAD de partida
+  `7ada476` (`docs: record D12a`).
+- **Decisões aplicadas:** "R-UI" (D-EN-1, D-EN-3), "Decisões humanas depois do D12a"
+  (README inteiro em inglês, português em `docs/README.pt-BR.md`, f1 portuguesa "da Hive",
+  pitch de até 3 min e demo técnica de 2–3 min cortada da tomada contínua) e o bloco
+  `hive-ui-core` do `AGENTS.md` (marca Hive, identificadores legados exatos), com o plano
+  aprovado em Plan Mode.
+- **Decisões humanas desta sessão (Plan Mode, 2026-10-07):**
+  - autorizada a correção de **uma linha** de `worker/README.md` (o link
+    `../README.md#frases-permitidas-congeladas-no-d9` passa a apontar
+    `../docs/README.pt-BR.md`), fora do escopo original do prompt;
+  - em `docs/README.pt-BR.md`, além da f1 "da Hive", o nome do produto na prosa (título e
+    "Num Job da Hive"); os identificadores técnicos continuam como no código.
+- **Escolhas do agente, no plano aprovado:**
+  - `README.md` em inglês com as seções do plano; a seção "Frozen phrases (English,
+    ratified R-UI)" tem o mesmo título e as 8 frases e o "Do not say" byte a byte iguais aos
+    ratificados; só o parágrafo de introdução mudou (aponta a lista portuguesa);
+  - em `docs/README.pt-BR.md`, a cópia da seção inglesa virou um ponteiro para a do
+    `README.md` (uma só cópia do texto inglês); comandos inalterados;
+  - `test_static.py` lê o PT de `docs/README.pt-BR.md` e o EN do `README.md`, com
+    igualdade direta da f1 "da Hive" (sem troca de marca no teste);
+  - demo técnica: lista de 13 cortes (alvo 2:55) com rótulos `Cut: …` e `Accelerated N×`,
+    narração em inglês com a fonte de cada frase técnica; o 6007 sai (rotulado) e a F6 não
+    é dita no corte; nenhuma fala diz "verified on-chain" fora da F1;
+  - pitch: 8 partes, 7 slides, só F1–F5 ratificadas como claims; visão só como
+    "next"/"we plan to", slide "Roadmap (not built yet)";
+  - submissão: seções genéricas até o `TODO(form)`, cada claim técnico com link de devnet ou
+    relatório.
+- **Resultado (evidência):** `unittest` 58/58; o teste novo falha na árvore de `HEAD` e nas
+  mutações (seção EN sumida, seção PT sumida, f1 PT antiga); `lint:design` 0/0,
+  `tokens ok`, 43 assets; varredura `d13/bin/scan13.py`: 0 violações de termos, 75 links do
+  Explorer em devnet, 29/29 assinaturas nos relatórios e `finalized` em devnet
+  (`getSignatureStatuses`, só leitura), 0 identificador renomeado, links relativos e
+  âncoras válidos, comandos iguais aos do README anterior; 0 segredos no diff
+  (`docs/d13-results.md`).
+- **Pendente do humano:** `TODO(video)`, `TODO(form)`, `TODO(team)`, `TODO(validation)`,
+  `TODO(business)`, `TODO(brand)` (slogan em inglês) e `TODO(repo)` (acesso dos jurados).
+- **Risco aberto:** comentários de `worker/static/js/i18n.js` e a §6 do
+  `HIVE_MVP_UI_ADAPTATION.md` ainda descrevem o README português (fora de escopo); o corte
+  depende dos tempos reais da tomada; a seção "Gravação" (vídeo de reserva do D9) mantém a
+  fala antiga "No VeriCode…".
+- **Fronteira:** o WSL reiniciou em 2026-10-08 07:43 durante a pausa, e o worker real (PID
+  121845) parou com ele; o agente não o parou nem chamou rota dele, e `d10/data` não muda
+  desde 2026-10-07. Antes da gravação, o humano o inicia de novo (C-UI-5).
+- **Próximo gate:** D13b (fechamento da submissão), conforme `docs/handoffs/d13-to-d13b.md`.

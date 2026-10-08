@@ -23,10 +23,10 @@ inglês no D12a).
 
 ### Frases permitidas (congeladas no D9)
 
-São as mesmas do [`README.md`](../README.md#frases-permitidas-congeladas-no-d9). Mudar a lista exige decisão
+São as mesmas do [`docs/README.pt-BR.md`](README.pt-BR.md#frases-permitidas-congeladas-no-d9). Mudar a lista exige decisão
 registrada em `docs/decisions.md`.
 
-1. **Claim:** "A receipt Groth16 do VeriCode é verificada em devnet por CPI
+1. **Claim:** "A receipt Groth16 da Hive é verificada em devnet por CPI
    ao verificador Groth16 imutável de risc0-solana v3.0.0, na mesma
    instrução que libera ou devolve o Test USDC do Job." Sempre com o link de
    uma transação.
@@ -560,6 +560,74 @@ Duração bruta: ~13 min (no ensaio do D11–D12, 11 min 16 s de U1 a U10).
 | Prazo de T ainda não venceu na cena 13 | Fazer a cena 14 e voltar a T, sem cortar. |
 | Tela do token no meio da tomada | Colar o token no campo mascarado, sem mostrar o terminal. Se o worker reiniciou, os Jobs da tomada ficam travados para os cenários adversariais: a tomada recomeça com Jobs novos (C-UI-6). |
 | RPC de devnet fora do ar | Mostrar as tabelas de "Plano B: evidência já executada" abaixo, dizendo que são uma execução anterior (D11–D12 ou D9). |
+
+## Demo técnica (corte de 2–3 min)
+
+Lista de cortes do **vídeo de demo técnica** da submissão (D13), montado a partir da
+tomada contínua da seção [Gravação pela interface](#gravação-pela-interface). A tomada
+completa, sem cortes, fica publicada à parte como evidência ("Decisões humanas depois do
+D12a" em `docs/decisions.md`). Instruções em português; rótulos de tela e narração em
+inglês. Os tempos de cada cena da tomada só serão conhecidos depois da gravação (10/10):
+esta lista é plano até lá.
+
+### Regras do corte
+
+- Só material da **mesma tomada contínua**, na ordem em que aconteceu. Nada de outra
+  tomada, de ensaio ou de execução anterior. Se o Plano B for usado na gravação, a demo diz
+  "earlier run" na tela, nunca o apresenta como desta tomada.
+- **Todo trecho removido** leva um rótulo na tela, em caixa fixa, por pelo menos 2 s:
+  `Cut: <o que saiu>`. **Toda aceleração** leva `Accelerated N×` durante todo o trecho,
+  com o N real da edição. Nenhum rótulo diz "live" ou "real time".
+- A frase 1 só aparece junto do link da transação de liquidação visível na tela ("View on
+  Explorer" ou o Explorer aberto em `?cluster=devnet`).
+- No 6014, a narração diz que a receipt é a **do Job P desta mesma tomada**.
+- A frase 6 **não** é dita: o corte mostra só três dos quatro negativos (o 6007 sai).
+- O último quadro mostra o link da tomada completa (`TODO(video)`).
+- A narração é uma locução gravada na edição. Ela descreve o que a tela mostra e usa só as
+  frases ratificadas (F1, F3, F4, F5 e F8) e fatos do código e da evidência, com a fonte
+  indicada abaixo. Sem termos da lista "Do not say".
+
+### Cortes (alvo 2:55)
+
+| # | Cena da tomada | Duração no corte | Rótulo na tela |
+| --- | --- | ---: | --- |
+| 1 | cartão de abertura (sem tela da tomada) | 0:10 | "Hive technical demo. A labeled cut of one continuous take recorded on `TODO(video)`. Full take: `TODO(video)`" |
+| 2 | 1 Environment ("Details" da barra de status) | 0:20 | — |
+| 3 | 2 Job T (New job → Fund job → Open job) | 0:10 | `Cut: dialog reading` |
+| 4 | 3 refund antes do prazo em T (6021) | 0:08 | — |
+| 5 | 4 Job P (Fund job → Open job, "Commitments and observed") | 0:06 | `Cut: job creation of P` |
+| 6 | 5 prova de P (`prove`, `compress`; ~3 min 20 s na tomada) | 0:20 | `Accelerated N×` |
+| 7 | 6 prova adulterada em P (6003) | 0:09 | — |
+| 8 | 7 liquidação PASS de P, anatomia, saldos e Explorer | 0:40 | — |
+| 9 | 8 liquidar de novo em P (6007) | 0:00 | `Cut: settle again on P (rejected, 6007)` |
+| 10 | 9–10 Job F e receipt de P em F (6014) | 0:14 | `Cut: job creation of F` |
+| 11 | 11–12 prova de F e liquidação FAIL | 0:14 | `Accelerated N×` na prova |
+| 12 | 13 refund de T por prazo | 0:09 | `Cut: waiting for the deadline` |
+| 13 | 14 encerramento ("Limits of this proof") e link da tomada | 0:15 | "Full take: `TODO(video)`" |
+
+Total: 2:55. Se passar de 3:00 depois da edição, encurte nesta ordem: as linhas 3, 5 e 12
+(com o rótulo `Cut`). **Nunca corte** a linha 8 (liquidação verificada com o link), um
+negativo e a frase 3.
+
+### Narração (inglês, ~400 palavras com as frases ratificadas, ~2,4 palavras por segundo)
+
+| # | Narração | Fonte |
+| --- | --- | --- |
+| 1 | "One continuous take through the Hive interface, served by a local worker over this repository's Rust CLI and prover. Every cut and acceleration is labeled." | `worker/README.md`; "Decisões humanas depois do D12a" |
+| 2 | (na tela, o Anchor program `vericode_escrow` e o verificador) F4: "The escrow and the verifier are immutable (upgrade authority `none`). No one, not even the project, changes the rules or decides the payment; there is also no e-stop." F5: "Devnet and Test USDC only; none of this exists on mainnet." | F4, F5 |
+| 3 | "In the Anchor program, the buyer creates and funds a Job in one transaction, `create_job` and `fund`. The Test USDC goes to a vault whose authority is the Job's PDA." | `docs/d11-ui-results.md` (U1); `docs/escrow-program.md` |
+| 4 | "A refund before the deadline is rejected by the escrow: `DeadlineNotReached`, 6021. Nothing moves." | cena 3; `docs/d11-ui-results.md` (U2) |
+| 5 | "A second Job, P. The spec, the harness and the image ID are fixed by the program." | cena 4; `HIVE_MVP_UI_ADAPTATION.md` §3.1 |
+| 6 | "The executor proves locally. The RISC Zero guest evaluates the artifact, 21 and 42, against the fixed rule: output equals two times input. The Rust core it runs is `no_std`, with no Solana or RISC Zero dependency." F8: "The proof is generated locally and compressed to Groth16 in a local Docker container, with no network access." | `prover/README.md`; `docs/d1c2b3g1-core-no-std-results.md`; F8 |
+| 7 | "The same proof with one bit flipped: the Groth16 verifier itself rejects it, `PairingError`, inside the same transaction." | cena 6; `docs/d11-ui-results.md` (U5) |
+| 8 | "`deliver` and `release` go in a single transaction. Inside `release`, the escrow checks the journal against the Job and the delivery, calls the verifier by CPI, 99,541 compute units, and only then moves the Test USDC with `TransferChecked`." F1, apontando o link: "Hive's Groth16 receipt is verified on devnet via CPI to the immutable Groth16 verifier of risc0-solana v3.0.0, in the same instruction that releases or refunds the Job's Test USDC." "The escrow calls the verifier directly, not through the Verifier Router: the upstream Router on devnet is not initialized." | cena 7; `docs/d11-ui-results.md` (U6); `docs/d4a-direct-verifier-results.md`; F1 |
+| 10 | "A third Job, F. We submit the receipt of Job P, from this same take. The escrow rejects it, `JournalJobIdMismatch`, 6014: the journal belongs to another Job." | cena 10; D-6014 |
+| 11 | "F is proved with 7 and 15, which does not meet the rule. The `FAIL` verdict goes through the same verifier CPI, 99,541 compute units, and the Test USDC goes back to the buyer." | cenas 11–12; `docs/d11-ui-results.md` (U9) |
+| 12 | "After the deadline, the refund of T needs no proof: `refund_on_timeout` returns the Test USDC to the buyer." | cena 13; `docs/d11-ui-results.md` (U10) |
+| 13 | F3: "The proof attests to the execution of the fixed rule on this artifact, not to the quality of a piece of software. The v1 rule is trivial (output = 2 × input) and serves to demonstrate the flow." | F3 |
+
+A linha 9 não tem narração (só o rótulo). "Verified on devnet" só aparece dentro da F1, dita
+na linha 8 com o link na tela; nenhuma outra fala diz "verified on-chain".
 
 ## Plano B: evidência já executada
 

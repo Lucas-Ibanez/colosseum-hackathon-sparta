@@ -22,7 +22,7 @@ Decisões e condições: "Decisões humanas para o D10" (P1–P6) e o veredito d
   dois papéis. A chave do deployer (mint authority do Test USDC) nunca entra no worker.
 - `Proving` é uma etapa local do executor, fora da cadeia.
 - Só devnet e Test USDC. O claim continua o do CD7, com as frases congeladas do
-  [`README.md`](../README.md#frases-permitidas-congeladas-no-d9); o worker não cria frase.
+  [`docs/README.pt-BR.md`](../docs/README.pt-BR.md#frases-permitidas-congeladas-no-d9); o worker não cria frase.
 - `http.server` não é endurecido para rede: por isso o bind é fixo em `127.0.0.1`.
 - Se o `compress` estourar o tempo, o worker mata o grupo do prover; um container
   já iniciado termina sozinho (`--rm`) e a receipt não é usada.
