@@ -2098,3 +2098,82 @@ Registre decisões relevantes do projeto neste formato.
   `docs/handoffs/r-ui-to-d12a.md`; depois, vídeo definitivo (10/10), D13 (README e texto
   de submissão em inglês, com o link do vídeo; pode começar antes da gravação) e submissão
   (11/10).
+
+## 2026-10-07 — D12a: correções da R-UI para o vídeo em inglês
+
+- **Data:** 2026-10-07 (21:00–22:00 -03:00)
+- **Commits:** autorizados pelo humano (2026-10-07): `ba79080` (`worker: English
+  interface and R-UI fixes (D12a)`) e `docs: record D12a`; HEAD de partida `9fa4b3b`.
+- **Decisões aplicadas:** entrada "R-UI" (D-EN-1, D-EN-2, D-EN-3, D-NEG, D-6014,
+  D-RUI-06 e a autorização de edição da adaptação), com o plano aprovado em Plan Mode.
+- **Escolhas do agente, no plano aprovado:**
+  - dicionário `EN` a partir da proposta da R-UI (`e5c1ecbf…`), com cinco chaves novas nos
+    dois idiomas (`adv.why.thisRun`, `job.title`, `settle.external`,
+    `settle.reconcileFailed`, `banner.FailedCreate.detail`) e um polimento só em chave não
+    congelada (`limit.proving` EN);
+  - trava D-NEG sem tempo conhecido = desabilitada; o 6007 em Job terminal também trava;
+  - `README.md`: a seção inglesa traz as 8 frases e o "Do not say" da R-UI §8 sem o item
+    RD7-01, que ficou como regra de operação no `docs/demo-script.md`;
+  - roteiro final com instruções em português (o operador) e rótulos e falas em inglês,
+    conferido contra os textos capturados no ensaio; título da seção mantido para não
+    quebrar âncoras; numeração das cenas do Plano B do D11–D12 alinhada ao roteiro novo;
+  - adaptação: §2 (decisão 2) e §6, só.
+- **Desvio de escopo (aceito pelo humano em 2026-10-07):** uma regra de CSS fora do RUI-11
+  (`.op-group .button`: altura mínima, quebra de linha), só com tokens, porque os rótulos
+  em inglês dos cenários adversariais transbordavam e se sobrepunham no grid de 4 colunas
+  (`docs/d12a-results.md`, seção 4). Reverter é apagar a regra; a alternativa é encurtar
+  os rótulos.
+- **Resultado (evidência):** `unittest` 58/58 (5 testes novos falham na árvore de
+  `HEAD`); `lint:design` 0/0; `tokens ok`; 43 assets; ensaio C-UI-4 completo em inglês
+  sobre os falsos (porta 8715), com Job OLD e reinício por PID: OLD com os quatro cenários
+  desabilitados e o motivo, 6014 de F começando por P, 0 palavras portuguesas, 0 CSP, 0
+  erros de console, teclado, recarga, escuro e 900 px; antes × depois de RUI-01, 02 e 03
+  contra os estáticos de `HEAD`; nenhuma escrita em devnet; worker real, perfil, locks,
+  `worker/vericode_worker.py`, `DESIGN.md`, guia e `tokens.css` inalterados.
+- **Risco aberto:** nomes de erro de Anchor só nos dados reais (nos
+  falsos, "code N"); D-NEG com resolução de 1 s; f1 do README português com "do VeriCode"
+  até o D13; RUI-06/07/10/12–14; P3; RD7-08; orçamento de 8 tomadas; memória do WSL.
+- **Próximo gate:** D13 (`README.md` inteiro, texto de submissão, roteiro do pitch e
+  lista de cortes da demo técnica, em inglês), conforme `docs/handoffs/d12a-to-d13.md`;
+  em paralelo, a tomada contínua pelo humano (10/10), depois do commit e do reinício do
+  worker (C-UI-5).
+
+## 2026-10-07 — Decisões humanas depois do D12a (README, frase 1 e vídeos da submissão)
+
+- **Data:** 2026-10-07, na sessão de registro do D12a.
+- **Desvio de CSS do D12a aceito:** `.op-group .button` quebra a linha, com altura
+  mínima, só com tokens. Segue o `DESIGN.md` ("não reduza a fonte: quebre, amplie o
+  componente") e preserva os nomes de ação usados no roteiro.
+- **Commits do D12a autorizados** (sem push).
+- **README (D13):**
+  - o `README.md` passa a ser inteiro em inglês, com a marca Hive e os identificadores
+    legados exatos (`AGENTS.md`, bloco `hive-ui-core`);
+  - o texto português atual vai para `docs/README.pt-BR.md`, que passa a ser a fonte das
+    frases portuguesas para os testes.
+- **Frase 1 portuguesa:** "A receipt Groth16 **do VeriCode**…" passa a "A receipt
+  Groth16 **da Hive**…", igual à interface desde o D11a. É só troca da palavra de marca
+  (mesmo claim, mesma regra do link). Vale a partir do D13 em `docs/README.pt-BR.md` e
+  em `docs/demo-script.md`.
+- **Vídeos da submissão:**
+  - **Fonte:** o guia de submissão da Colosseum
+    (<https://blog.colosseum.com/perfecting-your-hackathon-submission/>, de uma edição
+    anterior) pede dois vídeos:
+    - um **pitch de no máximo 3 minutos**: time, problema, para quem é, validação e
+      visão; é um pitch de startup, não uma demo;
+    - uma **demo técnica de 2 a 3 minutos**: funcionalidades, stack, decisões de
+      arquitetura e a integração com Solana.
+  - **O plano:**
+    - a tomada contínua de ~13 min (`docs/demo-script.md`, "Gravação pela interface")
+      continua sendo gravada e fica como **evidência completa, sem cortes**, linkada no
+      README;
+    - a **demo técnica** é um corte dessa tomada, com todo corte e toda aceleração
+      rotulados na tela ("cut", "accelerated");
+    - o **pitch** é um vídeo separado (por exemplo, slides com narração), só com claims
+      ratificados.
+  - **Antes de gravar e montar:** o humano confere as regras e os campos do formulário da
+    edição atual.
+  - **Validação de usuários:** só a real, fornecida pelo humano. Nada inventado.
+  - **Regras que continuam valendo nos cortes:**
+    - nenhuma execução anterior apresentada como ao vivo;
+    - a receipt do 6014 sempre identificada;
+    - a frase 1 sempre junto do link da liquidação.

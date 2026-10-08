@@ -60,7 +60,7 @@ Regras:
 | # | Decisão do guia | Resolução no MVP |
 | --- | --- | --- |
 | 1 | Assinatura A (carteira) ou B (CLI) | **B**: CLI via worker local (P3, "Decisões humanas para o D10") |
-| 2 | Idioma padrão | **Português** como padrão, porque as frases congeladas e o roteiro estão em português; dicionário pronto para inglês (rótulos EN do `DESIGN.md`). Trocar o padrão ou traduzir as frases congeladas exige decisão humana registrada |
+| 2 | Idioma padrão | **Inglês** como padrão, porque o vídeo e a submissão são em inglês (decisão D-EN-2, entrada R-UI de `docs/decisions.md`); o português continua completo no dicionário, sem seletor. As frases congeladas em inglês foram ratificadas (D-EN-1, mesma entrada) e estão no `README.md`, seção "Frozen phrases (English, ratified R-UI)"; os rótulos EN são os do `DESIGN.md` |
 | 3 | Tema com acabamento total | **Claro**, canônico pelo `DESIGN.md`; o escuro fica preparado por tokens |
 | 4 | Jobs reais da demonstração | Só Jobs reais, criados pelo worker em devnet: um que passa, os negativos e um timeout. Nenhum dado fictício |
 | 5 | Origem dos dados de cada bloco | Worker (seção 4); o estado on-chain é o `job show` do worker, com o slot |
@@ -284,10 +284,15 @@ desatualizado (slot e horário).
   ou devolve o Test USDC do Job."
   - Só a palavra de marca muda; o claim é o mesmo e vai sempre junto do link da
     liquidação.
+  - **Em inglês** (padrão da interface, D-EN-1 e D-EN-2, entrada R-UI): "Hive's Groth16
+    receipt is verified on devnet via CPI to the immutable Groth16 verifier of
+    risc0-solana v3.0.0, in the same instruction that releases or refunds the Job's Test
+    USDC." Mesmo claim, mesma regra do link.
   - O `README.md` e o roteiro mantêm o texto atual até uma decisão própria sobre a
     documentação.
 - As frases 2 a 8 não citam a marca e valem como estão. A lista "Não dizer" do
-  `README.md` vale inteira. "Verifier Router" nunca aparece como caminho atual.
+  `README.md` vale inteira. Em inglês, as 8 frases e o "Do not say" ratificados estão na
+  seção "Frozen phrases (English, ratified R-UI)" do `README.md`. "Verifier Router" nunca aparece como caminho atual.
 - **Troca de vocabulário do guia:**
 
   | Guia | Na interface |

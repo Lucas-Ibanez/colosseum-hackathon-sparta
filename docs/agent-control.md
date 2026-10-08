@@ -1,18 +1,20 @@
-# Controle autônomo — R-UI concluída (APROVADO COM RESSALVAS); próximo D12a
+# Controle autônomo — D12a concluído; próximo D13 (e o vídeo definitivo)
 
 ## Objetivo atual
 
-D12a, conforme `docs/handoffs/r-ui-to-d12a.md`: cumprir C-UI-1 a C-UI-3 da R-UI só em
-`worker/static/`, nos testes e nos documentos autorizados:
-- interface em inglês com as frases ratificadas (D-EN-1, D-EN-2);
-- trava dos cenários adversariais para Jobs desta execução do worker (D-NEG);
-- liquidação exibida mesmo com reconciliação falha.
+D13, conforme `docs/handoffs/d12a-to-d13.md`, em inglês, com a marca Hive, os
+identificadores legados exatos e os links dos vídeos a preencher:
+- `README.md` inteiro em inglês; o português vai para `docs/README.pt-BR.md`, com a
+  frase 1 "da Hive";
+- texto de submissão;
+- roteiro do pitch (até 3 min);
+- lista de cortes da demo técnica (2–3 min) a partir da tomada contínua.
 
-Depois, ensaiar a tomada em inglês sobre os falsos e aplicar o roteiro final ao
-`docs/demo-script.md`. Sem escrita em devnet.
+O D13 pode começar antes da gravação.
 
-Em seguida: vídeo definitivo (10/10), D13 (README e texto de submissão em inglês) e
-submissão (11/10).
+Em paralelo, o humano grava a tomada contínua em inglês (10/10), pela seção "Gravação pela
+interface" de `docs/demo-script.md`, depois do reinício do worker (C-UI-5). Submissão:
+11/10.
 
 ## Marcos anteriores
 
@@ -52,6 +54,10 @@ submissão (11/10).
   - `faad06c` (`docs: record D11-D12 interface`).
 - R-UI (`docs: record R-UI review`): **APROVADO COM RESSALVAS** para o vídeo
   (RUI-01 a RUI-14; condições C-UI-1 a C-UI-7).
+- D12a (`docs/d12a-results.md`): interface em inglês por padrão, trava D-NEG,
+  liquidação aterrissada com reconciliação falha, recomendados RUI-04/05/08/09/11,
+  ensaio C-UI-4 sobre os falsos e roteiro final em inglês; commits `ba79080`
+  (`worker: English interface and R-UI fixes (D12a)`) e `docs: record D12a`.
 
 ## Baseline (D11–D12)
 
@@ -129,7 +135,7 @@ submissão (11/10).
 
 ## Gate atual
 
-`R-UI` (concluída, APROVADO COM RESSALVAS) → próximo `D12a`.
+`D12a` (concluído) → próximo `D13`; tomada contínua pelo humano.
 
 ## Estado
 
@@ -177,6 +183,14 @@ submissão (11/10).
   RUI-01 (interface só em português; alto), RUI-02 (escrita adversarial em Jobs
   consumidos) e RUI-03 (C/D contra a cadeia depois de reconciliação falha), ambos
   médios; roteiro final do vídeo em inglês na seção 10.
+- D12a (`docs/d12a-results.md`): C-UI-1 a C-UI-3 só em `worker/static/`, nos testes e
+  nos documentos autorizados; `unittest` 58/58 (5 testes novos falham na árvore de
+  `HEAD`); `lint:design` 0/0, `tokens ok`, 43 assets; ensaio completo em inglês sobre os
+  falsos com Job antigo e reinício (0 palavras portuguesas, 0 CSP, 0 erros de console);
+  antes × depois de RUI-01/02/03; seção "Frozen phrases (English, ratified R-UI)" no
+  README; roteiro final em `docs/demo-script.md`; adaptação editada só em §2 e §6.
+  Desvio registrado e aceito pelo humano: regra de CSS de quebra de rótulo dos botões.
+  Nenhuma escrita em devnet; worker real intocado.
 
 ## Decisões humanas registradas
 
@@ -204,6 +218,13 @@ submissão (11/10).
   - D-NEG por `first_seen`;
   - D-6014: receipt de P em F;
   - D-RUI-06 fora do D12a.
+- Depois do D12a (2026-10-07), em `docs/decisions.md`:
+  - desvio de CSS aceito;
+  - commits do D12a autorizados;
+  - README inteiro em inglês e português em `docs/README.pt-BR.md`;
+  - frase 1 portuguesa "da Hive";
+  - vídeos: pitch de até 3 min e demo técnica de 2–3 min cortada da tomada contínua,
+    que fica como evidência completa.
 
 ## Ações proibidas (permanentes salvo novo objetivo)
 
@@ -283,14 +304,18 @@ submissão (11/10).
   binários de mesmo nome (incidente do D10a): usar targets separados.
 - O `env.sh` herdado define `R`, `B`, `D` e `VC`; não reutilizar esses nomes
   (incidente do R-D7).
-- **Interface (D11–D12):**
-  - RUI-01: interface só em português até o D12a; o vídeo e a submissão serão em
-    inglês;
-  - RUI-02: cenários adversariais habilitados em Jobs consumidos até o D12a;
-  - RUI-03: liquidação aterrissada com reconciliação falha aparece como "Ainda não…"
-    até o D12a;
-  - RUI-04 a 14 (baixos e informativos, `docs/r-ui-review-results.md`); RUI-06
-    (`Content-Length: ²` → 500) fica no worker, fora do D12a;
+- **Interface (D11–D12, D12a):**
+  - RUI-01 a 05, 08, 09 e 11 corrigidos no D12a; desvio de CSS (quebra de rótulo dos
+    botões) aceito;
+  - RUI-06 (`Content-Length: ²` → 500) fica no worker; RUI-07, 10, 12 a 14 abertos
+    (informativos);
+  - D-NEG depende do relógio do worker (resolução de 1 s);
+  - o README português ainda tem a f1 com "do VeriCode" (muda para "da Hive" no D13);
+  - **vídeos da submissão:** pelo guia da Colosseum (edição anterior), pitch de até
+    3 min e demo técnica de 2–3 min; o humano confere as regras e os campos da edição
+    atual. A tomada de ~13 min não é a demo técnica;
+  - o repositório precisa estar acessível aos jurados: o push exige autorização
+    separada;
   - orçamento do buyer: no máximo 8 tomadas completas sem novo SOL de devnet
     (C-UI-6);
   - `app_commit` é o HEAD da partida: reiniciar o worker depois do commit;
@@ -301,6 +326,6 @@ submissão (11/10).
 
 ## Próxima transição permitida
 
-`D12a`, conforme `docs/handoffs/r-ui-to-d12a.md` (Opus 5.5, high, Plan Mode
-obrigatório). Depois: vídeo definitivo numa tomada contínua (10/10), D13 (README e
-texto de submissão em inglês) e submissão (11/10).
+`D13`, conforme `docs/handoffs/d12a-to-d13.md` (Opus 5.5, high; Plan
+Mode obrigatório por mudar claims públicos). Em paralelo: a tomada contínua (10/10),
+cortada depois para a demo técnica. Submissão: 11/10.

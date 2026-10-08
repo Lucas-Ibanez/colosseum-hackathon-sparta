@@ -91,8 +91,8 @@ adversariais com prefixo `R-`). O gate seguinte ao D4 é o `D7`, não "D5".
 | D11a | fundação da interface Hive: marca, adaptação do guia ao MVP, stack, fontes e assets | preparação de D11–D12 |
 | D11–D12 | telas Jobs, Novo job e Detalhe do job servidas pelo worker, com a identidade Hive (sem carteira no navegador); U1–U10 em devnet pela interface; roteiro "Gravação pela interface" | D11–D12 |
 | R-UI | revisão adversarial do worker (D10) e da interface (D11–D12), somente leitura (APROVADO COM RESSALVAS, C-UI-1 a C-UI-7) | guia §11 |
-| D12a (próximo) | correções da R-UI para o vídeo em inglês (interface em inglês, trava dos negativos, liquidação sem reconciliação), ensaio sobre os falsos e roteiro final em inglês | D12 |
-| D13 | `README.md` e texto de submissão em inglês (marca Hive, identificadores legados exatos), com o link do vídeo | submissão |
+| D12a | correções da R-UI para o vídeo em inglês (interface em inglês, trava dos negativos, liquidação sem reconciliação), ensaio sobre os falsos e roteiro final em inglês | D12 |
+| D13 (próximo) | `README.md` em inglês (português em `docs/README.pt-BR.md`, f1 "da Hive"), texto de submissão, roteiro do pitch (até 3 min) e lista de cortes da demo técnica (2–3 min), com os links dos vídeos a preencher | submissão |
 
 Itens de produto e mercado do plano (inscrição, outreach, design partners,
 pitch, telas, vídeo) não são rastreados neste repositório.
@@ -161,14 +161,27 @@ O **D11–D12** (2026-10-07) entregou a interface (`docs/d11-ui-results.md`):
 A **R-UI** (2026-10-07) revisou o worker e a interface, somente leitura
 (`docs/r-ui-review-results.md`): **APROVADO COM RESSALVAS** para o vídeo.
 
-O vídeo e a submissão serão em inglês (decisão humana de 2026-10-07), mas a interface
-ainda é só em português (RUI-01). O humano decidiu:
+O vídeo e a submissão serão em inglês (decisão humana de 2026-10-07). O humano decidiu:
 - ratificar as frases em inglês (D-EN-1);
 - tornar o inglês o padrão da interface (D-EN-2);
 - autorizar a edição pontual da adaptação;
 - deixar o README inteiro em inglês para o D13.
 
-O próximo gate é o **D12a**, conforme `docs/handoffs/r-ui-to-d12a.md`.
+O **D12a** (2026-10-07) cumpriu C-UI-1 a C-UI-3 (`docs/d12a-results.md`): interface em
+inglês por padrão, com o português completo no dicionário; cenários adversariais só em
+Jobs desta partida do worker; liquidação aterrissada exibida também com a reconciliação
+falha; ensaio completo da tomada em inglês sobre os falsos; roteiro final em
+`docs/demo-script.md`. Sem escrita em devnet.
+
+Depois do D12a, o humano:
+- aceitou o desvio de CSS;
+- decidiu o README em inglês, com o português em `docs/README.pt-BR.md` e a frase 1
+  "da Hive";
+- adotou dois vídeos, conforme o guia da Colosseum: um pitch de até 3 min e uma demo
+  técnica de 2–3 min, cortada da tomada contínua, que fica como evidência completa.
+
+O próximo gate é o **D13**, conforme `docs/handoffs/d12a-to-d13.md`; em paralelo, a
+tomada contínua pelo humano.
 
 | Dia | Situação | Evidência / lacuna |
 | --- | --- | --- |
@@ -185,6 +198,7 @@ O próximo gate é o **D12a**, conforme `docs/handoffs/r-ui-to-d12a.md`.
 | D10 | **concluído** (2026-10-06) | worker local em `worker/` (23/23 testes); partida com os binários do D10a, sondas de chave e `check` duplo; W1/W2 `RefundedOnTimeout` dos Jobs das gravações (`57UYbVX9…`, `625JvmR8…`); Job `bc334093…`: 6021 (escrow), prova `Composite` → `Groth16` com a linha `docker_run`, 6003 (verificador), **`Released` com o verificador invocado, 99.541 CU** (`ByGF4BFP…`), 6007 (escrow); tudo pela API (`docs/d10-worker-results.md`) |
 | D11–D12 | **concluído** (2026-10-07) | interface Hive em `worker/static/` (`/ui/`), 53 testes; U1–U10 pela interface: P₃ `Released` (`2gB9djwM…`) e F₃ `RefundedOnFail` (`4jcugMyX…`) com o verificador invocado, T₃ `RefundedOnTimeout` (`5oTbFiTX…`), negativos 6021/6014/6007 (escrow) e 6003 (verificador); sem carteira no navegador (P3) (`docs/d11-ui-results.md`) |
 | R-UI | **concluída** (2026-10-07) | revisão somente leitura: 53/53, devnet só leitura igual ao D11–D12, PoCs HTTP e de navegador sobre os falsos; RUI-01 (inglês, alto), RUI-02 e RUI-03 (médios); APROVADO COM RESSALVAS para o vídeo (`docs/r-ui-review-results.md`) |
+| D12a | **concluído** (2026-10-07; `ba79080` e `docs: record D12a`) | interface em inglês (`LANG = "en"`, 371 chaves PT = EN, frases ratificadas), trava D-NEG por `first_seen` ≥ partida, liquidação aterrissada com reconciliação falha, RUI-04/05/08/09/11; `unittest` 58/58; ensaio C-UI-4 em inglês sobre os falsos (0 palavras portuguesas, 0 CSP); antes × depois de RUI-01/02/03; roteiro final em `docs/demo-script.md` (`docs/d12a-results.md`) |
 
 ### Caminho crítico e risco de prazo
 
@@ -234,9 +248,10 @@ O próximo gate é o **D12a**, conforme `docs/handoffs/r-ui-to-d12a.md`.
      (`docs/d11-ui-results.md`);
   11. R-UI concluída: **APROVADO COM RESSALVAS** para o vídeo
      (`docs/r-ui-review-results.md`);
-  12. D12a (08–09/10), conforme `docs/handoffs/r-ui-to-d12a.md`; vídeo
-     definitivo em inglês numa tomada contínua (10/10); D13 (README e texto de
-     submissão em inglês); submissão (11/10).
+  12. D12a concluído (`docs/d12a-results.md`);
+  13. D13 (README, texto de submissão, pitch e cortes da demo técnica, em inglês),
+     conforme `docs/handoffs/d12a-to-d13.md`; vídeo definitivo em inglês numa tomada
+     contínua (10/10); submissão (11/10).
 - Wallets de devnet: o agente está autorizado a criar keypairs efêmeros de
   devnet/localnet (D2a.2), sob as restrições do princípio 9 de `AGENTS.md`.
 
