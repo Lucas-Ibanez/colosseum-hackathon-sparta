@@ -80,9 +80,12 @@ com autorização separada, fazer o push.
 - `TODO(brand)`: slogan oficial em inglês (pitch).
 - `TODO(repo)`: **resolvido na sessão de registro (2026-10-08).** O repositório
   `https://github.com/Lucas-Ibanez/colosseum-hackathon-sparta` é público: a página
-  respondeu HTTP 200 sem login (`curl`). O commit do D13 foi enviado com autorização do
-  humano. No D13b, troque o `TODO(repo)` de `docs/submission.md` por essa constatação e
-  repita a checagem antes da submissão.
+  respondeu HTTP 200 sem login (`curl`). No D13b, troque o `TODO(repo)` de
+  `docs/submission.md` por essa constatação e repita a checagem antes da submissão.
+- **Push do D13:** autorizado pelo humano em 2026-10-08, mas o `git push` da sessão de
+  registro falhou porque o shell do agente não tem credenciais do GitHub (`could not read
+  Username`). O humano faz o push do próprio terminal. No preflight, confira `git status
+  -sb` e `git ls-remote origin main`, e não configure credenciais.
 - **Push:** só com autorização separada e explícita do humano. Sem ela:
   AGUARDANDO_AUTORIZAÇÃO.
 - Dado que mude o sentido de uma frase ratificada ou peça claim novo:
