@@ -2032,3 +2032,69 @@ Registre decisões relevantes do projeto neste formato.
 - **Próximo gate:** R-UI, revisão adversarial do worker (D10) e da interface (D11–D12)
   juntos, somente leitura, conforme `docs/handoffs/d11-to-r-ui.md`; depois, vídeo
   definitivo numa tomada contínua (10/10) e submissão (11/10).
+
+## 2026-10-07 — R-UI: revisão adversarial do worker (D10) e da interface Hive (D11–D12) (APROVADO COM RESSALVAS para o vídeo)
+
+- **Data:** 2026-10-07 (14:38–14:58 -03:00)
+- **Revisor:** Claude Code (Opus 5.5, esforço max), sessão separada e somente leitura;
+  HEAD revisado `faad06c` (sobre `37d2d63`), worker `bbdf6dbe…`.
+- **Resultado:** **APROVADO COM RESSALVAS** para o vídeo definitivo, condicionado ao gate
+  D12a (C-UI-1 a C-UI-3) e às condições de operação C-UI-4 a C-UI-7
+  (`docs/r-ui-review-results.md`, seção 9). Nenhum achado crítico; segurança HTTP, token,
+  CSP, DOM, argv/ambiente e rótulo C10-7 sem achado.
+  - RUI-01 (alto, bloqueia o vídeo em inglês): interface só em português (`LANG` fixo;
+    333 de 366 chaves sem inglês; frases congeladas sem tradução registrada).
+  - RUI-02 (médio): a seção adversarial habilita escrita ("Liquidar de novo") em Jobs
+    consumidos (P₃, F₃, `bc334093`), contra a C10-10.
+  - RUI-03 (médio): uma liquidação aterrissada cuja reconciliação falhou uma vez fica com a
+    verificação on-chain e a liquidação como "Ainda não…", contra a cadeia, mesmo depois de
+    reler.
+  - RUI-04 a 06 (baixos) e RUI-07 a 14 (informativos).
+- **Conferência na sessão de registro (código em `faad06c`):**
+  - `worker/static/js/i18n.js` tem `LANG = "pt-BR"`;
+  - `settlementOp()` em `views/job.js` filtra `status === "ok"`;
+  - o worker expõe `first_seen` por Job (`GET /api/jobs`) e `startup.started_at`
+    (`GET /api/health`);
+  - o 6014 exige só o Job em `Funded` e um candidato, então a cena 10 do roteiro (receipt
+    de P aplicada em F antes da prova de F) é possível;
+  - a proposta `r-ui/i18n-en-proposal.js` tem o SHA-256 registrado (`e5c1ecbf…`).
+- **Decisões humanas (2026-10-07, depois da revisão):**
+  - **Idioma:** o vídeo e toda a submissão serão em inglês.
+  - **D-EN-1 ratificada:** a tradução das 8 frases congeladas e do "Do not say" da seção
+    8 do relatório vale como texto oficial em inglês:
+    - frase 1 com "Hive's" na interface e no vídeo;
+    - o português continua válido e equivalente.
+  - **Ajuste na D-EN-1:** o item "name the rejecting program from an
+    `escrow:6000`–`6003` code (RD7-01)" não é tradução. Ele fica como **regra de
+    operação** (o programa que rejeitou vem só de `rejection`, C10-7), fora da lista
+    congelada.
+  - **D-EN-2:** inglês como idioma padrão da interface; o português fica no dicionário,
+    sem seletor.
+  - **Autorização explícita:** o D12a pode editar o `HIVE_MVP_UI_ADAPTATION.md` só em
+    dois pontos:
+    - a decisão 2 da §2: idioma padrão inglês, português mantido no dicionário;
+    - a §6: frase 1 em inglês ao lado da portuguesa, e referência à lista em inglês.
+
+    O `DESIGN.md`, o `HIVE_MVP_UI_GUIDE.md` e o resto da adaptação não mudam.
+  - **D-EN-3:**
+    - o D12a só acrescenta ao `README.md` uma seção com as frases em inglês e o "Do not
+      say", para os testes compararem;
+    - o README inteiro em inglês fica para um gate de submissão (D13), junto com o texto
+      da submissão: marca Hive e identificadores legados exatos.
+  - **D-NEG:** trava dos cenários adversariais por `first_seen` ≥
+    `startup.started_at` (C-UI-2), com o motivo visível; sem `data_dir` novo.
+  - **D-6014:** na tomada, a receipt de P é aplicada em F (cena 10), nunca a de um Job
+    antigo.
+  - **D-RUI-06:** fora do D12a. O worker não muda.
+- **Evidência:** `unittest` 53/53; `lint:design` 0/0; `check:tokens`; `check:assets`
+  43; hashes de locks, guest, binários, shim e worker iguais; devnet só leitura (T₃, P₃,
+  F₃, 10 transações U1–U10, saldos iguais, nenhuma assinatura nova); PoCs HTTP e de
+  navegador contra workers de revisão sobre os executáveis falsos (portas 8712–8714);
+  varredura de segredos limpa; artefatos em `~/.local/share/vericode-spikes/r-ui/`.
+- **Registro:** feito por sessão com escrita a partir da resposta da revisão. O prompt do
+  D12a da resposta veio truncado (limite de colagem) e foi reconstruído a partir das
+  seções 9 a 11 do relatório e destas decisões.
+- **Próximo gate:** D12a (correções da R-UI para o vídeo em inglês), conforme
+  `docs/handoffs/r-ui-to-d12a.md`; depois, vídeo definitivo (10/10), D13 (README e texto
+  de submissão em inglês, com o link do vídeo; pode começar antes da gravação) e submissão
+  (11/10).

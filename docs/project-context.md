@@ -90,7 +90,9 @@ adversariais com prefixo `R-`). O gate seguinte ao D4 é o `D7`, não "D5".
 | D10 | worker local em Python (stdlib), em `127.0.0.1`, sobre os binários do D10a; escritas W1–W7 pela API | D10 |
 | D11a | fundação da interface Hive: marca, adaptação do guia ao MVP, stack, fontes e assets | preparação de D11–D12 |
 | D11–D12 | telas Jobs, Novo job e Detalhe do job servidas pelo worker, com a identidade Hive (sem carteira no navegador); U1–U10 em devnet pela interface; roteiro "Gravação pela interface" | D11–D12 |
-| R-UI (próximo) | revisão adversarial do worker (D10) e da interface (D11–D12), somente leitura | guia §11 |
+| R-UI | revisão adversarial do worker (D10) e da interface (D11–D12), somente leitura (APROVADO COM RESSALVAS, C-UI-1 a C-UI-7) | guia §11 |
+| D12a (próximo) | correções da R-UI para o vídeo em inglês (interface em inglês, trava dos negativos, liquidação sem reconciliação), ensaio sobre os falsos e roteiro final em inglês | D12 |
+| D13 | `README.md` e texto de submissão em inglês (marca Hive, identificadores legados exatos), com o link do vídeo | submissão |
 
 Itens de produto e mercado do plano (inscrição, outreach, design partners,
 pitch, telas, vídeo) não são rastreados neste repositório.
@@ -156,7 +158,17 @@ O **D11–D12** (2026-10-07) entregou a interface (`docs/d11-ui-results.md`):
   e F₃ `RefundedOnFail` com o verificador invocado (99.541 CU), negativos 6021, 6014,
   6007 (escrow) e 6003 (verificador); saldos fecham.
 
-O próximo gate é o **R-UI**, conforme `docs/handoffs/d11-to-r-ui.md`.
+A **R-UI** (2026-10-07) revisou o worker e a interface, somente leitura
+(`docs/r-ui-review-results.md`): **APROVADO COM RESSALVAS** para o vídeo.
+
+O vídeo e a submissão serão em inglês (decisão humana de 2026-10-07), mas a interface
+ainda é só em português (RUI-01). O humano decidiu:
+- ratificar as frases em inglês (D-EN-1);
+- tornar o inglês o padrão da interface (D-EN-2);
+- autorizar a edição pontual da adaptação;
+- deixar o README inteiro em inglês para o D13.
+
+O próximo gate é o **D12a**, conforme `docs/handoffs/r-ui-to-d12a.md`.
 
 | Dia | Situação | Evidência / lacuna |
 | --- | --- | --- |
@@ -172,6 +184,7 @@ O próximo gate é o **R-UI**, conforme `docs/handoffs/d11-to-r-ui.md`.
 | D10a | **concluído**; R-D10a: APROVADO COM RESSALVAS (C10-1 a C10-10) | antes × depois: lógica do D9 com 7 falhas em `negative_runs` e 2 no `docker_shim`; CLI do D9 aceitava `escrow:6003` sobre falha do verificador e dava erro falso com "already processed"/nó atrasado; prover do D9 chamava o Bonsai. Depois: core 42/42 ×2, CLI 30/30, suíte 61/61, prover 5/5 + 2/2; `Groth16` pelo shim novo; `check=ok` com o verificador `34ae6e5c…` (`docs/d10a-hardening-results.md`) |
 | D10 | **concluído** (2026-10-06) | worker local em `worker/` (23/23 testes); partida com os binários do D10a, sondas de chave e `check` duplo; W1/W2 `RefundedOnTimeout` dos Jobs das gravações (`57UYbVX9…`, `625JvmR8…`); Job `bc334093…`: 6021 (escrow), prova `Composite` → `Groth16` com a linha `docker_run`, 6003 (verificador), **`Released` com o verificador invocado, 99.541 CU** (`ByGF4BFP…`), 6007 (escrow); tudo pela API (`docs/d10-worker-results.md`) |
 | D11–D12 | **concluído** (2026-10-07) | interface Hive em `worker/static/` (`/ui/`), 53 testes; U1–U10 pela interface: P₃ `Released` (`2gB9djwM…`) e F₃ `RefundedOnFail` (`4jcugMyX…`) com o verificador invocado, T₃ `RefundedOnTimeout` (`5oTbFiTX…`), negativos 6021/6014/6007 (escrow) e 6003 (verificador); sem carteira no navegador (P3) (`docs/d11-ui-results.md`) |
+| R-UI | **concluída** (2026-10-07) | revisão somente leitura: 53/53, devnet só leitura igual ao D11–D12, PoCs HTTP e de navegador sobre os falsos; RUI-01 (inglês, alto), RUI-02 e RUI-03 (médios); APROVADO COM RESSALVAS para o vídeo (`docs/r-ui-review-results.md`) |
 
 ### Caminho crítico e risco de prazo
 
@@ -219,8 +232,11 @@ O próximo gate é o **R-UI**, conforme `docs/handoffs/d11-to-r-ui.md`.
      stack, fontes e assets);
   10. D11–D12 concluído: interface Hive e U1–U10 pela interface
      (`docs/d11-ui-results.md`);
-  11. R-UI (09/10), conforme `docs/handoffs/d11-to-r-ui.md`; vídeo definitivo
-     numa tomada contínua (10/10); submissão (11/10).
+  11. R-UI concluída: **APROVADO COM RESSALVAS** para o vídeo
+     (`docs/r-ui-review-results.md`);
+  12. D12a (08–09/10), conforme `docs/handoffs/r-ui-to-d12a.md`; vídeo
+     definitivo em inglês numa tomada contínua (10/10); D13 (README e texto de
+     submissão em inglês); submissão (11/10).
 - Wallets de devnet: o agente está autorizado a criar keypairs efêmeros de
   devnet/localnet (D2a.2), sob as restrições do princípio 9 de `AGENTS.md`.
 

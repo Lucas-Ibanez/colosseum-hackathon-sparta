@@ -1,15 +1,18 @@
-# Controle autônomo — D11–D12 concluído (interface Hive); próximo R-UI
+# Controle autônomo — R-UI concluída (APROVADO COM RESSALVAS); próximo D12a
 
 ## Objetivo atual
 
-R-UI, conforme `docs/handoffs/d11-to-r-ui.md`: revisão adversarial do worker (D10)
-e da interface Hive (D11–D12) juntos, numa sessão separada e somente leitura (Opus
-5.5, esforço max): assinatura e envio pelo worker, argv e ambiente, shim, `Host`,
-token, CORS e CSP, DOM só com `textContent`, rótulo C10-7, chaves, claims e frases
-(inclusive "da Hive"), fidelidade ao `DESIGN.md` e à adaptação, e o roteiro "Gravação
-pela interface".
+D12a, conforme `docs/handoffs/r-ui-to-d12a.md`: cumprir C-UI-1 a C-UI-3 da R-UI só em
+`worker/static/`, nos testes e nos documentos autorizados:
+- interface em inglês com as frases ratificadas (D-EN-1, D-EN-2);
+- trava dos cenários adversariais para Jobs desta execução do worker (D-NEG);
+- liquidação exibida mesmo com reconciliação falha.
 
-Depois: vídeo definitivo numa tomada contínua (10/10) e submissão (11/10).
+Depois, ensaiar a tomada em inglês sobre os falsos e aplicar o roteiro final ao
+`docs/demo-script.md`. Sem escrita em devnet.
+
+Em seguida: vídeo definitivo (10/10), D13 (README e texto de submissão em inglês) e
+submissão (11/10).
 
 ## Marcos anteriores
 
@@ -46,7 +49,9 @@ Depois: vídeo definitivo numa tomada contínua (10/10) e submissão (11/10).
   - `23a91b5` (`docs: record D10 worker`).
 - D11–D12: interface Hive servida pelo worker e U1–U10 pela interface:
   - `37d2d63` (worker);
-  - `docs: record D11-D12 interface`.
+  - `faad06c` (`docs: record D11-D12 interface`).
+- R-UI (`docs: record R-UI review`): **APROVADO COM RESSALVAS** para o vídeo
+  (RUI-01 a RUI-14; condições C-UI-1 a C-UI-7).
 
 ## Baseline (D11–D12)
 
@@ -124,7 +129,7 @@ Depois: vídeo definitivo numa tomada contínua (10/10) e submissão (11/10).
 
 ## Gate atual
 
-`D11–D12` (concluído) → próximo `R-UI`.
+`R-UI` (concluída, APROVADO COM RESSALVAS) → próximo `D12a`.
 
 ## Estado
 
@@ -167,6 +172,11 @@ Depois: vídeo definitivo numa tomada contínua (10/10) e submissão (11/10).
   `RefundedOnFail` com o verificador invocado (99.541 CU), negativos 6021, 6014, 6007
   (escrow) e 6003 (verificador); 10 transações, saldos fecham; seção "Gravação pela
   interface" no roteiro.
+- R-UI (`docs/r-ui-review-results.md`): revisão somente leitura do worker e da
+  interface; segurança HTTP, token, CSP, DOM, argv/ambiente e C10-7 sem achado;
+  RUI-01 (interface só em português; alto), RUI-02 (escrita adversarial em Jobs
+  consumidos) e RUI-03 (C/D contra a cadeia depois de reconciliação falha), ambos
+  médios; roteiro final do vídeo em inglês na seção 10.
 
 ## Decisões humanas registradas
 
@@ -185,6 +195,15 @@ Depois: vídeo definitivo numa tomada contínua (10/10) e submissão (11/10).
   desenvolvimento, emendando a P2), idioma padrão português.
 - D11–D12: plano aprovado em Plan Mode (2026-10-07 09:37), com a lista fechada
   U1–U10 (`docs/decisions.md`).
+- R-UI (2026-10-07), em `docs/decisions.md`:
+  - vídeo e submissão em inglês;
+  - D-EN-1: frases e "Do not say" em inglês ratificados;
+  - D-EN-2: inglês como padrão da interface;
+  - edição autorizada do `HIVE_MVP_UI_ADAPTATION.md` (§2 decisão 2 e §6) no D12a;
+  - D-EN-3: README inteiro no D13;
+  - D-NEG por `first_seen`;
+  - D-6014: receipt de P em F;
+  - D-RUI-06 fora do D12a.
 
 ## Ações proibidas (permanentes salvo novo objetivo)
 
@@ -265,17 +284,23 @@ Depois: vídeo definitivo numa tomada contínua (10/10) e submissão (11/10).
 - O `env.sh` herdado define `R`, `B`, `D` e `VC`; não reutilizar esses nomes
   (incidente do R-D7).
 - **Interface (D11–D12):**
-  - a seção adversarial aceita também Jobs antigos já liquidados (confirmação
-    obrigatória); numa tomada, um Job errado vira escrita fora do roteiro;
+  - RUI-01: interface só em português até o D12a; o vídeo e a submissão serão em
+    inglês;
+  - RUI-02: cenários adversariais habilitados em Jobs consumidos até o D12a;
+  - RUI-03: liquidação aterrissada com reconciliação falha aparece como "Ainda não…"
+    até o D12a;
+  - RUI-04 a 14 (baixos e informativos, `docs/r-ui-review-results.md`); RUI-06
+    (`Content-Length: ²` → 500) fica no worker, fora do D12a;
+  - orçamento do buyer: no máximo 8 tomadas completas sem novo SOL de devnet
+    (C-UI-6);
   - `app_commit` é o HEAD da partida: reiniciar o worker depois do commit;
   - `slot_clock` é estimativa (~0,24 s por slot medidos);
-  - o dicionário inglês cobre só os rótulos do `DESIGN.md`;
   - o SPL Token não registra o nome da instrução nos logs (a tela diz isso);
   - favicon inexistente (`TODO(brand)`).
 - **Calendário:** 2026-10-07; prazo de entrega 11/10.
 
 ## Próxima transição permitida
 
-`R-UI`, conforme `docs/handoffs/d11-to-r-ui.md`, em sessão nova e separada, somente
-leitura (Opus 5.5, esforço max). Depois: vídeo definitivo numa tomada contínua (10/10)
-pela seção "Gravação pela interface" de `docs/demo-script.md`, e submissão (11/10).
+`D12a`, conforme `docs/handoffs/r-ui-to-d12a.md` (Opus 5.5, high, Plan Mode
+obrigatório). Depois: vídeo definitivo numa tomada contínua (10/10), D13 (README e
+texto de submissão em inglês) e submissão (11/10).
